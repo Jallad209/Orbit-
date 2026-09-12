@@ -3,7 +3,7 @@
 **Tech Stack:** TypeScript (strict) + Zod + Vitest + Dexie (IndexedDB) + SQLite (Tauri SQL plugin, from week 7) + MiniSearch / FTS5 + Tauri 2 Rust commands (from week 7)
 **Repository:** `C:\Orbit`
 **Packages Owned:** `packages/core`, `packages/storage`, `apps/orbit/src-tauri` (from week 7)
-**Current Status:** Weeks 1-2 ✅ COMPLETE
+**Current Status:** Weeks 1-3 ✅ COMPLETE
 
 > In Orbit there is no server. "Backend" means the pure domain engine (`packages/core`), the storage layer (`packages/storage`), and, from week 7, the Rust shell commands. Weeks 1–6 run entirely in the browser against IndexedDB. Everything here must run with the network cable unplugged.
 
@@ -152,7 +152,7 @@ pnpm run dev
 
 ---
 
-## Week 3: Capture Parser & Classifier
+## Week 3: Capture Parser & Classifier ✅ COMPLETE
 
 **Description:** This week you will build the deterministic natural-language parser behind the Universal Inbox. Given free text, it returns a classification (task, event, note, goal, routine, bill, relationship reminder) with extracted fields, a confidence, and ranked alternatives so the UI can offer one-keystroke correction. The parser is a pure function and must be exhaustively tested. A `Classifier` interface wraps it so a local model can be swapped in later.
 
@@ -181,11 +181,30 @@ pnpm run dev
 - **Ambiguity Tests:** "Pay Omar 50 on Friday" → bill with person link, alternatives include task
 - **Prefix Tests:** Prefix overrides all cues
 
+**What was done:**
+
+- Span-based extractors in `capture/extract.ts`: explicit prefixes (`t: n: e: g: r: b: c:`, `$`), `@person` / `#project` mentions, time ranges, recurrence (every/each + interval, weekday lists, weekdays, monthly on the Nth, yearly, N times a week), money (symbols, ISO codes, words, thousands, "pay Omar 50"), relative durations, absolute and relative dates (ISO, D Mon, Mon D, D/M, today/tomorrow/tonight, weekdays with next/this, next/this week/month/year/weekend, end of X, on the Nth, month-only "by June"), single times (at 5, 9:30, 6pm, noon, morning/evening), estimates (2h, 45m, 1h30), priority (urgent, p1–p3, !!), directed people ("ask Omar", "I owe Layla", "Omar owes me")
+- Earlier extractors claim spans so later ones cannot overlap: recurrence before dates makes "every friday" a routine, not a deadline; "in 30 min" is a time, not an estimate
+- All dates are local calendar dates and minutes-of-day, so results are timezone independent; the app combines them with `toInstant`
+- Additive scoring in `classify.ts` over cue regexes and extracted facts; an explicit prefix scores 1.0; `alternatives` ranks all seven types for Tab-cycling; `reclassify()` re-derives fields for a chosen type
+- Title tidying strips claimed spans, dangling connectors, and "remind me to"; keeps a leading "Weekly" in routine names
+- `Classifier` interface with `ruleClassifier` as the default implementation
+- `materializeCapture()` turns a type + fields into concrete records with sensible defaults (task due end of day, event 09:00 for an hour, bill due in a week, routine window from start + duration, commitment links or creates the person); typed `MaterializeError` for `needs-area` / `needs-person`
+- New `Capture` entity (inbox item holding the guess, confidence, status, and what it became), `captures` store in both adapters (Dexie schema v2), export schema bumped to 2
+- Golden corpus of 122 phrases across all seven types with field expectations, 100 % exact, plus a regression guard; date, recurrence, ambiguity, prefix, reclassify, and token tests
+
+**Files created:**
+
+- `packages/core/src/capture/{types.ts,extract.ts,classify.ts,materialize.ts,index.ts}` ✅
+- `packages/core/src/schema/entities.ts` (CaptureSchema), `schema/common.ts` (entity type `capture`) ✅
+- `packages/core/test/capture/{corpus.json,capture.test.ts,materialize.test.ts}` ✅
+- `packages/storage/src/{repository.ts,memory/index.ts,indexeddb/index.ts,export/json.ts}` (captures store, Dexie v2, export v2) ✅
+
 **Deliverables:**
 
-- [ ] `packages/core/src/capture/*` — tokenizer, dates, recurrence, money, mentions, classifier
-- [ ] `packages/core/test/capture/corpus.json`
-- [ ] Unit tests written and passing (corpus ≥ 95% exact match)
+- [x] `packages/core/src/capture/*` — tokenizer, dates, recurrence, money, mentions, classifier
+- [x] `packages/core/test/capture/corpus.json`
+- [x] Unit tests written and passing (corpus ≥ 95% exact match)
 
 **Verification:**
 
@@ -632,7 +651,7 @@ pnpm run test
 | ----------- | ------------------------------------------------------ | ----------- | -------- |
 | **Week 1**  | Monorepo, Schemas & In-Memory Repository               | ✅ COMPLETE | 100%     |
 | **Week 2**  | IndexedDB Adapter, Op Log, Persistence & Export/Import | ✅ COMPLETE | 100%     |
-| **Week 3**  | Capture Parser & Classifier                            | ⏳ PENDING  | 0%       |
+| **Week 3**  | Capture Parser & Classifier                            | ✅ COMPLETE | 100%     |
 | **Week 4**  | Structure Services — Hierarchy, Links & Project Health | ⏳ PENDING  | 0%       |
 | **Week 5**  | Planning Engine v1                                     | ⏳ PENDING  | 0%       |
 | **Week 6**  | Recurrence, Blocks & Recalculation                     | ⏳ PENDING  | 0%       |
@@ -644,4 +663,4 @@ pnpm run test
 | **Week 12** | Weekly Review, People, Bills & Tray                    | ⏳ PENDING  | 0%       |
 | **Week 13** | Hardening, Performance & Data Safety                   | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 2/13 weeks complete (15%)
+**Total Progress:** 3/13 weeks complete (23%)

@@ -295,3 +295,36 @@ export const OpLogEntrySchema = z.object({
   at: InstantSchema,
 });
 export type OpLogEntry = z.infer<typeof OpLogEntrySchema>;
+
+// ---------------------------------------------------------------------------
+// Inbox: Capture
+// ---------------------------------------------------------------------------
+
+/** What a capture can become. `commitment` is a relationship reminder. */
+export const CaptureTypeSchema = z.enum([
+  'task',
+  'event',
+  'note',
+  'goal',
+  'routine',
+  'bill',
+  'commitment',
+]);
+export type CaptureType = z.infer<typeof CaptureTypeSchema>;
+
+export const CaptureStatusSchema = z.enum(['inbox', 'processed', 'archived']);
+
+/**
+ * A raw capture waiting in the inbox. Holds the parser's guess so the UI can
+ * show and correct it; triage turns it into a real entity (`processedId`).
+ */
+export const CaptureSchema = BaseRecordSchema.extend({
+  text: z.string().trim().min(1, 'text is required'),
+  type: CaptureTypeSchema,
+  fields: z.record(z.unknown()).default({}),
+  confidence: z.number().min(0).max(1).default(0),
+  status: CaptureStatusSchema.default('inbox'),
+  processedType: EntityTypeSchema.nullable().default(null),
+  processedId: nullableId,
+});
+export type Capture = z.infer<typeof CaptureSchema>;

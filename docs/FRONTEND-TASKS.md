@@ -3,7 +3,7 @@
 **Tech Stack:** React 18 + Vite + TypeScript + Tailwind CSS + Radix UI Primitives + Framer Motion + Zustand + Vite PWA + Tauri 2 API (from week 7) + Vitest + Testing Library
 **Repository:** `C:\Orbit`
 **Packages Owned:** `apps/orbit/src`
-**Current Status:** Weeks 1-2 ✅ COMPLETE
+**Current Status:** Weeks 1-3 ✅ COMPLETE
 
 > The frontend talks only to `@orbit/core` services, the `Repository` interface, and a `Platform` interface. It never issues SQL, never imports Tauri APIs outside `src/platform/`, and never calls the network. All fonts and assets are bundled. Weeks 1–6 run in a plain browser; the desktop shell is integrated in week 7.
 
@@ -158,7 +158,7 @@ pnpm run build && pnpm run preview
 
 ---
 
-## Week 3: Universal Inbox
+## Week 3: Universal Inbox ✅ COMPLETE
 
 **Description:** This week you will build capture and triage. The capture bar accepts natural language, shows the parser's guessed type as a chip with a confidence hint, and lets the user cycle types with Tab or click an alternative. Captured items land in the inbox list where they can be triaged (assign project/area, set date, convert type, archive) entirely from the keyboard. Capture must feel instant and never block. An in-app quick-capture overlay opens from any screen; the system-wide version arrives with the desktop shell in week 7.
 
@@ -191,10 +191,28 @@ pnpm run build && pnpm run preview
 - **Integration Tests:**
   - Capture writes through the repository (in-memory) and appears in the list
 
+**What was done:**
+
+- `CaptureBar`: parses on every keystroke with the repository's people and project names as context, shows the guessed type as a `TypeBadge` (with a "guess" hint under 60 % confidence) and every extracted span as a removable chip; Tab / Shift+Tab cycle the ranked alternatives via `reclassify`; Enter saves a `Capture` and clears; Escape clears
+- `InboxPage`: captures grouped by type in one keyboard list (j / k / arrows / Home / End across groups), newest first; selection falls back to the first item when the chosen one leaves; `TriageActions` toolbar with type menu, date popover (today / tomorrow / in a week / custom / clear), searchable project popover, Accept, Archive
+- Single-key hotkeys `t` cycle type, `d` date, `p` project, `e` archive, Enter accept, all ignored while typing; assigning a project converts the capture into a task (or note) in that project
+- `inboxService`: save, list, set type, set date, archive, and `convertCapture`, which writes the materialised records and marks the capture processed in one transaction; `MaterializeError` codes surface as toasts
+- `QuickCaptureOverlay` on `c` from any screen, mounted in the app layout; closes on save with an "Open inbox" toast action
+- `useRepoQuery` + `bumpData()` in `data/useQuery.ts`: the read model for the whole app until live queries arrive
+- Hotkey fixes found by the inbox tests: `useHotkey` now calls the latest handler through a ref, and a pending sequence like `g` can no longer be stolen by a page's single-key binding
+- Empty state "Inbox zero"; 13 new tests covering chips, Tab cycling, save and clear, token removal, grouping, j/k, p → project, e, Enter, t, live insert, overlay open/close, overlay ignored while typing
+
+**Files created:**
+
+- `apps/orbit/src/features/inbox/{CaptureBar.tsx,InboxPage.tsx,TriageActions.tsx,QuickCaptureOverlay.tsx,inboxService.ts}` ✅
+- `apps/orbit/src/features/inbox/{CaptureBar.test.tsx,InboxPage.test.tsx}` ✅
+- `apps/orbit/src/data/useQuery.ts`, `apps/orbit/src/app/store.ts` (dataVersion, quick capture) ✅
+- `apps/orbit/src/lib/hotkeys.ts` (ref-based handler, sequence isolation), `components/ui/Badge.tsx` (commitment kind) ✅
+
 **Deliverables:**
 
-- [ ] `apps/orbit/src/features/inbox/{CaptureBar,InboxPage,TriageActions,QuickCaptureOverlay}.tsx`
-- [ ] Unit tests written and passing
+- [x] `apps/orbit/src/features/inbox/{CaptureBar,InboxPage,TriageActions,QuickCaptureOverlay}.tsx`
+- [x] Unit tests written and passing
 
 **Verification:**
 
@@ -641,7 +659,7 @@ pnpm run build && pnpm run preview
 | ----------- | --------------------------------------------- | ----------- | -------- |
 | **Week 1**  | Vite + React Setup, Design Tokens & App Shell | ✅ COMPLETE | 100%     |
 | **Week 2**  | Base Component Library & PWA Shell            | ✅ COMPLETE | 100%     |
-| **Week 3**  | Universal Inbox                               | ⏳ PENDING  | 0%       |
+| **Week 3**  | Universal Inbox                               | ✅ COMPLETE | 100%     |
 | **Week 4**  | Areas, Goals, Projects & Tasks                | ⏳ PENDING  | 0%       |
 | **Week 5**  | Today Screen & Plan Proposal                  | ⏳ PENDING  | 0%       |
 | **Week 6**  | Time-Block Timeline                           | ⏳ PENDING  | 0%       |
@@ -653,4 +671,4 @@ pnpm run build && pnpm run preview
 | **Week 12** | Weekly Review, People, Bills & Notes          | ⏳ PENDING  | 0%       |
 | **Week 13** | Mobile PWA Layouts, Accessibility & Polish    | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 2/13 weeks complete (15%)
+**Total Progress:** 3/13 weeks complete (23%)

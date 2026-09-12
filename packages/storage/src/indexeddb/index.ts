@@ -4,6 +4,7 @@ import {
   AreaSchema,
   BillSchema,
   BlockSchema,
+  CaptureSchema,
   CommitmentSchema,
   DayCommitmentSchema,
   EventSchema,
@@ -35,14 +36,17 @@ import type {
 } from '../repository';
 import { STORE_ENTITY } from '../repository';
 
-export const INDEXEDDB_SCHEMA_VERSION = 1;
+export const INDEXEDDB_SCHEMA_VERSION = 2;
 export const DEFAULT_DB_NAME = 'orbit';
 
 /**
  * Dexie store definitions. First entry is the primary key; the rest are
  * indexes. `deletedAt` is not indexed because IndexedDB cannot index null.
+ *
+ * Versions are additive: each `version(n)` lists only what changed, and Dexie
+ * upgrades older databases in place. Never edit a shipped version.
  */
-const STORES: Record<StoreName | 'opLog', string> = {
+const STORES_V1: Record<Exclude<StoreName, 'captures'> | 'opLog', string> = {
   areas: 'id',
   goals: 'id, areaId, status',
   projects: 'id, areaId, goalId, status',
@@ -64,6 +68,11 @@ const STORES: Record<StoreName | 'opLog', string> = {
   opLog: '++seq, entity, entityId',
 };
 
+/** v2 (week 3): inbox captures. */
+const STORES_V2: Partial<Record<StoreName, string>> = {
+  captures: 'id, status, type',
+};
+
 type OpLogInsert = Omit<OpLogEntry, 'seq'>;
 
 class OrbitDb extends Dexie {
@@ -71,7 +80,8 @@ class OrbitDb extends Dexie {
 
   constructor(name: string, deps?: { indexedDB: IDBFactory; IDBKeyRange: typeof IDBKeyRange }) {
     super(name, deps ? { indexedDB: deps.indexedDB, IDBKeyRange: deps.IDBKeyRange } : undefined);
-    this.version(INDEXEDDB_SCHEMA_VERSION).stores(STORES);
+    this.version(1).stores(STORES_V1);
+    this.version(2).stores(STORES_V2);
   }
 }
 
@@ -242,6 +252,7 @@ export async function createIndexedDbRepository(
     sessions: new IdbStore('sessions', SessionSchema, ctx),
     rules: new IdbStore('rules', RuleSchema, ctx),
     insightStates: new IdbStore('insightStates', InsightStateSchema, ctx),
+    captures: new IdbStore('captures', CaptureSchema, ctx),
     links: new IdbLinkStore('links', LinkSchema, ctx),
     opLog: new IdbOpLog(ctx),
 

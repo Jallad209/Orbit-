@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Placeholder } from '@/pages/Placeholder';
+import { InboxPage } from '@/features/inbox/InboxPage';
 
 const ComponentsGallery = import.meta.env.DEV
   ? lazy(() =>
@@ -27,12 +28,7 @@ export function AppRoutes() {
             />
           }
         />
-        <Route
-          path="/inbox"
-          element={
-            <Placeholder title="Inbox" description="Universal capture. Arrives in week 3." />
-          }
-        />
+        <Route path="/inbox" element={<InboxPage />} />
         <Route
           path="/timeline"
           element={<Placeholder title="Timeline" description="Time blocks. Arrives in week 6." />}

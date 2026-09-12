@@ -3,7 +3,7 @@
 **Tech Stack:** pnpm + GitHub Actions + Vitest + Playwright + Vite PWA + Lighthouse + Rust toolchain & Tauri CLI (from week 7) + tauri-driver/WebdriverIO + NSIS/MSI + Tauri Updater (manual check)
 **Repository:** `C:\Orbit`
 **Owned:** `.github/`, `scripts/`, `apps/orbit/src-tauri/tauri.conf.json` (build/security sections, from week 7), release process
-**Current Status:** Weeks 1-2 ✅ COMPLETE (branch protection pending: needs `gh auth login` or the GitHub UI)
+**Current Status:** Weeks 1-3 ✅ COMPLETE (branch protection pending: needs `gh auth login` or the GitHub UI)
 
 > There are no servers to run. DevOps for Orbit means: reproducible builds, CI that guards the engine, a static PWA build, data-safety verification, signed desktop installers, and a release process. Weeks 1–6 need no Rust. Nothing here may introduce a network dependency into the app itself.
 
@@ -122,7 +122,7 @@ git push origin feature/ci-test
 
 ---
 
-## Week 3: PWA Build & Static Preview
+## Week 3: PWA Build & Static Preview ✅ COMPLETE
 
 **Description:** This week you will make the web build a real, installable, offline artifact. CI builds the PWA on every main commit, runs a Lighthouse PWA audit, checks the bundle budget, and uploads the static bundle as an artifact. A preview script serves it over LAN so it can be installed on a phone for testing. No hosting service is required; the bundle is a folder.
 
@@ -141,12 +141,25 @@ git push origin feature/ci-test
 4. **LAN Preview Script** — `pnpm run preview:lan` with local HTTPS cert instructions
 5. **Static Hosting Doc** — `docs/HOSTING.md`: how to self-host the folder (any static server) or open from a local server; no cloud dependency
 
+**What was done:**
+
+- `pwa.yml` on every push to `main`: build → `scripts/check-bundle.mjs` → upload `orbit-pwa` (the static `dist/` folder) → Lighthouse CI (`@lhci/cli`) against the built folder → upload the HTML report
+- `check-bundle.mjs`: sums gzipped JS, fails above 600 KB or more than 20 % over `bench/bundle-baseline.json`, verifies `manifest.webmanifest`, `sw.js`, and icons exist, writes a table to the job summary; `--update` refreshes the baseline (first baseline: 221 KB gzipped)
+- `lighthouserc.json`: desktop preset, two runs, accessibility ≥ 0.95 as an error, performance and best-practices ≥ 0.9 as warnings (Lighthouse 12 dropped the PWA category; installability is covered by the artefact check)
+- `pnpm run preview:lan` serves the build on all interfaces at port 4173; `docs/HOSTING.md` covers mkcert for HTTPS on a phone, self-hosting with any static server (Caddy example), and cache headers
+
+**Files created:**
+
+- `.github/workflows/pwa.yml`, `lighthouserc.json` ✅
+- `scripts/check-bundle.mjs`, `bench/bundle-baseline.json` ✅
+- `docs/HOSTING.md`; root scripts `preview:lan`, `check:bundle` ✅
+
 **Deliverables:**
 
-- [ ] `.github/workflows/pwa.yml`
-- [ ] `lighthouserc.json`
-- [ ] `scripts/preview-lan.ts`
-- [ ] `docs/HOSTING.md`
+- [x] `.github/workflows/pwa.yml`
+- [x] `lighthouserc.json`
+- [x] `scripts/preview-lan.ts`
+- [x] `docs/HOSTING.md`
 
 **Verification:**
 
@@ -512,7 +525,7 @@ git tag v1.0.0 && git push --tags
 | ----------- | ------------------------------------------------- | ----------- | -------- |
 | **Week 1**  | Local Toolchain & Repository Bootstrap            | ✅ COMPLETE | 100%     |
 | **Week 2**  | Continuous Integration                            | ✅ COMPLETE | 90%      |
-| **Week 3**  | PWA Build & Static Preview                        | ⏳ PENDING  | 0%       |
+| **Week 3**  | PWA Build & Static Preview                        | ✅ COMPLETE | 100%     |
 | **Week 4**  | Test Infrastructure & Browser End-to-End          | ⏳ PENDING  | 0%       |
 | **Week 5**  | Data Safety Verification (Web)                    | ⏳ PENDING  | 0%       |
 | **Week 6**  | Performance Benchmarks                            | ⏳ PENDING  | 0%       |
@@ -524,4 +537,4 @@ git tag v1.0.0 && git push --tags
 | **Week 12** | Optional Updater (Manual Check)                   | ⏳ PENDING  | 0%       |
 | **Week 13** | Security Review & 1.0 Release                     | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 2/13 weeks complete (15%)
+**Total Progress:** 3/13 weeks complete (23%)

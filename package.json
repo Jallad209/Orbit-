@@ -20,7 +20,9 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "preview:lan": "pnpm --filter orbit exec vite preview --host --port 4173",
+    "check:bundle": "node scripts/check-bundle.mjs"
   },
   "lint-staged": {
     "*.{ts,tsx,js}": [

@@ -4,7 +4,7 @@ import { cn } from '@/lib/cn';
 
 /** Capture / entity types the inbox can classify into. */
 export type EntityKind =
-  'task' | 'event' | 'note' | 'goal' | 'routine' | 'bill' | 'person' | 'project';
+  'task' | 'event' | 'note' | 'goal' | 'routine' | 'bill' | 'commitment' | 'person' | 'project';
 
 export const ENTITY_LABELS: Record<EntityKind, string> = {
   task: 'Task',
@@ -13,6 +13,7 @@ export const ENTITY_LABELS: Record<EntityKind, string> = {
   goal: 'Goal',
   routine: 'Routine',
   bill: 'Bill',
+  commitment: 'Commitment',
   person: 'Person',
   project: 'Project',
 };
@@ -35,6 +36,7 @@ export const badgeVariants = cva(
         goal: 'bg-gold-2/60 text-gold-ink',
         routine: 'bg-[#dcefe3] text-[#1f4a31]',
         bill: 'bg-[#f3dede] text-[#6b1f1f]',
+        commitment: 'bg-[#e4e0f6] text-[#33285e]',
         person: 'bg-[#eadff3] text-[#3f2a5a]',
         project: 'bg-nav text-nav-fg',
       },

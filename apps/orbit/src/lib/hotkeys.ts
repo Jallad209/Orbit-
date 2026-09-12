@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect } from 'react';
+import { createContext, useContext, useEffect, useRef } from 'react';
 
 /**
  * Keyboard-first navigation.
@@ -146,20 +146,32 @@ export class HotkeyRegistry {
     const typing = isTypingTarget(e.target);
     this.pushBuffer(e);
 
-    let partial = false;
-    for (const b of this.bindings) {
-      if (typing && !b.options.allowInInput) continue;
-      const match = this.matchBinding(b);
-      if (match === 'full') {
-        if (b.options.preventDefault !== false) e.preventDefault();
-        this.clearBuffer();
-        b.handler(e);
-        return true;
+    const attempt = (): 'fired' | 'partial' | 'none' => {
+      let partial = false;
+      for (const b of this.bindings) {
+        if (typing && !b.options.allowInInput) continue;
+        const match = this.matchBinding(b);
+        if (match === 'full') {
+          if (b.options.preventDefault !== false) e.preventDefault();
+          this.clearBuffer();
+          b.handler(e);
+          return 'fired';
+        }
+        if (match === 'partial') partial = true;
       }
-      if (match === 'partial') partial = true;
+      return partial ? 'partial' : 'none';
+    };
+
+    // While a sequence is pending ("g" of "g t"), only the whole buffer may
+    // match, so a page's single-key "p" cannot steal the second key of "g p".
+    let outcome = attempt();
+    if (outcome === 'none' && this.buffer.length > 1) {
+      // The pending sequence went nowhere; evaluate this key on its own.
+      this.buffer = [e];
+      outcome = attempt();
     }
-    if (partial) {
-      // The key started a sequence (e.g. "g" of "g t"); keep the buffer.
+    if (outcome === 'fired') return true;
+    if (outcome === 'partial') {
       if (!typing) e.preventDefault();
       return false;
     }
@@ -169,11 +181,7 @@ export class HotkeyRegistry {
 
   private matchBinding(b: Binding): 'full' | 'partial' | 'none' {
     const n = this.buffer.length;
-    if (n > b.steps.length) {
-      // Only the tail of the buffer can match.
-      const tail = this.buffer.slice(n - b.steps.length);
-      return tail.every((e, i) => eventMatchesStep(e, b.steps[i]!)) ? 'full' : 'none';
-    }
+    if (n > b.steps.length) return 'none';
     const allMatch = this.buffer.every((e, i) => eventMatchesStep(e, b.steps[i]!));
     if (!allMatch) return 'none';
     return n === b.steps.length ? 'full' : 'partial';
@@ -221,11 +229,20 @@ export function useHotkeyRegistry(): HotkeyRegistry {
  */
 export function useHotkey(spec: string, handler: HotkeyHandler, options: HotkeyOptions = {}): void {
   const registry = useHotkeyRegistry();
+  const handlerRef = useRef(handler);
+  useEffect(() => {
+    handlerRef.current = handler;
+  });
   const { description, group, allowInInput, preventDefault } = options;
   useEffect(() => {
-    return registry.register(spec, handler, { description, group, allowInInput, preventDefault });
-    // handler is intentionally excluded: re-registering per render would reorder priority.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Register once per spec; the wrapper always calls the latest handler so
+    // callers need not memoise and priority order is stable across renders.
+    return registry.register(spec, (e) => handlerRef.current(e), {
+      description,
+      group,
+      allowInInput,
+      preventDefault,
+    });
   }, [spec, description, group, allowInInput, preventDefault, registry]);
 }
 

@@ -3,6 +3,7 @@ import {
   AreaSchema,
   BillSchema,
   BlockSchema,
+  CaptureSchema,
   CommitmentSchema,
   DayCommitmentSchema,
   EventSchema,
@@ -27,7 +28,7 @@ import type { EntityStore, Repository, StoreName } from '../repository';
 
 export const EXPORT_FORMAT = 'orbit-export';
 /** Bump when the export envelope or any entity shape changes incompatibly. */
-export const EXPORT_SCHEMA_VERSION = 1;
+export const EXPORT_SCHEMA_VERSION = 2;
 
 /** Parents before children so a future FK-checking importer can stream in order. */
 export const STORE_ORDER: StoreName[] = [
@@ -48,6 +49,7 @@ export const STORE_ORDER: StoreName[] = [
   'sessions',
   'rules',
   'insightStates',
+  'captures',
   'links',
 ];
 
@@ -69,6 +71,7 @@ const STORE_SCHEMAS: Record<StoreName, z.ZodTypeAny> = {
   sessions: SessionSchema,
   rules: RuleSchema,
   insightStates: InsightStateSchema,
+  captures: CaptureSchema,
   links: LinkSchema,
 };
 

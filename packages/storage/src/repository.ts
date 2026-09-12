@@ -2,6 +2,7 @@ import type {
   Area,
   BaseRecord,
   Bill,
+  Capture,
   Block,
   Commitment,
   DayCommitment,
@@ -82,6 +83,7 @@ export interface Repository {
   readonly sessions: EntityStore<Session>;
   readonly rules: EntityStore<Rule>;
   readonly insightStates: EntityStore<InsightState>;
+  readonly captures: EntityStore<Capture>;
   readonly links: LinkStore;
   readonly opLog: OpLogReader;
 
@@ -116,6 +118,7 @@ export const STORE_ENTITY: Record<
   sessions: 'session',
   rules: 'rule',
   insightStates: 'insightState',
+  captures: 'capture',
   links: 'link',
 };
 

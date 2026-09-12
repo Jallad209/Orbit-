@@ -1,0 +1,52 @@
+name: PWA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pwa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build, budget, Lighthouse
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build PWA
+        run: pnpm --filter orbit run build
+
+      - name: Bundle budget
+        run: node scripts/check-bundle.mjs
+
+      - name: Upload static bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: orbit-pwa
+          path: apps/orbit/dist/
+          retention-days: 14
+
+      - name: Lighthouse
+        run: pnpm dlx @lhci/cli@0.15.x autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ''
+
+      - name: Upload Lighthouse report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: lighthouse-report/
+          retention-days: 14

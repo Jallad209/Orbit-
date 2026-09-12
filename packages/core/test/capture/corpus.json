@@ -1,0 +1,915 @@
+[
+  {
+    "text": "Submit my report next Friday",
+    "type": "task",
+    "fields": {
+      "title": "Submit my report",
+      "dueDate": "2026-09-18"
+    }
+  },
+  {
+    "text": "Finish the slides by tomorrow",
+    "type": "task",
+    "fields": {
+      "title": "Finish the slides",
+      "dueDate": "2026-09-13"
+    }
+  },
+  {
+    "text": "Buy milk",
+    "type": "task",
+    "fields": {
+      "title": "Buy milk"
+    }
+  },
+  {
+    "text": "Call the bank on Monday at 10am",
+    "type": "task",
+    "fields": {
+      "dueDate": "2026-09-14",
+      "dueTime": 600
+    }
+  },
+  {
+    "text": "Renew passport before end of month",
+    "type": "task",
+    "fields": {
+      "title": "Renew passport",
+      "dueDate": "2026-09-30"
+    }
+  },
+  {
+    "text": "Write the intro for 2 hours",
+    "type": "task",
+    "fields": {
+      "title": "Write the intro",
+      "estimateMin": 120
+    }
+  },
+  {
+    "text": "Fix the login bug urgent",
+    "type": "task",
+    "fields": {
+      "title": "Fix the login bug",
+      "priority": 1
+    }
+  },
+  {
+    "text": "Send invoice to Ahmed by Thursday",
+    "type": "task",
+    "fields": {
+      "dueDate": "2026-09-17"
+    }
+  },
+  {
+    "text": "Book flights to Cairo, due in 2 weeks",
+    "type": "task",
+    "fields": {
+      "dueDate": "2026-09-26"
+    }
+  },
+  {
+    "text": "Prepare the deck for the board meeting by Oct 12",
+    "type": "task",
+    "fields": {
+      "dueDate": "2026-10-12"
+    }
+  },
+  {
+    "text": "Read chapter 3 tonight",
+    "type": "task",
+    "fields": {
+      "dueDate": "2026-09-12",
+      "dueTime": 1200
+    }
+  },
+  {
+    "text": "t: Ask Omar for the files",
+    "type": "task",
+    "explicit": true,
+    "fields": {
+      "title": "Ask Omar for the files",
+      "people": ["Omar"]
+    }
+  },
+  {
+    "text": "Clean the garage this weekend",
+    "type": "task",
+    "fields": {
+      "title": "Clean the garage",
+      "dueDate": "2026-09-12"
+    }
+  },
+  {
+    "text": "Apply for the scholarship by 30 September",
+    "type": "task",
+    "fields": {
+      "dueDate": "2026-09-30"
+    }
+  },
+  {
+    "text": "Update resume 45m",
+    "type": "task",
+    "fields": {
+      "title": "Update resume",
+      "estimateMin": 45
+    }
+  },
+  {
+    "text": "Order new headphones p3",
+    "type": "task",
+    "fields": {
+      "priority": 3
+    }
+  },
+  {
+    "text": "Study for the exam, due 2026-10-05",
+    "type": "task",
+    "fields": {
+      "dueDate": "2026-10-05"
+    }
+  },
+  {
+    "text": "Pack for the trip in 3 days",
+    "type": "task",
+    "fields": {
+      "dueDate": "2026-09-15"
+    }
+  },
+  {
+    "text": "Water the plants",
+    "type": "task"
+  },
+  {
+    "text": "Deploy the new build at 5",
+    "type": "task",
+    "fields": {
+      "dueDate": "2026-09-12",
+      "dueTime": 1020
+    }
+  },
+  {
+    "text": "Reply to the landlord about the lease",
+    "type": "task"
+  },
+  {
+    "text": "Check the oil in the car next month",
+    "type": "task",
+    "fields": {
+      "dueDate": "2026-10-01"
+    }
+  },
+  {
+    "text": "Draft the proposal, about 3h",
+    "type": "task",
+    "fields": {
+      "title": "Draft the proposal",
+      "estimateMin": 180
+    }
+  },
+  {
+    "text": "Print the tickets tomorrow morning",
+    "type": "task",
+    "fields": {
+      "dueDate": "2026-09-13",
+      "dueTime": 540
+    }
+  },
+  {
+    "text": "Email the professor about the deadline",
+    "type": "task"
+  },
+  {
+    "text": "Install the printer driver",
+    "type": "task"
+  },
+  {
+    "text": "Cancel the old gym membership by Friday",
+    "type": "task",
+    "fields": {
+      "dueDate": "2026-09-18"
+    }
+  },
+  {
+    "text": "Organize the bookshelf",
+    "type": "task"
+  },
+  {
+    "text": "Research laptops for mom",
+    "type": "task"
+  },
+  {
+    "text": "Test the new parser 1h30",
+    "type": "task",
+    "fields": {
+      "estimateMin": 90
+    }
+  },
+  {
+    "text": "Schedule a haircut",
+    "type": "task"
+  },
+  {
+    "text": "Fix the leaking tap asap",
+    "type": "task",
+    "fields": {
+      "priority": 1
+    }
+  },
+  {
+    "text": "Buy a birthday gift for Sara by Wednesday",
+    "type": "task",
+    "fields": {
+      "dueDate": "2026-09-16",
+      "people": ["Sara"]
+    }
+  },
+  {
+    "text": "Submit expenses on the 25th",
+    "type": "task",
+    "fields": {
+      "dueDate": "2026-09-25"
+    }
+  },
+  {
+    "text": "Plan the #thesis chapter outline",
+    "type": "task",
+    "fields": {
+      "projects": ["thesis"]
+    }
+  },
+  {
+    "text": "Return the library books in a week",
+    "type": "task",
+    "fields": {
+      "dueDate": "2026-09-19"
+    }
+  },
+  {
+    "text": "Dentist tomorrow at 3pm",
+    "type": "event",
+    "fields": {
+      "title": "Dentist",
+      "date": "2026-09-13",
+      "startMin": 900,
+      "endMin": 960
+    }
+  },
+  {
+    "text": "Meeting with Sara from 2 to 3pm on Wednesday",
+    "type": "event",
+    "fields": {
+      "title": "Meeting with Sara",
+      "date": "2026-09-16",
+      "startMin": 840,
+      "endMin": 900,
+      "people": ["Sara"]
+    }
+  },
+  {
+    "text": "Team standup at 9:30 tomorrow",
+    "type": "event",
+    "fields": {
+      "date": "2026-09-13",
+      "startMin": 570
+    }
+  },
+  {
+    "text": "Lunch with Layla on Friday at 1",
+    "type": "event",
+    "fields": {
+      "date": "2026-09-18",
+      "startMin": 780,
+      "people": ["Layla"]
+    }
+  },
+  {
+    "text": "Flight to Dubai on 3 Oct at 6:40am",
+    "type": "event",
+    "fields": {
+      "date": "2026-10-03",
+      "startMin": 400
+    }
+  },
+  {
+    "text": "Doctor appointment next Tuesday 11am",
+    "type": "event",
+    "fields": {
+      "date": "2026-09-15",
+      "startMin": 660
+    }
+  },
+  {
+    "text": "e: Coffee with Ali",
+    "type": "event",
+    "explicit": true,
+    "fields": {
+      "title": "Coffee with Ali",
+      "people": ["Ali"]
+    }
+  },
+  {
+    "text": "Interview at 10:00 on 15 Sep",
+    "type": "event",
+    "fields": {
+      "date": "2026-09-15",
+      "startMin": 600
+    }
+  },
+  {
+    "text": "Wedding on Saturday",
+    "type": "event",
+    "fields": {
+      "date": "2026-09-19"
+    }
+  },
+  {
+    "text": "Webinar on AI tomorrow 6pm–7pm",
+    "type": "event",
+    "fields": {
+      "date": "2026-09-13",
+      "startMin": 1080,
+      "endMin": 1140
+    }
+  },
+  {
+    "text": "Parent-teacher session Thursday afternoon",
+    "type": "event",
+    "fields": {
+      "date": "2026-09-17",
+      "startMin": 840
+    }
+  },
+  {
+    "text": "Conference call with the client 4-5pm",
+    "type": "event",
+    "fields": {
+      "startMin": 960,
+      "endMin": 1020
+    }
+  },
+  {
+    "text": "Birthday party for Nour on Sunday 7pm",
+    "type": "event",
+    "fields": {
+      "date": "2026-09-13",
+      "startMin": 1140
+    }
+  },
+  {
+    "text": "Lecture on Monday 8am-10am",
+    "type": "event",
+    "fields": {
+      "date": "2026-09-14",
+      "startMin": 480,
+      "endMin": 600
+    }
+  },
+  {
+    "text": "Dinner with Omar tomorrow at 8",
+    "type": "event",
+    "fields": {
+      "date": "2026-09-13",
+      "startMin": 1200,
+      "people": ["Omar"]
+    }
+  },
+  {
+    "text": "1:1 with my manager Thursday 2pm",
+    "type": "event",
+    "fields": {
+      "date": "2026-09-17",
+      "startMin": 840
+    }
+  },
+  {
+    "text": "Idea: an app that plans your day around energy",
+    "type": "note",
+    "explicit": true,
+    "fields": {
+      "title": "An app that plans your day around energy"
+    }
+  },
+  {
+    "text": "n: Omar mentioned the grant closes in December",
+    "type": "note",
+    "explicit": true,
+    "fields": {
+      "people": ["Omar"]
+    }
+  },
+  {
+    "text": "Save this: the best time to write is before 9am",
+    "type": "note"
+  },
+  {
+    "text": "Remember that the printer needs the special paper",
+    "type": "note"
+  },
+  {
+    "text": "Thought: maybe the weekly review should be on Sunday evening",
+    "type": "note"
+  },
+  {
+    "text": "Quote from the lecture: simplicity is the ultimate sophistication",
+    "type": "note"
+  },
+  {
+    "text": "Learned that Dexie can't index null values",
+    "type": "note"
+  },
+  {
+    "text": "The thing about the morning routine is that it only works when the previous night ends early enough and the room is dark",
+    "type": "note"
+  },
+  {
+    "text": "Note: the blue cable is the one for the monitor",
+    "type": "note",
+    "explicit": true
+  },
+  {
+    "text": "Insight: I plan better when I write the plan on paper first",
+    "type": "note"
+  },
+  {
+    "text": "FYI the office closes at 4pm on Thursdays",
+    "type": "note"
+  },
+  {
+    "text": "Observation: meetings after 3pm always run over",
+    "type": "note"
+  },
+  {
+    "text": "Goal: run a half marathon by June",
+    "type": "goal",
+    "explicit": true,
+    "fields": {
+      "title": "Run a half marathon",
+      "dueDate": "2027-06-30"
+    }
+  },
+  {
+    "text": "I want to become fluent in Spanish",
+    "type": "goal"
+  },
+  {
+    "text": "Get better at public speaking this year",
+    "type": "goal",
+    "fields": {
+      "dueDate": "2026-12-31"
+    }
+  },
+  {
+    "text": "g: Save 10,000 JOD for a house",
+    "type": "goal",
+    "explicit": true,
+    "fields": {
+      "title": "Save for a house"
+    }
+  },
+  {
+    "text": "Aim to read 24 books in 2027",
+    "type": "goal"
+  },
+  {
+    "text": "Long-term: learn to play the piano",
+    "type": "goal"
+  },
+  {
+    "text": "Master the planner algorithm by the end of the year",
+    "type": "goal",
+    "fields": {
+      "dueDate": "2026-12-31"
+    }
+  },
+  {
+    "text": "My resolution is to sleep before midnight",
+    "type": "goal"
+  },
+  {
+    "text": "Gym every mon/wed/fri at 7am",
+    "type": "routine",
+    "fields": {
+      "title": "Gym",
+      "recurrence": {
+        "freq": "weekly",
+        "byDay": ["MO", "WE", "FR"]
+      },
+      "startMin": 420
+    }
+  },
+  {
+    "text": "Meditate every morning for 10 minutes",
+    "type": "routine",
+    "fields": {
+      "recurrence": {
+        "freq": "daily"
+      },
+      "startMin": 480,
+      "durationMin": 10
+    }
+  },
+  {
+    "text": "Water the plants every 3 days",
+    "type": "routine",
+    "fields": {
+      "recurrence": {
+        "freq": "daily",
+        "interval": 3
+      }
+    }
+  },
+  {
+    "text": "Weekly review on Sundays",
+    "type": "routine",
+    "fields": {
+      "title": "Weekly review",
+      "recurrence": {
+        "freq": "weekly",
+        "byDay": ["SU"]
+      }
+    }
+  },
+  {
+    "text": "Exercise three times a week",
+    "type": "routine",
+    "fields": {
+      "timesPerWeek": 3
+    }
+  },
+  {
+    "text": "r: Journal before bed",
+    "type": "routine",
+    "explicit": true
+  },
+  {
+    "text": "Call mom every Sunday evening",
+    "type": "routine",
+    "fields": {
+      "recurrence": {
+        "freq": "weekly",
+        "byDay": ["SU"]
+      },
+      "startMin": 1080
+    }
+  },
+  {
+    "text": "Review inbox daily at 5pm",
+    "type": "routine",
+    "fields": {
+      "recurrence": {
+        "freq": "daily"
+      },
+      "startMin": 1020
+    }
+  },
+  {
+    "text": "Stretch every other day",
+    "type": "routine",
+    "fields": {
+      "recurrence": {
+        "freq": "daily",
+        "interval": 2
+      }
+    }
+  },
+  {
+    "text": "Practice guitar twice a week for 30 min",
+    "type": "routine",
+    "fields": {
+      "timesPerWeek": 2,
+      "durationMin": 30
+    }
+  },
+  {
+    "text": "Walk the dog every morning",
+    "type": "routine",
+    "fields": {
+      "recurrence": {
+        "freq": "daily"
+      },
+      "startMin": 480
+    }
+  },
+  {
+    "text": "Back up the laptop monthly on the 1st",
+    "type": "routine",
+    "fields": {
+      "recurrence": {
+        "freq": "monthly",
+        "byMonthDay": 1
+      }
+    }
+  },
+  {
+    "text": "Language practice on weekdays",
+    "type": "routine",
+    "fields": {
+      "recurrence": {
+        "freq": "weekly",
+        "byDay": ["MO", "TU", "WE", "TH", "FR"]
+      }
+    }
+  },
+  {
+    "text": "Deep clean the kitchen every 2 weeks",
+    "type": "routine",
+    "fields": {
+      "recurrence": {
+        "freq": "weekly",
+        "interval": 2
+      }
+    }
+  },
+  {
+    "text": "Read for 20 minutes every night",
+    "type": "routine",
+    "fields": {
+      "durationMin": 20,
+      "startMin": 1260
+    }
+  },
+  {
+    "text": "Pay electricity bill every month",
+    "type": "bill",
+    "fields": {
+      "title": "Pay electricity bill",
+      "recurrence": {
+        "freq": "monthly"
+      }
+    }
+  },
+  {
+    "text": "Pay Omar 50 on Friday",
+    "type": "bill",
+    "fields": {
+      "amount": 50,
+      "dueDate": "2026-09-18",
+      "people": ["Omar"]
+    },
+    "alternativesInclude": ["task", "commitment"]
+  },
+  {
+    "text": "Rent is due on the 1st",
+    "type": "bill",
+    "fields": {
+      "title": "Rent",
+      "dueDate": "2026-10-01"
+    }
+  },
+  {
+    "text": "$120 internet bill due 5 Oct",
+    "type": "bill",
+    "fields": {
+      "amount": 120,
+      "currency": "USD",
+      "dueDate": "2026-10-05"
+    }
+  },
+  {
+    "text": "Netflix subscription 15 dollars monthly",
+    "type": "bill",
+    "fields": {
+      "amount": 15,
+      "currency": "USD",
+      "recurrence": {
+        "freq": "monthly"
+      }
+    }
+  },
+  {
+    "text": "Car insurance 400 JOD by 20 Nov",
+    "type": "bill",
+    "fields": {
+      "amount": 400,
+      "currency": "JOD",
+      "dueDate": "2026-11-20"
+    }
+  },
+  {
+    "text": "b: Tuition second installment",
+    "type": "bill",
+    "explicit": true
+  },
+  {
+    "text": "Phone bill 25€ every month on the 15th",
+    "type": "bill",
+    "fields": {
+      "amount": 25,
+      "currency": "EUR",
+      "recurrence": {
+        "freq": "monthly",
+        "byMonthDay": 15
+      }
+    }
+  },
+  {
+    "text": "Water bill 30 JD due next week",
+    "type": "bill",
+    "fields": {
+      "amount": 30,
+      "currency": "JOD",
+      "dueDate": "2026-09-14"
+    }
+  },
+  {
+    "text": "Renew the domain, 12 dollars, by 1 Nov",
+    "type": "bill",
+    "fields": {
+      "amount": 12,
+      "dueDate": "2026-11-01"
+    }
+  },
+  {
+    "text": "Gym fee 40 JOD monthly",
+    "type": "bill",
+    "fields": {
+      "amount": 40,
+      "recurrence": {
+        "freq": "monthly"
+      }
+    }
+  },
+  {
+    "text": "Pay the plumber 85",
+    "type": "bill",
+    "fields": {
+      "amount": 85
+    }
+  },
+  {
+    "text": "Remind me to ask Omar about his interview",
+    "type": "commitment",
+    "fields": {
+      "title": "Ask Omar about his interview",
+      "person": "Omar"
+    }
+  },
+  {
+    "text": "Follow up with Sara about the contract next week",
+    "type": "commitment",
+    "fields": {
+      "person": "Sara",
+      "dueDate": "2026-09-14"
+    }
+  },
+  {
+    "text": "Omar owes me 20 JOD",
+    "type": "commitment",
+    "fields": {
+      "person": "Omar",
+      "direction": "owed-to-me"
+    }
+  },
+  {
+    "text": "I owe Layla a coffee",
+    "type": "commitment",
+    "fields": {
+      "person": "Layla",
+      "direction": "owed-by-me"
+    }
+  },
+  {
+    "text": "Call Ahmed back tomorrow",
+    "type": "commitment",
+    "fields": {
+      "person": "Ahmed",
+      "dueDate": "2026-09-13"
+    }
+  },
+  {
+    "text": "Thank Dr Hana for the reference",
+    "type": "commitment",
+    "fields": {
+      "person": "Dr Hana"
+    }
+  },
+  {
+    "text": "c: Send Sara the slides",
+    "type": "commitment",
+    "explicit": true,
+    "fields": {
+      "person": "Sara"
+    }
+  },
+  {
+    "text": "Check in with Omar on Monday",
+    "type": "commitment",
+    "fields": {
+      "person": "Omar",
+      "dueDate": "2026-09-14"
+    }
+  },
+  {
+    "text": "Ping Layla when the report is ready",
+    "type": "commitment",
+    "fields": {
+      "person": "Layla"
+    }
+  },
+  {
+    "text": "Text Ali the address",
+    "type": "commitment",
+    "fields": {
+      "person": "Ali"
+    }
+  },
+  {
+    "text": "Get back to Nour about the venue by Thursday",
+    "type": "commitment",
+    "fields": {
+      "person": "Nour",
+      "dueDate": "2026-09-17"
+    }
+  },
+  {
+    "text": "Chase Ahmed for the signed form",
+    "type": "commitment",
+    "fields": {
+      "person": "Ahmed"
+    }
+  },
+  {
+    "text": "Remind me to call Sara on her birthday",
+    "type": "commitment",
+    "fields": {
+      "person": "Sara"
+    }
+  },
+  {
+    "text": "Reply to Omar's email about the budget",
+    "type": "commitment",
+    "fields": {
+      "person": "Omar"
+    }
+  },
+  {
+    "text": "Talk to Layla about the shared flat",
+    "type": "commitment",
+    "fields": {
+      "person": "Layla"
+    }
+  },
+  {
+    "text": "Message @Ali about Saturday",
+    "type": "commitment",
+    "fields": {
+      "person": "Ali",
+      "dueDate": "2026-09-19"
+    }
+  },
+  {
+    "text": "Catch up with Nour over lunch next Friday",
+    "type": "commitment",
+    "fields": {
+      "person": "Nour",
+      "dueDate": "2026-09-18"
+    }
+  },
+  {
+    "text": "Write to Dr Hana about the thesis draft",
+    "type": "commitment",
+    "fields": {
+      "person": "Dr Hana"
+    }
+  },
+  {
+    "text": "Buy groceries after work",
+    "type": "task"
+  },
+  {
+    "text": "Pay back Sara 15 JOD",
+    "type": "bill",
+    "fields": {
+      "amount": 15,
+      "currency": "JOD",
+      "people": ["Sara"]
+    }
+  },
+  {
+    "text": "Yoga every Tuesday at 6pm",
+    "type": "routine",
+    "fields": {
+      "recurrence": {
+        "freq": "weekly",
+        "byDay": ["TU"]
+      },
+      "startMin": 1080
+    }
+  },
+  {
+    "text": "Pick up the dry cleaning on Wednesday",
+    "type": "task",
+    "fields": {
+      "dueDate": "2026-09-16"
+    }
+  },
+  {
+    "text": "Hand in the assignment by noon tomorrow",
+    "type": "task",
+    "fields": {
+      "dueDate": "2026-09-13",
+      "dueTime": 720
+    }
+  }
+]

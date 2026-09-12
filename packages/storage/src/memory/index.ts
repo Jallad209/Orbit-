@@ -3,6 +3,7 @@ import {
   AreaSchema,
   BillSchema,
   BlockSchema,
+  CaptureSchema,
   CommitmentSchema,
   DayCommitmentSchema,
   EventSchema,
@@ -187,6 +188,7 @@ export function createMemoryRepository(options: MemoryRepositoryOptions = {}): R
     sessions: new MemoryStore('sessions', SessionSchema, ctx),
     rules: new MemoryStore('rules', RuleSchema, ctx),
     insightStates: new MemoryStore('insightStates', InsightStateSchema, ctx),
+    captures: new MemoryStore('captures', CaptureSchema, ctx),
     links: new MemoryLinkStore('links', LinkSchema, ctx),
     opLog: new MemoryOpLog(ctx),
 
