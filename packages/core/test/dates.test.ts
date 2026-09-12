@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   addDays,
+  compareLocalDates,
   dayOfWeek,
+  daysInMonth,
   formatMinute,
   fromLocalDate,
   isValidLocalDate,
@@ -10,7 +12,7 @@ import {
   toInstant,
   toLocalDate,
 } from '../src/dates';
-import { fixedClock } from '../src/clock';
+import { fixedClock, nowIso, systemClock } from '../src/clock';
 
 describe('local dates', () => {
   it('validates real calendar dates', () => {
@@ -37,6 +39,18 @@ describe('local dates', () => {
     expect(dayOfWeek('2026-09-12')).toBe(6); // Saturday
     expect(dayOfWeek('2026-09-14')).toBe(1); // Monday
   });
+
+  it('compares calendar dates lexically', () => {
+    expect(compareLocalDates('2026-09-12', '2026-09-13')).toBe(-1);
+    expect(compareLocalDates('2026-09-13', '2026-09-12')).toBe(1);
+    expect(compareLocalDates('2026-09-12', '2026-09-12')).toBe(0);
+    expect(daysInMonth(2024, 2)).toBe(29);
+    expect(daysInMonth(2026, 2)).toBe(28);
+  });
+
+  it('throws on an unparseable local date', () => {
+    expect(() => fromLocalDate('nope')).toThrow(/invalid local date/);
+  });
 });
 
 describe('minutes of day', () => {
@@ -54,6 +68,15 @@ describe('minutes of day', () => {
     const at = toInstant('2026-09-12', 14 * 60 + 15);
     expect(minuteOfDay(at)).toBe(14 * 60 + 15);
     expect(toLocalDate(at)).toBe('2026-09-12');
+  });
+});
+
+describe('systemClock', () => {
+  it('tracks wall time and renders ISO instants', () => {
+    const before = Date.now();
+    const now = systemClock.now().getTime();
+    expect(now).toBeGreaterThanOrEqual(before);
+    expect(nowIso(systemClock)).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   });
 });
 

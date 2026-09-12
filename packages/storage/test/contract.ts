@@ -54,6 +54,16 @@ export function repositoryContract(name: string, factory: ContractFactory): void
       expect(await repo.tasks.count()).toBe(1);
     });
 
+    it('preserveUpdatedAt keeps the incoming timestamp (import path)', async () => {
+      const task = createRecord(TaskSchema, clock, { title: 'From export' });
+      const original = { ...task, updatedAt: '2025-01-01T00:00:00.000Z' };
+      clock.advance(60_000);
+      await repo.tasks.upsert(original, { preserveUpdatedAt: true });
+      expect((await repo.tasks.get(task.id))?.updatedAt).toBe('2025-01-01T00:00:00.000Z');
+      await repo.tasks.upsert(original);
+      expect((await repo.tasks.get(task.id))?.updatedAt).toBe('2026-09-12T09:01:00.000Z');
+    });
+
     it('rejects a record that violates the schema', async () => {
       const task = createRecord(TaskSchema, clock, { title: 'ok' });
       await expect(repo.tasks.upsert({ ...task, title: '' })).rejects.toThrow();

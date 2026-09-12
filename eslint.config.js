@@ -30,5 +30,18 @@ export default tseslint.config(
     files: ['**/*.test.{ts,tsx}', '**/test/**/*.{ts,tsx}'],
     rules: { 'no-console': 'off' },
   },
+  {
+    // Node scripts (build tooling, generators)
+    files: ['scripts/**/*.{js,mjs,ts}'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        URL: 'readonly',
+        Buffer: 'readonly',
+      },
+    },
+    rules: { 'no-console': 'off' },
+  },
   prettier,
 );

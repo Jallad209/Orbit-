@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router';
+import { StorageBanner } from '@/components/StorageBanner';
 import { NavRail } from './NavRail';
 
 /**
@@ -15,9 +16,12 @@ export function AppLayout() {
         Skip to content
       </a>
       <NavRail />
-      <main id="main" tabIndex={-1} className="min-w-0 overflow-y-auto px-6 py-8 md:px-10">
-        <Outlet />
-      </main>
+      <div className="flex min-w-0 flex-col">
+        <StorageBanner />
+        <main id="main" tabIndex={-1} className="min-w-0 flex-1 overflow-y-auto px-6 py-8 md:px-10">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

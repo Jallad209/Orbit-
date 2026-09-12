@@ -3,7 +3,7 @@
 **Tech Stack:** TypeScript (strict) + Zod + Vitest + Dexie (IndexedDB) + SQLite (Tauri SQL plugin, from week 7) + MiniSearch / FTS5 + Tauri 2 Rust commands (from week 7)
 **Repository:** `C:\Orbit`
 **Packages Owned:** `packages/core`, `packages/storage`, `apps/orbit/src-tauri` (from week 7)
-**Current Status:** Week 1 ✅ COMPLETE
+**Current Status:** Weeks 1-2 ✅ COMPLETE
 
 > In Orbit there is no server. "Backend" means the pure domain engine (`packages/core`), the storage layer (`packages/storage`), and, from week 7, the Rust shell commands. Weeks 1–6 run entirely in the browser against IndexedDB. Everything here must run with the network cable unplugged.
 
@@ -87,7 +87,7 @@ pnpm vitest run --project core --project storage
 
 ---
 
-## Week 2: IndexedDB Adapter, Op Log, Persistence & Export/Import
+## Week 2: IndexedDB Adapter, Op Log, Persistence & Export/Import ✅ COMPLETE
 
 **Description:** This week you will make the data real in the browser. You will implement `IndexedDbRepository` on Dexie, persist the append-only operation log, request persistent storage so the browser does not evict Orbit's data, and build JSON and Markdown export plus JSON import with a dry-run report. This adapter is the web runtime's permanent store and the development store until the desktop shell arrives in week 7.
 
@@ -117,15 +117,35 @@ pnpm vitest run --project core --project storage
 
 **Deliverables:**
 
-- [ ] `packages/storage/src/indexeddb/*` — schema, adapter
-- [ ] `packages/storage/src/export/*` — JSON + Markdown
-- [ ] `packages/storage/src/factory.ts`
-- [ ] Unit tests written and passing
+- [x] `packages/storage/src/indexeddb/*` — schema, adapter
+- [x] `packages/storage/src/export/*` — JSON + Markdown
+- [x] `packages/storage/src/factory.ts`
+- [x] Unit tests written and passing
+
+**What was done:**
+
+- `IndexedDbRepository` on Dexie 4: one table per store with indexes on the fields the planner and lists will query (`projectId`, `status`, `dueAt`, `date`, compound `[fromType+fromId]` / `[toType+toId]` for links), plus an auto-increment `opLog`
+- Every mutation validates first, then runs in a Dexie transaction over the table and the op log; repository `transaction()` wraps Dexie's, so a throw rolls everything back and nested calls become sub-transactions
+- The Week 1 contract suite runs unchanged against IndexedDB via `fake-indexeddb` with a fresh `IDBFactory` per test; persistence test proves rows and op-log sequence survive close-and-reopen
+- `UpsertOptions.preserveUpdatedAt` added to the interface (and memory adapter) so imports are lossless; contract test added
+- JSON export: versioned envelope (`orbit-export`, schema 1), every store including soft-deleted rows, sorted by id, with the latest op-log seq; `parseExport` returns typed `ExportError` codes (`invalid-json`, `invalid-format`, `newer-schema`)
+- JSON import: `merge` keeps the newer copy by `updatedAt`, `replace` makes the file authoritative and soft-deletes local rows absent from it; dry-run report per store; all writes in one transaction (atomicity tested)
+- Markdown export: index by area → goal → project, one file per project (outcome, milestone checklist with progress, tasks with next-action marker) and per note, plus routines, people with commitments, and a bills table; unique slugs
+- `openRepository({ kind })` factory; SQLite joins it in week 7
+- Persistent storage request lives in the app's web platform (`navigator.storage.persist()`), surfaced by the frontend banner
+
+**Files created:**
+
+- `packages/storage/src/indexeddb/index.ts` ✅
+- `packages/storage/src/export/{json.ts,markdown.ts,index.ts}` ✅
+- `packages/storage/src/factory.ts` ✅
+- `packages/storage/test/{indexeddb.test.ts,export.test.ts}` ✅
+- `packages/storage/src/repository.ts` (UpsertOptions), `packages/storage/test/contract.ts` (+1 behaviour) ✅
 
 **Verification:**
 
 ```bash
-pnpm run test --filter @orbit/storage
+pnpm vitest run --project storage
 pnpm run dev
 # DevTools → Application → IndexedDB → orbit; reload; data persists
 ```
@@ -611,7 +631,7 @@ pnpm run test
 | Week        | Feature Area                                           | Status      | Progress |
 | ----------- | ------------------------------------------------------ | ----------- | -------- |
 | **Week 1**  | Monorepo, Schemas & In-Memory Repository               | ✅ COMPLETE | 100%     |
-| **Week 2**  | IndexedDB Adapter, Op Log, Persistence & Export/Import | ⏳ PENDING  | 0%       |
+| **Week 2**  | IndexedDB Adapter, Op Log, Persistence & Export/Import | ✅ COMPLETE | 100%     |
 | **Week 3**  | Capture Parser & Classifier                            | ⏳ PENDING  | 0%       |
 | **Week 4**  | Structure Services — Hierarchy, Links & Project Health | ⏳ PENDING  | 0%       |
 | **Week 5**  | Planning Engine v1                                     | ⏳ PENDING  | 0%       |
@@ -624,4 +644,4 @@ pnpm run test
 | **Week 12** | Weekly Review, People, Bills & Tray                    | ⏳ PENDING  | 0%       |
 | **Week 13** | Hardening, Performance & Data Safety                   | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 1/13 weeks complete (8%)
+**Total Progress:** 2/13 weeks complete (15%)

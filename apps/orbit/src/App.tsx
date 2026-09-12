@@ -2,6 +2,14 @@ import { BrowserRouter } from 'react-router';
 import { HotkeyProvider } from '@/lib/HotkeyProvider';
 import { PlatformProvider } from '@/platform';
 import { AppRoutes } from '@/routes';
+import { Toaster } from '@/components/ui/Toast';
+import { TooltipProvider } from '@/components/ui/Popover';
+import { usePwa } from '@/pwa/usePwa';
+
+function PwaBridge() {
+  usePwa();
+  return null;
+}
 
 export function App() {
   return (
@@ -12,11 +20,15 @@ export function App() {
         </div>
       }
     >
-      <BrowserRouter>
-        <HotkeyProvider>
-          <AppRoutes />
-        </HotkeyProvider>
-      </BrowserRouter>
+      <TooltipProvider delayDuration={400}>
+        <BrowserRouter>
+          <HotkeyProvider>
+            <AppRoutes />
+          </HotkeyProvider>
+        </BrowserRouter>
+        <Toaster />
+        <PwaBridge />
+      </TooltipProvider>
     </PlatformProvider>
   );
 }

@@ -1,6 +1,13 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Placeholder } from '@/pages/Placeholder';
+
+const ComponentsGallery = import.meta.env.DEV
+  ? lazy(() =>
+      import('@/pages/dev/ComponentsGallery').then((m) => ({ default: m.ComponentsGallery })),
+    )
+  : null;
 
 /**
  * Every screen from ORBIT-SPEC §8. Placeholders are replaced week by week.
@@ -78,6 +85,16 @@ export function AppRoutes() {
           path="/settings"
           element={<Placeholder title="Settings" description="Arrives in week 9." />}
         />
+        {ComponentsGallery ? (
+          <Route
+            path="/dev/components"
+            element={
+              <Suspense fallback={null}>
+                <ComponentsGallery />
+              </Suspense>
+            }
+          />
+        ) : null}
         <Route
           path="*"
           element={<Placeholder title="Not found" description="That screen does not exist." />}

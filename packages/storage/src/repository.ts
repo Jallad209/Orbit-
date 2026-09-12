@@ -28,6 +28,14 @@ export interface ListOptions {
   includeDeleted?: boolean;
 }
 
+export interface UpsertOptions {
+  /**
+   * Keep the record's own `updatedAt` instead of stamping the clock.
+   * Used by import so a round trip is lossless. Default false.
+   */
+  preserveUpdatedAt?: boolean;
+}
+
 /**
  * One store per entity. Every mutation validates against the entity schema,
  * stamps `updatedAt` from the repository clock, and appends to the op log.
@@ -40,7 +48,7 @@ export interface EntityStore<T extends BaseRecord> {
   query(predicate: (record: T) => boolean, options?: ListOptions): Promise<T[]>;
   count(options?: ListOptions): Promise<number>;
   /** Insert or replace. Throws on schema violation. */
-  upsert(record: T): Promise<T>;
+  upsert(record: T, options?: UpsertOptions): Promise<T>;
   /** Soft delete: sets `deletedAt`. No-op if already deleted. */
   softDelete(id: Id): Promise<void>;
 }

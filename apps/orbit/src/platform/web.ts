@@ -1,9 +1,10 @@
-import { createMemoryRepository } from '@orbit/storage';
+import { openRepository } from '@orbit/storage';
 import type { Platform, StorageStatus } from './types';
 
 /**
- * Browser runtime. Week 1 uses the in-memory repository; week 2 swaps in
- * IndexedDB through the storage factory without touching the UI.
+ * Browser runtime. Data lives in IndexedDB. If IndexedDB is unavailable
+ * (some private modes, restricted contexts), fall back to memory so the app
+ * still opens; the storage banner tells the user nothing will persist.
  */
 export const webPlatform: Platform = {
   name: 'web',
@@ -15,7 +16,12 @@ export const webPlatform: Platform = {
   },
 
   async createRepository() {
-    return createMemoryRepository();
+    if (typeof indexedDB === 'undefined') {
+      // eslint-disable-next-line no-console -- surfaced for diagnostics; no logger yet (week 10)
+      console.warn('IndexedDB unavailable; Orbit is running in memory only.');
+      return openRepository({ kind: 'memory' });
+    }
+    return openRepository({ kind: 'indexeddb' });
   },
 
   async notify(title, body) {

@@ -3,7 +3,7 @@
 **Tech Stack:** pnpm + GitHub Actions + Vitest + Playwright + Vite PWA + Lighthouse + Rust toolchain & Tauri CLI (from week 7) + tauri-driver/WebdriverIO + NSIS/MSI + Tauri Updater (manual check)
 **Repository:** `C:\Orbit`
 **Owned:** `.github/`, `scripts/`, `apps/orbit/src-tauri/tauri.conf.json` (build/security sections, from week 7), release process
-**Current Status:** Week 1 ✅ COMPLETE
+**Current Status:** Weeks 1-2 ✅ COMPLETE (branch protection pending: needs `gh auth login` or the GitHub UI)
 
 > There are no servers to run. DevOps for Orbit means: reproducible builds, CI that guards the engine, a static PWA build, data-safety verification, signed desktop installers, and a release process. Weeks 1–6 need no Rust. Nothing here may introduce a network dependency into the app itself.
 
@@ -56,7 +56,7 @@
 - [x] `.npmrc`, `.editorconfig`, `.gitattributes`, `.gitignore`
 - [x] `eslint.config.js`, `.prettierrc`, `.husky/*`, `commitlint.config.js`
 - [x] `SETUP.md`
-- [ ] Fresh clone builds and runs on a second machine (needs a remote; verify after the first push)
+- [x] Pushed to `https://github.com/Jallad209/Orbit-` (private); CI in week 2 is the fresh-clone check
 
 **Verification:**
 
@@ -69,7 +69,7 @@ pnpm run dev
 
 ---
 
-## Week 2: Continuous Integration
+## Week 2: Continuous Integration ✅ COMPLETE
 
 **Description:** This week you will set up GitHub Actions to guard every pull request. The CI workflow lints, type-checks, and runs the Vitest suites for `core`, `storage`, and `orbit` with coverage thresholds, caching pnpm to keep runs fast. Branch protection requires green CI.
 
@@ -94,10 +94,24 @@ pnpm run dev
 
 **Deliverables:**
 
-- [ ] `.github/workflows/ci.yml`
-- [ ] `.github/pull_request_template.md`
-- [ ] Coverage thresholds configured
-- [ ] Branch protection enabled
+- [x] `.github/workflows/ci.yml`
+- [x] `.github/pull_request_template.md`
+- [x] Coverage thresholds configured
+- [ ] Branch protection enabled (GitHub UI: Settings → Branches → add rule for `main`, require the "Lint, type-check, test" check)
+
+**What was done:**
+
+- `ci.yml` runs on pushes to `main` and every PR on `ubuntu-latest`: install with frozen lockfile → lint → Prettier check → type-check → tests with coverage → web build; coverage uploaded as an artifact; bundle sizes printed to the job summary; concurrent runs on the same ref are cancelled
+- pnpm version comes from `packageManager`; the pnpm store is cached via `actions/setup-node`
+- Coverage thresholds in `vitest.config.ts` per package: core 90 % lines/functions/statements, storage 85 %, app 70 %; test files, barrels, the dev gallery, and the PWA registration glue are excluded from the measurement
+- PR template with the offline and platform-boundary rules as a checklist
+- Root scripts gained `test:coverage`; `pnpm run format` applied repo-wide so the format check starts green
+
+**Files created:**
+
+- `.github/workflows/ci.yml` ✅
+- `.github/pull_request_template.md` ✅
+- `vitest.config.ts` (thresholds) ✅
 
 **Verification:**
 
@@ -496,8 +510,8 @@ git tag v1.0.0 && git push --tags
 
 | Week        | Feature Area                                      | Status      | Progress |
 | ----------- | ------------------------------------------------- | ----------- | -------- |
-| **Week 1**  | Local Toolchain & Repository Bootstrap            | ✅ COMPLETE | 95%      |
-| **Week 2**  | Continuous Integration                            | ⏳ PENDING  | 0%       |
+| **Week 1**  | Local Toolchain & Repository Bootstrap            | ✅ COMPLETE | 100%     |
+| **Week 2**  | Continuous Integration                            | ✅ COMPLETE | 90%      |
 | **Week 3**  | PWA Build & Static Preview                        | ⏳ PENDING  | 0%       |
 | **Week 4**  | Test Infrastructure & Browser End-to-End          | ⏳ PENDING  | 0%       |
 | **Week 5**  | Data Safety Verification (Web)                    | ⏳ PENDING  | 0%       |
@@ -510,4 +524,4 @@ git tag v1.0.0 && git push --tags
 | **Week 12** | Optional Updater (Manual Check)                   | ⏳ PENDING  | 0%       |
 | **Week 13** | Security Review & 1.0 Release                     | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 1/13 weeks complete (8%)
+**Total Progress:** 2/13 weeks complete (15%)

@@ -30,6 +30,7 @@ import type {
   OpLogReader,
   Repository,
   StoreName,
+  UpsertOptions,
 } from '../repository';
 import { STORE_ENTITY } from '../repository';
 
@@ -107,9 +108,10 @@ class MemoryStore<T extends BaseRecord> implements EntityStore<T> {
     return (await this.list(options)).length;
   }
 
-  async upsert(record: T): Promise<T> {
+  async upsert(record: T, options?: UpsertOptions): Promise<T> {
     const prev = this.table.get(record.id);
-    const stamped = this.schema.parse({ ...record, updatedAt: nowIso(this.ctx.clock) });
+    const updatedAt = options?.preserveUpdatedAt ? record.updatedAt : nowIso(this.ctx.clock);
+    const stamped = this.schema.parse({ ...record, updatedAt });
     this.table.set(stamped.id, stamped);
     if (prev) {
       this.log('update', stamped.id, shallowPatch(prev, stamped) as Record<string, unknown>);
