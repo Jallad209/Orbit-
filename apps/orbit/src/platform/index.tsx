@@ -1,0 +1,84 @@
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import type { Repository } from '@orbit/storage';
+import type { Platform } from './types';
+import { webPlatform } from './web';
+
+export type { Platform, PlatformCapabilities, StorageStatus } from './types';
+export { webPlatform };
+
+interface PlatformContextValue {
+  platform: Platform;
+  repository: Repository;
+}
+
+const PlatformContext = createContext<PlatformContextValue | null>(null);
+
+interface PlatformProviderProps {
+  platform?: Platform;
+  /** Supply a ready repository (tests). Otherwise `platform.createRepository()` runs once. */
+  repository?: Repository;
+  fallback?: ReactNode;
+  children: ReactNode;
+}
+
+/**
+ * Selects the runtime and opens its repository once. Everything below reads
+ * `usePlatform()` and `useRepository()`; nothing imports Tauri or Dexie directly.
+ */
+export function PlatformProvider({
+  platform = webPlatform,
+  repository,
+  fallback = null,
+  children,
+}: PlatformProviderProps) {
+  const [opened, setOpened] = useState<Repository | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (repository) return; // caller owns the repository's lifecycle
+    let cancelled = false;
+    let mine: Repository | null = null;
+    platform
+      .createRepository()
+      .then((r) => {
+        if (cancelled) {
+          void r.close();
+          return;
+        }
+        mine = r;
+        setOpened(r);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setError(e instanceof Error ? e : new Error(String(e)));
+      });
+    return () => {
+      cancelled = true;
+      if (mine) void mine.close();
+    };
+  }, [platform, repository]);
+
+  const repo = repository ?? opened;
+  const value = useMemo(() => (repo ? { platform, repository: repo } : null), [platform, repo]);
+
+  if (error) {
+    return (
+      <div role="alert" className="p-6 text-danger">
+        Orbit could not open its data store: {error.message}
+      </div>
+    );
+  }
+  if (!value) return <>{fallback}</>;
+  return <PlatformContext.Provider value={value}>{children}</PlatformContext.Provider>;
+}
+
+export function usePlatform(): Platform {
+  const ctx = useContext(PlatformContext);
+  if (!ctx) throw new Error('usePlatform must be used inside <PlatformProvider>');
+  return ctx.platform;
+}
+
+export function useRepository(): Repository {
+  const ctx = useContext(PlatformContext);
+  if (!ctx) throw new Error('useRepository must be used inside <PlatformProvider>');
+  return ctx.repository;
+}

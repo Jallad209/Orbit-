@@ -1,0 +1,96 @@
+@import 'tailwindcss';
+
+/*
+ * Orbit design tokens. Charcoal navigation, warm neutral workspace,
+ * lime for action and "now", gold for goals and importance.
+ * Tailwind v4 reads these as utilities: bg-nav, text-ink, bg-lime, …
+ */
+@theme {
+  /* Navigation (charcoal) */
+  --color-nav: #1c1b1a;
+  --color-nav-2: #26251f;
+  --color-nav-3: #33322c;
+  --color-nav-fg: #ece7dd;
+  --color-nav-muted: #9c968b;
+
+  /* Workspace (warm neutral) */
+  --color-surface: #f5f1ea;
+  --color-surface-2: #ede7dd;
+  --color-surface-3: #e2dbcd;
+  --color-line: #d8d0c1;
+
+  /* Text */
+  --color-ink: #1a1917;
+  --color-ink-muted: #6b665d;
+  --color-ink-faint: #9a9488;
+
+  /* Accents */
+  --color-lime: #c6f135;
+  --color-lime-2: #b3df1f;
+  --color-lime-ink: #1e2a00;
+  --color-gold: #d4a93a;
+  --color-gold-2: #e9c96a;
+  --color-gold-ink: #6b4f0a;
+  --color-danger: #c43d2e;
+  --color-danger-soft: #f6dcd7;
+  --color-ok: #3d8f5a;
+
+  /* Type */
+  --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Cascadia Mono', ui-monospace, Consolas, 'SFMono-Regular', monospace;
+  --text-display: 1.75rem;
+  --text-display--line-height: 2rem;
+  --text-display--letter-spacing: -0.02em;
+  --text-h1: 1.375rem;
+  --text-h1--line-height: 1.75rem;
+  --text-h1--letter-spacing: -0.015em;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.5rem;
+
+  /* Shape */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+
+  /* Motion */
+  --ease-out-quick: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+
+  /* Tabular numerals for times and amounts */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Keyboard-first: a visible ring on every focusable element */
+  :focus-visible {
+    outline: 2px solid var(--color-lime-2);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
