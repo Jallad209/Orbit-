@@ -3,6 +3,10 @@ import { Navigate, Route, Routes } from 'react-router';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Placeholder } from '@/pages/Placeholder';
 import { InboxPage } from '@/features/inbox/InboxPage';
+import { AreasPage } from '@/features/structure/AreasPage';
+import { GoalPage, GoalsPage } from '@/features/structure/GoalsPage';
+import { ProjectsPage } from '@/features/structure/ProjectsPage';
+import { ProjectPage } from '@/features/structure/ProjectPage';
 
 const ComponentsGallery = import.meta.env.DEV
   ? lazy(() =>
@@ -33,22 +37,11 @@ export function AppRoutes() {
           path="/timeline"
           element={<Placeholder title="Timeline" description="Time blocks. Arrives in week 6." />}
         />
-        <Route
-          path="/projects"
-          element={<Placeholder title="Projects" description="Arrives in week 4." />}
-        />
-        <Route
-          path="/projects/:id"
-          element={<Placeholder title="Project" description="Arrives in week 4." />}
-        />
-        <Route
-          path="/goals"
-          element={<Placeholder title="Goals" description="Arrives in week 4." />}
-        />
-        <Route
-          path="/areas"
-          element={<Placeholder title="Areas" description="Arrives in week 4." />}
-        />
+        <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/projects/:id" element={<ProjectPage />} />
+        <Route path="/goals" element={<GoalsPage />} />
+        <Route path="/goals/:id" element={<GoalPage />} />
+        <Route path="/areas" element={<AreasPage />} />
         <Route
           path="/people"
           element={<Placeholder title="People" description="Arrives in week 12." />}

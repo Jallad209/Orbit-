@@ -11,3 +11,4 @@ export * from './Card';
 export * from './Badge';
 export * from './List';
 export * from './InlineEdit';
+export * from './Drawer';

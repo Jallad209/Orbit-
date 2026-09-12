@@ -4,3 +4,5 @@ export * from './clock';
 export * from './dates';
 export * from './records';
 export * from './capture';
+export * from './durations';
+export * from './services';

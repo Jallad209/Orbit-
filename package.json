@@ -22,7 +22,9 @@
     "format:check": "prettier --check .",
     "prepare": "husky",
     "preview:lan": "pnpm --filter orbit exec vite preview --host --port 4173",
-    "check:bundle": "node scripts/check-bundle.mjs"
+    "check:bundle": "node scripts/check-bundle.mjs",
+    "e2e": "pnpm --filter orbit run build && playwright test",
+    "e2e:ui": "playwright test --ui"
   },
   "lint-staged": {
     "*.{ts,tsx,js}": [
@@ -37,6 +39,7 @@
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
     "@vitest/coverage-v8": "^5.0.0",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",

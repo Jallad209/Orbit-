@@ -3,7 +3,7 @@
 **Tech Stack:** TypeScript (strict) + Zod + Vitest + Dexie (IndexedDB) + SQLite (Tauri SQL plugin, from week 7) + MiniSearch / FTS5 + Tauri 2 Rust commands (from week 7)
 **Repository:** `C:\Orbit`
 **Packages Owned:** `packages/core`, `packages/storage`, `apps/orbit/src-tauri` (from week 7)
-**Current Status:** Weeks 1-3 ✅ COMPLETE
+**Current Status:** Weeks 1-4 ✅ COMPLETE
 
 > In Orbit there is no server. "Backend" means the pure domain engine (`packages/core`), the storage layer (`packages/storage`), and, from week 7, the Rust shell commands. Weeks 1–6 run entirely in the browser against IndexedDB. Everything here must run with the network cable unplugged.
 
@@ -214,7 +214,7 @@ pnpm run test --filter @orbit/core -- capture
 
 ---
 
-## Week 4: Structure Services — Hierarchy, Links & Project Health
+## Week 4: Structure Services — Hierarchy, Links & Project Health ✅ COMPLETE
 
 **Description:** This week you will implement the domain services that make Orbit "one connected system". Tasks belong to projects, projects advance goals, goals live in areas. Soft links connect notes, people, events, and bills to any of them. You will compute project progress from milestones, detect projects without a next action, measure goal attention, and identify blocked work through task dependencies.
 
@@ -242,10 +242,26 @@ pnpm run test --filter @orbit/core -- capture
 - Cycle in `dependsOn` rejected
 - Goal with zero sessions in 14 days flagged neglected
 
+**What was done:**
+
+- Pure services in `packages/core/src/services` over an array snapshot, so the app loads once and persists what comes back
+- `hierarchy.ts`: `validateGoalParent`, `validateProjectParent` (goal must share the project's area), `resolveTaskParent` (task area derived from its project; archived projects refused), `ancestorsOfTask`, `descendantsOfArea`, `archiveProjectCascade` (open/inbox tasks archived, done left alone, next action cleared), `assertAreaDeletable`; typed `HierarchyError`
+- `dependencies.ts`: `wouldCreateCycle` (graph walk), `validateDependencies` (self / missing / cycle with a human message), `blockers`, `isReady`, `dependents`
+- `projectHealth.ts`: progress from milestones, else task completion, else none; `noNextAction` (active project without a valid open next action), `blocked` (every open task waits), `staleDays` from the latest change to the project, its tasks, milestones, or sessions; `overdue` and `daysToDeadline`
+- `goalAttention.ts`: session minutes in a rolling 14-day window per goal and per area; expectation from the area's weekly target split across its active goals; `neglected` when an active goal got zero time
+- `links.ts`: `makeLink` returns the existing link for a pair in either direction, refuses self-links; `linkedRefs` / `groupLinked` for the linked panel
+- `durations.ts`: `parseDuration` ("45", "1h30", "1:30", "2.5h", "90 min") and `formatDuration`
+- Fixture builders in `test/builders.ts` (one per entity, seeded PRNG, and `aWorld()`: 2 areas, 3 goals, 4 projects, milestones, a dependency chain); 15 new tests
+
+**Files created:**
+
+- `packages/core/src/services/{hierarchy,dependencies,projectHealth,goalAttention,links,index}.ts`, `packages/core/src/durations.ts` ✅
+- `packages/core/test/builders.ts`, `packages/core/test/services/structure.test.ts` ✅
+
 **Deliverables:**
 
-- [ ] `packages/core/src/services/{hierarchy,links,projectHealth,goalAttention,dependencies}.ts`
-- [ ] Unit tests written and passing
+- [x] `packages/core/src/services/{hierarchy,links,projectHealth,goalAttention,dependencies}.ts`
+- [x] Unit tests written and passing
 
 **Verification:**
 
@@ -652,7 +668,7 @@ pnpm run test
 | **Week 1**  | Monorepo, Schemas & In-Memory Repository               | ✅ COMPLETE | 100%     |
 | **Week 2**  | IndexedDB Adapter, Op Log, Persistence & Export/Import | ✅ COMPLETE | 100%     |
 | **Week 3**  | Capture Parser & Classifier                            | ✅ COMPLETE | 100%     |
-| **Week 4**  | Structure Services — Hierarchy, Links & Project Health | ⏳ PENDING  | 0%       |
+| **Week 4**  | Structure Services — Hierarchy, Links & Project Health | ✅ COMPLETE | 100%     |
 | **Week 5**  | Planning Engine v1                                     | ⏳ PENDING  | 0%       |
 | **Week 6**  | Recurrence, Blocks & Recalculation                     | ⏳ PENDING  | 0%       |
 | **Week 7**  | Desktop Shell — Tauri, SQLite Adapter & Data File      | ⏳ PENDING  | 0%       |
@@ -663,4 +679,4 @@ pnpm run test
 | **Week 12** | Weekly Review, People, Bills & Tray                    | ⏳ PENDING  | 0%       |
 | **Week 13** | Hardening, Performance & Data Safety                   | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 3/13 weeks complete (23%)
+**Total Progress:** 4/13 weeks complete (31%)

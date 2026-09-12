@@ -3,7 +3,7 @@
 **Tech Stack:** React 18 + Vite + TypeScript + Tailwind CSS + Radix UI Primitives + Framer Motion + Zustand + Vite PWA + Tauri 2 API (from week 7) + Vitest + Testing Library
 **Repository:** `C:\Orbit`
 **Packages Owned:** `apps/orbit/src`
-**Current Status:** Weeks 1-3 ✅ COMPLETE
+**Current Status:** Weeks 1-4 ✅ COMPLETE
 
 > The frontend talks only to `@orbit/core` services, the `Repository` interface, and a `Platform` interface. It never issues SQL, never imports Tauri APIs outside `src/platform/`, and never calls the network. All fonts and assets are bundled. Weeks 1–6 run in a plain browser; the desktop shell is integrated in week 7.
 
@@ -223,7 +223,7 @@ pnpm run dev
 
 ---
 
-## Week 4: Areas, Goals, Projects & Tasks
+## Week 4: Areas, Goals, Projects & Tasks ✅ COMPLETE
 
 **Description:** This week you will build the structure screens that make Orbit one connected system. Areas, goals, and projects each get a list and a detail view. The project detail shows outcome, deadline, milestones with progress, the next action, and linked notes, people, events, and bills. Tasks can be created, edited inline, moved between projects, and given dependencies. Neglected goals and projects without a next action are visibly flagged.
 
@@ -251,11 +251,28 @@ pnpm run dev
 - Dependency picker cannot select the task itself or create a cycle (error shown)
 - Link picker filters by type and links the entity
 
+**What was done:**
+
+- `structureService.ts`: every write for areas, goals, projects, milestones, tasks, and links, each validated through the core services and followed by `bumpData()`; `loadStructure` returns the snapshot plus health and attention maps; `loadLinked` resolves a project's links into notes, people, events, bills, and tasks; `loadLinkCandidates` feeds the picker
+- `AreasPage`: inline create, inline rename, weekly-hours target, attention bar for the last 14 days, goal and project counts, delete refused with a toast when not empty
+- `GoalsPage` grouped by area with importance dots, target date, project count, and a Neglected badge; `GoalPage` edits importance, target date, status, area, shows attention against expectation, lists projects, and creates one under the goal
+- `ProjectsPage` with progress bar, percentage, area › goal, deadline, health badges, "show archived" toggle, and create with area + goal (goal list filtered by area)
+- `ProjectPage`: outcome, deadline, status (archived cascades), goal, next-action selector (invalid when none), milestones with toggle / rename / move up-down / remove / add, task list with complete checkbox, Waits-on and Next badges, inline add (first task becomes the next action), and a linked panel with unlink; `HealthBadges` shows overdue / blocked / no next action / stale
+- `TaskEditor` drawer (new `Drawer` primitive) keyed by task id: title, project, estimate with inline parse error, due date and optional time, energy, priority, dependency checkboxes that hide the task itself and disable anything that would create a loop, notes, archive
+- `LinkPicker`: type tabs, search, Enter picks the first match, already-linked items hidden
+- 11 new tests: milestone progress 2/4 → 50 % and toggle to 75 %, no-next-action flag set and cleared, inline milestone and task creation, link picker filter and link, estimate "1h30" → 90, unparseable estimate blocked, self excluded and cycle disabled in the dependency picker, dependency save, area → goal → project creation flow, non-empty area delete refused, goal detail edits
+
+**Files created:**
+
+- `apps/orbit/src/features/structure/{structureService.ts,useStructure.ts,AreasPage.tsx,GoalsPage.tsx,ProjectsPage.tsx,ProjectPage.tsx,TaskEditor.tsx}` ✅
+- `apps/orbit/src/features/structure/{ProjectPage,TaskEditor,StructurePages}.test.tsx` ✅
+- `apps/orbit/src/components/{LinkPicker.tsx,HealthBadge.tsx}`, `apps/orbit/src/components/ui/Drawer.tsx` ✅
+
 **Deliverables:**
 
-- [ ] `apps/orbit/src/features/{areas,goals,projects,tasks}/*`
-- [ ] `apps/orbit/src/components/LinkPicker.tsx`
-- [ ] Unit tests written and passing
+- [x] `apps/orbit/src/features/{areas,goals,projects,tasks}/*`
+- [x] `apps/orbit/src/components/LinkPicker.tsx`
+- [x] Unit tests written and passing
 
 **Verification:**
 
@@ -660,7 +677,7 @@ pnpm run build && pnpm run preview
 | **Week 1**  | Vite + React Setup, Design Tokens & App Shell | ✅ COMPLETE | 100%     |
 | **Week 2**  | Base Component Library & PWA Shell            | ✅ COMPLETE | 100%     |
 | **Week 3**  | Universal Inbox                               | ✅ COMPLETE | 100%     |
-| **Week 4**  | Areas, Goals, Projects & Tasks                | ⏳ PENDING  | 0%       |
+| **Week 4**  | Areas, Goals, Projects & Tasks                | ✅ COMPLETE | 100%     |
 | **Week 5**  | Today Screen & Plan Proposal                  | ⏳ PENDING  | 0%       |
 | **Week 6**  | Time-Block Timeline                           | ⏳ PENDING  | 0%       |
 | **Week 7**  | Desktop Shell Integration                     | ⏳ PENDING  | 0%       |
@@ -671,4 +688,4 @@ pnpm run build && pnpm run preview
 | **Week 12** | Weekly Review, People, Bills & Notes          | ⏳ PENDING  | 0%       |
 | **Week 13** | Mobile PWA Layouts, Accessibility & Polish    | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 3/13 weeks complete (23%)
+**Total Progress:** 4/13 weeks complete (31%)
