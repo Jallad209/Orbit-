@@ -254,15 +254,28 @@ export const ReminderConfigSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('followUpAfter'), days: z.number().int().min(1).max(365) }),
 ]);
 
-export const RuleSchema = z.discriminatedUnion('type', [
-  RuleBase.extend({ type: z.literal('constraint'), config: ConstraintConfigSchema }),
-  RuleBase.extend({
-    type: z.literal('recurring'),
-    config: z.object({ routineId: IdSchema, timesPerWeek: z.number().int().min(1).max(7) }),
-  }),
-  RuleBase.extend({ type: z.literal('rollover'), config: RolloverConfigSchema }),
-  RuleBase.extend({ type: z.literal('reminder'), config: ReminderConfigSchema }),
-]);
+export const RuleSchema = z
+  .discriminatedUnion('type', [
+    RuleBase.extend({ type: z.literal('constraint'), config: ConstraintConfigSchema }),
+    RuleBase.extend({
+      type: z.literal('recurring'),
+      config: z.object({ routineId: IdSchema, timesPerWeek: z.number().int().min(1).max(7) }),
+    }),
+    RuleBase.extend({ type: z.literal('rollover'), config: RolloverConfigSchema }),
+    RuleBase.extend({ type: z.literal('reminder'), config: ReminderConfigSchema }),
+  ])
+  .superRefine((rule, ctx) => {
+    // A reserved window is two loose minute fields, not a TimeWindow: check the order here.
+    if (rule.type === 'constraint' && rule.config.kind === 'reserve') {
+      if (rule.config.endMin <= rule.config.startMin) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['config', 'endMin'],
+          message: 'must end after start',
+        });
+      }
+    }
+  });
 export type Rule = z.infer<typeof RuleSchema>;
 export type RuleType = Rule['type'];
 
@@ -332,3 +345,49 @@ export const CaptureSchema = BaseRecordSchema.extend({
   processedId: nullableId,
 });
 export type Capture = z.infer<typeof CaptureSchema>;
+
+// ---------------------------------------------------------------------------
+// Reminders & settings (week 9)
+// ---------------------------------------------------------------------------
+
+export const ReminderStatusSchema = z.enum(['pending', 'fired', 'dismissed']);
+export type ReminderStatus = z.infer<typeof ReminderStatusSchema>;
+
+/**
+ * A queued notification produced by a reminder rule. `key` is
+ * `${ruleId}:${entityId}:${dueDate}`: the thing being reminded about, never
+ * the fire time, so re-evaluating the rules cannot queue the same reminder
+ * twice. The scheduler (Rust on desktop, a hook on web) fires rows whose
+ * `fireAt` has passed and marks them `fired`.
+ */
+export const ReminderSchema = BaseRecordSchema.extend({
+  key: z.string().min(1),
+  ruleId: IdSchema,
+  entityType: EntityTypeSchema,
+  entityId: IdSchema,
+  fireAt: InstantSchema,
+  title,
+  body: z.string().default(''),
+  status: ReminderStatusSchema.default('pending'),
+});
+export type Reminder = z.infer<typeof ReminderSchema>;
+
+/** The one settings document's id (a fixed UUID so every adapter can `get` it). */
+export const APP_SETTINGS_ID = '00000000-0000-7000-8000-000000000001';
+
+/**
+ * Planning preferences, persisted through the repository so they travel
+ * with the data (export, desktop import). One document, `APP_SETTINGS_ID`.
+ */
+export const AppSettingsSchema = BaseRecordSchema.extend({
+  workingWindow: TimeWindowSchema.default({ startMin: 540, endMin: 1080 }),
+  /** Never planned into; a lunch break by default. */
+  restBoundaries: z.array(TimeWindowSchema).default([{ startMin: 750, endMin: 795 }]),
+  /** Gap left after every placed block. */
+  bufferMin: z.number().int().min(0).max(120).default(10),
+  /** Estimate for a task captured without one. */
+  defaultEstimateMin: z.number().int().min(5).max(480).default(30),
+  /** When the "Evening shutdown" launcher appears. */
+  eveningStartMin: MinuteOfDaySchema.default(17 * 60),
+});
+export type AppSettings = z.infer<typeof AppSettingsSchema>;

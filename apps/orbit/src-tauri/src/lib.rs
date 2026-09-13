@@ -1,10 +1,12 @@
 //! Orbit desktop shell. The web app runs unchanged inside a WebView; this
 //! crate adds what a browser cannot do: a real data file (SQLite through
 //! `commands::db`), a user-chosen data folder, native dialogs and
-//! notifications, remembered window state, and a system-wide quick-capture
-//! shortcut. No feature lives here that the engine could do in TypeScript.
+//! notifications, remembered window state, a system-wide quick-capture
+//! shortcut, and a reminder scheduler that delivers OS notifications. No
+//! feature lives here that the engine could do in TypeScript.
 
 mod commands;
+mod scheduler;
 
 use std::sync::Mutex;
 
@@ -43,6 +45,8 @@ pub fn run() {
             if let Some(main) = app.get_webview_window("main") {
                 let _ = main.set_title("Orbit");
             }
+            // `Db` is managed above; the scheduler skips ticks until the file is open.
+            scheduler::start(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

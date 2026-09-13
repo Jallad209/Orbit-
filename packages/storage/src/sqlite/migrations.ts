@@ -12,7 +12,8 @@ export interface Migration {
 }
 
 /** Every record lives as JSON in `data`; indexed fields are generated columns over it. */
-const INDEXED: Record<StoreName, string[]> = {
+type V1Store = Exclude<StoreName, 'reminders' | 'appSettings'>;
+const INDEXED_V1: Record<V1Store, string[]> = {
   areas: [],
   goals: ['areaId', 'status'],
   projects: ['areaId', 'goalId', 'status'],
@@ -32,6 +33,12 @@ const INDEXED: Record<StoreName, string[]> = {
   insightStates: ['insightKey'],
   captures: ['status', 'type'],
   links: ['fromType', 'fromId', 'toType', 'toId'],
+};
+
+/** Stores added in 0002 (week 9). */
+const INDEXED_V2: Record<Exclude<StoreName, V1Store>, string[]> = {
+  reminders: ['key', 'status', 'fireAt'],
+  appSettings: [],
 };
 
 function table(name: StoreName, fields: string[]): string {
@@ -54,7 +61,7 @@ function table(name: StoreName, fields: string[]): string {
 
 const INIT = [
   '-- 0001_init: one table per store, JSON in `data`, generated columns for indexes.',
-  ...(Object.keys(INDEXED) as StoreName[]).map((n) => table(n, INDEXED[n])),
+  ...(Object.keys(INDEXED_V1) as V1Store[]).map((n) => table(n, INDEXED_V1[n])),
   `CREATE INDEX IF NOT EXISTS idx_links_from ON links(fromType, fromId);`,
   `CREATE INDEX IF NOT EXISTS idx_links_to ON links(toType, toId);`,
   `CREATE TABLE IF NOT EXISTS opLog (
@@ -68,7 +75,17 @@ const INIT = [
   `CREATE INDEX IF NOT EXISTS idx_opLog_entity ON opLog(entity, entityId);`,
 ].join('\n\n');
 
-export const MIGRATIONS: readonly Migration[] = [{ version: 1, name: '0001_init', sql: INIT }];
+const REMINDERS = [
+  '-- 0002_reminders: the reminder queue and the one-row settings document.',
+  ...(Object.keys(INDEXED_V2) as Array<keyof typeof INDEXED_V2>).map((n) =>
+    table(n, INDEXED_V2[n]),
+  ),
+].join('\n\n');
+
+export const MIGRATIONS: readonly Migration[] = [
+  { version: 1, name: '0001_init', sql: INIT },
+  { version: 2, name: '0002_reminders', sql: REMINDERS },
+];
 
 export const SQLITE_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;
 

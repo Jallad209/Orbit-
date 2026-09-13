@@ -7,6 +7,5 @@ export * from './sessions';
 export * from './timeByArea';
 export * from './completion';
 export * from './atRisk';
-export * from './rollover';
 export * from './morning';
 export * from './evening';

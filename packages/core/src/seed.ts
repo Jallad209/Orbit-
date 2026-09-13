@@ -9,6 +9,8 @@ import { fixedClock, nowIso } from './clock';
 import { addDays, toLocalDate } from './dates';
 import { createRecord } from './records';
 import {
+  APP_SETTINGS_ID,
+  AppSettingsSchema,
   AreaSchema,
   BillSchema,
   BlockSchema,
@@ -30,6 +32,7 @@ import {
   TaskSchema,
 } from './schema';
 import type {
+  AppSettings,
   Area,
   Bill,
   Block,
@@ -46,6 +49,7 @@ import type {
   Note,
   Person,
   Project,
+  Reminder,
   Routine,
   RoutineInstance,
   Rule,
@@ -95,6 +99,8 @@ export interface SeedWorld {
   rules: Rule[];
   insightStates: InsightState[];
   captures: Capture[];
+  reminders: Reminder[];
+  appSettings: AppSettings[];
   links: Link[];
 }
 
@@ -414,6 +420,15 @@ export function seedWorld(options: SeedOptions = {}): SeedWorld {
     rules,
     insightStates,
     captures,
+    reminders: [],
+    // The settings document keeps its fixed id so every adapter can `get` it.
+    appSettings: [
+      createRecord(AppSettingsSchema, ago(sizes.days), {
+        id: APP_SETTINGS_ID,
+        workingWindow: { startMin: 540, endMin: 1080 },
+        restBoundaries: [{ startMin: 750, endMin: 795 }],
+      }),
+    ],
     links,
   };
 }

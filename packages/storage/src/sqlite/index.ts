@@ -1,5 +1,6 @@
 import type { z } from 'zod';
 import {
+  AppSettingsSchema,
   AreaSchema,
   BillSchema,
   BlockSchema,
@@ -14,6 +15,7 @@ import {
   NoteSchema,
   PersonSchema,
   ProjectSchema,
+  ReminderSchema,
   RoutineInstanceSchema,
   RoutineSchema,
   RuleSchema,
@@ -246,6 +248,8 @@ export async function createSqliteRepository(
     rules: new SqliteStore('rules', RuleSchema, ctx),
     insightStates: new SqliteStore('insightStates', InsightStateSchema, ctx),
     captures: new SqliteStore('captures', CaptureSchema, ctx),
+    reminders: new SqliteStore('reminders', ReminderSchema, ctx),
+    appSettings: new SqliteStore('appSettings', AppSettingsSchema, ctx),
     links: new SqliteLinkStore('links', LinkSchema, ctx),
     opLog: new SqliteOpLog(ctx),
 

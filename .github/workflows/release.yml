@@ -1,11 +1,15 @@
 name: Release
 
-# Tag a version to ship the desktop app:
-#   pnpm run bump -- 0.1.0-alpha.1 && git commit -am "chore: release v0.1.0-alpha.1"
-#   git tag v0.1.0-alpha.1 && git push --tags
-# Builds the Tauri app on Windows, produces NSIS and MSI installers, writes
-# SHA-256 checksums, and attaches everything to a draft GitHub Release.
-# Pre-release tags (anything with a hyphen) are marked as pre-releases.
+# Tag a version to ship Orbit (see docs/RELEASE.md for the full checklist):
+#   pnpm run bump -- 0.1.0-beta.1 && pnpm run changelog:release -- v0.1.0-beta.1
+#   git commit -am "chore: release v0.1.0-beta.1" && git tag v0.1.0-beta.1 && git push --tags
+# Builds the Tauri app on Windows, signs the binary and installers with Azure
+# Trusted Signing when the AZURE_* secrets are set, writes SHA-256 checksums,
+# zips the PWA build, and attaches everything to a draft GitHub Release whose
+# body is the changelog section for the tag.
+# Channels: `-alpha.N` unsigned builds, `-beta.N` signed pre-releases (any tag
+# with a hyphen is marked pre-release and ships NSIS only — the MSI needs a
+# numeric version), plain `vX.Y.Z` ships NSIS + MSI as a full release.
 
 on:
   push:
@@ -15,6 +19,11 @@ on:
 permissions:
   contents: write
 
+env:
+  # Signing is on when the app registration secret exists; forks and dry runs stay unsigned.
+  SIGNING: ${{ secrets.AZURE_CLIENT_ID != '' }}
+  PRERELEASE: ${{ contains(github.ref_name, '-') }}
+
 jobs:
   windows:
     name: Windows installers
@@ -22,6 +31,8 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # git-cliff needs the tags and history
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -41,30 +52,98 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      - name: trusted-signing-cli cache
+        if: env.SIGNING == 'true'
+        id: tsc
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/trusted-signing-cli.exe
+          key: trusted-signing-cli-${{ runner.os }}
+
+      - name: Install trusted-signing-cli
+        if: env.SIGNING == 'true' && steps.tsc.outputs.cache-hit != 'true'
+        run: cargo install trusted-signing-cli --locked
+
+      # Tauri signs the binary, then each installer, through this command
+      # (`%1` is the file). Passed as a --config overlay so local builds stay unsigned.
+      - name: Signing config
+        if: env.SIGNING == 'true'
+        shell: pwsh
+        run: |
+          $cmd = "trusted-signing-cli -e $env:AZURE_ENDPOINT -a $env:AZURE_ACCOUNT -c $env:AZURE_PROFILE -d Orbit %1"
+          @{ bundle = @{ windows = @{ signCommand = $cmd } } } | ConvertTo-Json -Depth 5 |
+            Set-Content -Encoding utf8 tauri.signing.conf.json
+          "TAURI_CONFIG_ARGS=--config $((Get-Item tauri.signing.conf.json).FullName)" | Add-Content $env:GITHUB_ENV
+        env:
+          AZURE_ENDPOINT: ${{ secrets.AZURE_ENDPOINT }}
+          AZURE_ACCOUNT: ${{ secrets.AZURE_ACCOUNT }}
+          AZURE_PROFILE: ${{ secrets.AZURE_PROFILE }}
+
+      - name: Release notes from the changelog
+        shell: pwsh
+        run: |
+          pnpm exec git-cliff --current --strip all | Set-Content -Encoding utf8 RELEASE_NOTES.md
+          if ((Get-Item RELEASE_NOTES.md).Length -lt 10) { "No conventional commits since the previous tag." | Set-Content RELEASE_NOTES.md }
+          "" | Add-Content RELEASE_NOTES.md
+          "### Install" | Add-Content RELEASE_NOTES.md
+          if ($env:SIGNING -eq 'true') {
+            "Windows: run the ``-setup.exe`` (NSIS) installer. It is signed; Windows shows the publisher on first run." | Add-Content RELEASE_NOTES.md
+          } else {
+            "Windows: run the ``-setup.exe`` (NSIS) installer. This build is **unsigned**: SmartScreen will warn once; choose *More info → Run anyway*." | Add-Content RELEASE_NOTES.md
+          }
+          "Browser: unzip ``orbit-pwa-*.zip`` and serve the folder from any static server (see docs/HOSTING.md)." | Add-Content RELEASE_NOTES.md
+          "" | Add-Content RELEASE_NOTES.md
+          "Verify downloads against ``SHA256SUMS.txt``." | Add-Content RELEASE_NOTES.md
+
       - name: Build and attach installers
         id: tauri
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
         with:
           projectPath: apps/orbit
           tagName: ${{ github.ref_name }}
           releaseName: 'Orbit ${{ github.ref_name }}'
-          releaseBody: 'Installers for Windows. Verify with the SHA-256 list below.'
+          releaseBody: 'Installers for Windows and the PWA bundle. Notes follow.'
           releaseDraft: true
-          prerelease: ${{ contains(github.ref_name, '-') }}
-          args: --bundles nsis,msi
+          prerelease: ${{ env.PRERELEASE == 'true' }}
+          # Pre-release identifiers (-alpha.N, -beta.N) are not valid MSI versions.
+          args: ${{ env.PRERELEASE == 'true' && '--bundles nsis' || '--bundles nsis,msi' }} ${{ env.TAURI_CONFIG_ARGS }}
+
+      - name: Verify signatures
+        if: env.SIGNING == 'true'
+        shell: pwsh
+        run: |
+          $files = @(Get-Item apps/orbit/src-tauri/target/release/orbit.exe) +
+            @(Get-ChildItem apps/orbit/src-tauri/target/release/bundle -Recurse -Include *.exe,*.msi)
+          $bad = foreach ($f in $files) {
+            $sig = Get-AuthenticodeSignature $f.FullName
+            "$($f.Name): $($sig.Status) $($sig.SignerCertificate.Subject)"
+            if ($sig.Status -ne 'Valid') { $f.Name }
+          }
+          if ($bad) { Write-Error "unsigned or invalid: $($bad -join ', ')"; exit 1 }
+
+      - name: PWA bundle
+        shell: pwsh
+        run: |
+          # beforeBuildCommand already built apps/orbit/dist for the shell.
+          Compress-Archive -Path apps/orbit/dist/* -DestinationPath "orbit-pwa-${{ github.ref_name }}.zip" -Force
 
       - name: Checksums and sizes
         shell: pwsh
         run: |
-          $bundles = Get-ChildItem apps/orbit/src-tauri/target/release/bundle -Recurse -Include *.exe,*.msi
+          $bundles = @(Get-ChildItem apps/orbit/src-tauri/target/release/bundle -Recurse -Include *.exe,*.msi) +
+            @(Get-Item "orbit-pwa-${{ github.ref_name }}.zip")
           $lines = foreach ($f in $bundles) {
             $h = (Get-FileHash $f.FullName -Algorithm SHA256).Hash.ToLower()
             "$h  $($f.Name)"
           }
           $lines | Set-Content SHA256SUMS.txt
-          "## Installers" | Add-Content $env:GITHUB_STEP_SUMMARY
+          "## Artifacts" | Add-Content $env:GITHUB_STEP_SUMMARY
+          "Signed: $env:SIGNING · pre-release: $env:PRERELEASE" | Add-Content $env:GITHUB_STEP_SUMMARY
           "| File | Size |" | Add-Content $env:GITHUB_STEP_SUMMARY
           "|---|---:|" | Add-Content $env:GITHUB_STEP_SUMMARY
           foreach ($f in $bundles) { "| $($f.Name) | $([math]::Round($f.Length/1MB,1)) MB |" | Add-Content $env:GITHUB_STEP_SUMMARY }
@@ -72,7 +151,9 @@ jobs:
           "| orbit.exe (binary) | $([math]::Round($exe.Length/1MB,1)) MB |" | Add-Content $env:GITHUB_STEP_SUMMARY
           node scripts/check-binary-size.mjs $exe.FullName
 
-      - name: Attach checksums to the release
+      - name: Attach the PWA bundle and checksums, write the notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ github.ref_name }} SHA256SUMS.txt --clobber
+        run: |
+          gh release upload ${{ github.ref_name }} "orbit-pwa-${{ github.ref_name }}.zip" SHA256SUMS.txt --clobber
+          gh release edit ${{ github.ref_name }} --notes-file RELEASE_NOTES.md

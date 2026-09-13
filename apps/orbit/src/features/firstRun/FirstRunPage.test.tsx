@@ -16,7 +16,13 @@ function desktopMock(overrides: Partial<NonNullable<Platform['desktop']>> = {}):
   return {
     ...webPlatform,
     name: 'desktop',
-    capabilities: { backgroundReminders: false, dataFolder: true, globalHotkey: true, tray: false },
+    capabilities: {
+      backgroundReminders: false,
+      nativeReminders: true,
+      dataFolder: true,
+      globalHotkey: true,
+      tray: false,
+    },
     desktop: {
       dataFileStatus: () => ({
         dir: 'C:\\Users\\me\\Orbit',
@@ -29,6 +35,7 @@ function desktopMock(overrides: Partial<NonNullable<Platform['desktop']>> = {}):
       revealDataFolder: vi.fn(async () => {}),
       pickExportFile: vi.fn(async () => null),
       listBackups: vi.fn(async () => []),
+      restoreBackup: vi.fn(async () => {}),
       hideCaptureWindow: vi.fn(async () => {}),
       startDraggingWindow: vi.fn(async () => {}),
       ...overrides,

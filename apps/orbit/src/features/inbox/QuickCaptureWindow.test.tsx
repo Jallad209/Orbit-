@@ -15,6 +15,7 @@ describe('QuickCaptureWindow', () => {
       name: 'desktop',
       capabilities: {
         backgroundReminders: true,
+        nativeReminders: true,
         dataFolder: true,
         globalHotkey: true,
         tray: false,
@@ -26,6 +27,7 @@ describe('QuickCaptureWindow', () => {
         revealDataFolder: async () => {},
         pickExportFile: async () => null,
         listBackups: async () => [],
+        restoreBackup: async () => {},
         hideCaptureWindow,
         startDraggingWindow: async () => {},
       },

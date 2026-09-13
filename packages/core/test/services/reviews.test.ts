@@ -6,9 +6,7 @@ import { createRecord } from '../../src/records';
 import { BlockSchema, DayCommitmentSchema, RuleSchema, SessionSchema } from '../../src/schema';
 import type { Rule, Session } from '../../src/schema';
 import {
-  DEFAULT_ROLLOVER,
   activeSession,
-  applyRollover,
   areaOfTask,
   billsDueWithin,
   buildEvening,
@@ -19,18 +17,22 @@ import {
   hasSession,
   manualSession,
   needsActual,
-  nextMonday,
-  rolloverDate,
-  rolloverPolicy,
   sessionDayParts,
   sessionMinutes,
   startSession,
   stopSession,
-  suggestRollover,
   taskSessionMinutes,
   timeByArea,
   trailingRange,
 } from '../../src/services';
+import {
+  DEFAULT_ROLLOVER,
+  applyRollover,
+  nextMonday,
+  rolloverDate,
+  rolloverPolicy,
+  suggestRollover,
+} from '../../src/rules';
 import { aBill, aProject, aTask, aWorld, anArea, testClock } from '../builders';
 
 // Wednesday 16 Sep 2026, 18:00 local: the day is over, next Monday is the 21st.

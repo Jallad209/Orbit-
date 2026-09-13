@@ -106,7 +106,11 @@ describe('SQLite migrations', () => {
     const driver = betterSqliteDriver();
     expect(await currentVersion(driver)).toBe(0);
     const first = await migrate(driver);
-    expect(first).toEqual({ from: 0, to: SQLITE_SCHEMA_VERSION, applied: ['0001_init'] });
+    expect(first).toEqual({
+      from: 0,
+      to: SQLITE_SCHEMA_VERSION,
+      applied: ['0001_init', '0002_reminders'],
+    });
     const again = await migrate(driver);
     expect(again.applied).toEqual([]);
     expect(await currentVersion(driver)).toBe(SQLITE_SCHEMA_VERSION);
@@ -124,18 +128,22 @@ describe('SQLite migrations', () => {
     const before = (await driver.select<{ c: number }>('SELECT count(*) AS c FROM tasks'))[0]!.c;
     expect(before).toBeGreaterThan(0);
 
-    // A hypothetical next migration: an extra index. Existing data must survive.
+    // The real 0002 plus a hypothetical next migration: an extra index. Existing data must survive.
     const next = {
-      version: 2,
-      name: '0002_task_energy_index',
+      version: 3,
+      name: '0003_task_energy_index',
       sql: `ALTER TABLE tasks ADD COLUMN energy TEXT GENERATED ALWAYS AS (json_extract(data, '$.energy')) VIRTUAL;
 CREATE INDEX IF NOT EXISTS idx_tasks_energy ON tasks(energy);`,
     };
     const report = await migrate(driver, [...MIGRATIONS, next]);
-    expect(report).toEqual({ from: 1, to: 2, applied: ['0002_task_energy_index'] });
+    expect(report).toEqual({
+      from: 1,
+      to: 3,
+      applied: ['0002_reminders', '0003_task_energy_index'],
+    });
     const after = (await driver.select<{ c: number }>('SELECT count(*) AS c FROM tasks'))[0]!.c;
     expect(after).toBe(before);
-    expect(await currentVersion(driver)).toBe(2);
+    expect(await currentVersion(driver)).toBe(3);
     const repo = await createSqliteRepository({ driver, skipMigrations: true });
     expect(await repo.tasks.count({ includeDeleted: true })).toBe(before);
     await repo.close();
@@ -152,9 +160,9 @@ CREATE INDEX IF NOT EXISTS idx_tasks_energy ON tasks(energy);`,
     const driver = betterSqliteDriver();
     await migrate(driver);
     await expect(
-      migrate(driver, [...MIGRATIONS, { version: 2, name: 'bad', sql: 'CREATE TABLE tasks(x)' }]),
+      migrate(driver, [...MIGRATIONS, { version: 3, name: 'bad', sql: 'CREATE TABLE tasks(x)' }]),
     ).rejects.toThrow();
-    expect(await currentVersion(driver)).toBe(1);
+    expect(await currentVersion(driver)).toBe(SQLITE_SCHEMA_VERSION);
     await driver.close();
   });
 });

@@ -3,7 +3,7 @@
 **Tech Stack:** TypeScript (strict) + Zod + Vitest + Dexie (IndexedDB) + SQLite (Tauri SQL plugin, from week 7) + MiniSearch / FTS5 + Tauri 2 Rust commands (from week 7)
 **Repository:** `C:\Orbit`
 **Packages Owned:** `packages/core`, `packages/storage`, `apps/orbit/src-tauri` (from week 7)
-**Current Status:** Weeks 1-8 ✅ COMPLETE
+**Current Status:** Weeks 1-9 ✅ COMPLETE
 
 > In Orbit there is no server. "Backend" means the pure domain engine (`packages/core`), the storage layer (`packages/storage`), and, from week 7, the Rust shell commands. Weeks 1–6 run entirely in the browser against IndexedDB. Everything here must run with the network cable unplugged.
 
@@ -513,7 +513,7 @@ pnpm test:coverage
 
 ---
 
-## Week 9: Rules Engine & Reminder Scheduler
+## Week 9: Rules Engine & Reminder Scheduler ✅ COMPLETE
 
 **Description:** This week you will implement the four typed rule families and their evaluation inside the planner and reminder scheduler: time constraints ("never schedule demanding work after 7 PM", "reserve Friday evening for family"), recurring scheduling ("exercise three times per week"), rollover policies, and reminders/follow-ups ("bill due within three days", "no reply after seven days"). Rules are structured objects, never parsed sentences. On desktop a Rust scheduler fires OS notifications; on web, reminders surface only while the app is open.
 
@@ -541,17 +541,35 @@ pnpm test:coverage
 - Commitment to a person with no reply for 8 days → follow-up reminder
 - Conflicting reservations reported
 
+**What was done:**
+
+- `packages/core/src/rules/` gathers the four families, moved rather than rewritten: `constraints.ts` (`applyConstraints(free, rules, date)` pulled out of the capacity builder — `reserve` blocks a window or pins it to an area, `noHighEnergyAfter` clears the flag after the cut; `capacity.ts` now calls it and every planner test stayed green), `recurring.ts` (`applyRecurringRules` from the recurrence module), `rollover.ts` (the week 8 service), `reminders.ts`, `conflicts.ts`, and `index.ts` with `evaluateRules(snapshot, date, clock)` returning the routine instances to add, the reminders to queue, and the conflicts
+- Schema bump in one go: `Reminder` (`key`, `ruleId`, `entityType`, `entityId`, `fireAt`, `title`, `body`, `status` pending / fired / dismissed) and the single-document `AppSettings` (working window, rest boundaries, buffer, default estimate, evening hour; fixed id `APP_SETTINGS_ID`, `defaultAppSettings(clock)`). Threaded through `EntityTypeSchema`, `STORE_ENTITY`, `STORE_ORDER`, the memory adapter, IndexedDB **v3**, SQLite **`0002_reminders`** (`0001_init` untouched, byte for byte), `seedWorld`, and `EXPORT_SCHEMA_VERSION` **3**; fixtures regenerated (`export/v3.json`, `idb/v3.json`, `sqlite/v2.sql`, `db/v2.db`) with every older version kept, and the matrix passes IndexedDB v1→v3, v2→v3 and SQLite v1→v2
+- `reminders.ts`: `computeReminders(snapshot, now)` — `billDueWithin(days)` from unpaid bills due on or before today + days (overdue ones included), firing 09:00 local the day the bill entered the window; `followUpAfter(days)` from open `owed-to-me` commitments whose person has no `lastContactAt` newer than the window (the commitment's own age when there is none), firing 09:00 the day the window ran out. `reconcileReminders(existing, computed)` returns only new keys — the key is `${ruleId}:${entityId}:${dueDate}`, the thing being reminded about, never the fire time, so a fired or dismissed reminder never comes back. `toReminderRecords`, `dueReminders`
+- `conflicts.ts`: `detectConflicts(rules)` → `{ ruleIds: [a, b], message }` for two enabled reservations on the same weekday that overlap, a window reserved for an area that starts after a `noHighEnergyAfter` cut, two enabled rollover policies, and two recurring rules for one routine; `conflictsByRule` for the badges
+- `RuleSchema` gained the check a `reserve` window ends after it starts (the reserve config is two loose minute fields, not a `TimeWindow`), so the form, the repository, and the importer agree
+- `apps/orbit/src-tauri/src/scheduler.rs`: a thread started in `setup` after `Db` is managed; every 60 s it takes the mutex just long enough to `SELECT` pending reminders with `fireAt <= now`, releases it, shows each through the notification plugin's Rust API, then re-locks to mark the row `fired` with an op-log entry. Skips silently while the file is not open or the table does not exist yet. Three Rust unit tests (due rows only, marks fired with an op-log row, no database)
+- 10 tests in `test/rules/rules.test.ts`: the five required (no high-energy block after 19:00 with the rule on, and the same task placed without it; Friday 18:00–22:00 reserved for Family leaves zero non-family blocks and Thursday untouched; a bill due in 2 days yields one reminder and nothing on later runs, after firing, or after dismissal; a commitment with no reply for 8 days becomes a follow-up while recent, owed-by-me, and done ones do not; overlapping reservations reported with both ids and the message) plus whole-window reservations, due reminders ordering, the other three conflict kinds, `evaluateRules` in one pass and idempotent, and the settings default document. `rules/` sits at 100 % lines
+
+**Files created:**
+
+- `packages/core/src/rules/{constraints,recurring,rollover,reminders,conflicts,index}.ts`, `packages/core/src/settings.ts` ✅
+- `packages/core/test/rules/rules.test.ts` ✅
+- `apps/orbit/src-tauri/src/scheduler.rs` ✅
+- `tests/fixtures/{export/v3.json,idb/v3.json,sqlite/v2.sql,db/v2.db}` ✅
+
 **Deliverables:**
 
-- [ ] `packages/core/src/rules/*`
-- [ ] `apps/orbit/src-tauri/src/scheduler.rs` — reminder polling + notifications
-- [ ] Unit tests written and passing
+- [x] `packages/core/src/rules/*`
+- [x] `apps/orbit/src-tauri/src/scheduler.rs` — reminder polling + notifications
+- [x] Unit tests written and passing
 
 **Verification:**
 
 ```bash
-pnpm run test --filter @orbit/core -- rules
-pnpm run tauri dev   # create a bill due tomorrow, observe OS notification
+pnpm exec vitest run --project core rules planner
+pnpm exec vitest run --project storage
+pnpm run tauri:build:bin && pnpm run e2e:desktop   # PowerShell; the reminders spec waits for the scheduler
 ```
 
 ---
@@ -740,10 +758,10 @@ pnpm run test
 | **Week 6**  | Recurrence, Blocks & Recalculation                     | ✅ COMPLETE | 100%     |
 | **Week 7**  | Desktop Shell — Tauri, SQLite Adapter & Data File      | ✅ COMPLETE | 100%     |
 | **Week 8**  | Actuals, Sessions & Review Data Services               | ✅ COMPLETE | 100%     |
-| **Week 9**  | Rules Engine & Reminder Scheduler                      | ⏳ PENDING  | 0%       |
+| **Week 9**  | Rules Engine & Reminder Scheduler                      | ✅ COMPLETE | 100%     |
 | **Week 10** | Search Index & Command Registry                        | ⏳ PENDING  | 0%       |
 | **Week 11** | Insights Engine                                        | ⏳ PENDING  | 0%       |
 | **Week 12** | Weekly Review, People, Bills & Tray                    | ⏳ PENDING  | 0%       |
 | **Week 13** | Hardening, Performance & Data Safety                   | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 8/13 weeks complete (62%)
+**Total Progress:** 9/13 weeks complete (69%)

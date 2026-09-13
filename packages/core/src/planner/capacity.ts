@@ -1,8 +1,7 @@
-import { dayOfWeek, minuteOfDay, toLocalDate } from '../dates';
-import type { Block, Id, LocalDate, Weekday } from '../schema';
+import { minuteOfDay, toLocalDate } from '../dates';
+import { applyConstraints } from '../rules/constraints';
+import type { Block, Id, LocalDate } from '../schema';
 import type { BusyInterval, DayCapacity, FreeInterval, PlanSettings, PlanSnapshot } from './types';
-
-const WEEKDAYS: Weekday[] = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 
 export function roundUpTo(min: number, grid: number): number {
   return Math.ceil(min / grid) * grid;
@@ -34,17 +33,6 @@ function subtract(intervals: FreeInterval[], s: number, e: number): FreeInterval
     }
     if (s > i.startMin) out.push({ ...i, endMin: s });
     if (e < i.endMin) out.push({ ...i, startMin: e });
-  }
-  return out;
-}
-
-/** Split intervals at `at` so a constraint can apply to one side only. */
-function splitAt(intervals: FreeInterval[], at: number): FreeInterval[] {
-  const out: FreeInterval[] = [];
-  for (const i of intervals) {
-    if (at > i.startMin && at < i.endMin) {
-      out.push({ ...i, endMin: at }, { ...i, startMin: at });
-    } else out.push(i);
   }
   return out;
 }
@@ -107,31 +95,11 @@ export function buildCapacity(
     }
   }
 
-  const weekday = WEEKDAYS[dayOfWeek(date)]!;
-  for (const rule of snapshot.rules ?? []) {
-    if (rule.deletedAt !== null || !rule.enabled || rule.type !== 'constraint') continue;
-    const c = rule.config;
-    if (c.kind === 'reserve' && c.dayOfWeek === weekday) {
-      if (c.areaId === null) {
-        busy.push({
-          startMin: c.startMin,
-          endMin: c.endMin,
-          kind: 'reserve',
-          refId: rule.id,
-          label: c.label || rule.name || 'Reserved',
-        });
-      } else {
-        free = splitAt(splitAt(free, c.startMin), c.endMin).map((i) =>
-          i.startMin >= c.startMin && i.endMin <= c.endMin ? { ...i, areaId: c.areaId } : i,
-        );
-      }
-    }
-    if (c.kind === 'noHighEnergyAfter') {
-      free = splitAt(free, c.afterMin).map((i) =>
-        i.startMin >= c.afterMin ? { ...i, highEnergyAllowed: false } : i,
-      );
-    }
-  }
+  // Constraint rules (packages/core/src/rules/constraints.ts): reservations and the
+  // high-energy cut shape the intervals before scoring ever sees them.
+  const constrained = applyConstraints(free, snapshot.rules ?? [], date);
+  free = constrained.free;
+  busy.push(...constrained.busy);
 
   for (const b of busy) free = subtract(free, b.startMin, b.endMin);
 

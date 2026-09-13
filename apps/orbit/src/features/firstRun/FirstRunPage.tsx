@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from '@/components/ui/toastStore';
 import { bumpData } from '@/data/useQuery';
+import { saveSettings } from '@/features/settings/settingsService';
 import { usePlanPrefs } from '@/features/today/planSettings';
 import { usePlatform, useRepository } from '@/platform';
 import { markFirstRunDone } from './firstRun';
@@ -78,9 +79,19 @@ export function FirstRunPage() {
     }
   };
 
-  const finish = () => {
+  const finish = async () => {
     if (windowError) return;
-    prefs.setWorkingWindow({ startMin: parseMinute(start), endMin: parseMinute(end) });
+    const workingWindow = { startMin: parseMinute(start), endMin: parseMinute(end) };
+    prefs.setWorkingWindow(workingWindow);
+    try {
+      await saveSettings(repo, { workingWindow });
+    } catch (e) {
+      toast({
+        title: 'Could not save the working window',
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'danger',
+      });
+    }
     markFirstRunDone();
     navigate('/today', { replace: true });
   };
@@ -190,7 +201,7 @@ export function FirstRunPage() {
       </section>
 
       <div className="flex justify-end">
-        <Button variant="primary" onClick={finish} disabled={!!windowError || busy}>
+        <Button variant="primary" onClick={() => void finish()} disabled={!!windowError || busy}>
           Start planning
         </Button>
       </div>

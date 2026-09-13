@@ -7,6 +7,8 @@ import type { BackupCandidate, IntegrityResult, Repository } from '@orbit/storag
 export interface PlatformCapabilities {
   /** Reminders fire while the window is closed (desktop tray). */
   backgroundReminders: boolean;
+  /** The shell raises OS notifications for due reminders while Orbit runs (desktop scheduler). */
+  nativeReminders: boolean;
   /** Data lives in a user-chosen folder as a real file (desktop SQLite). */
   dataFolder: boolean;
   /** System-wide quick-capture shortcut. */
@@ -42,6 +44,11 @@ export interface DesktopApi {
   /** Native file picker for an Orbit export; returns its text or null when cancelled. */
   pickExportFile(): Promise<string | null>;
   listBackups(): Promise<BackupCandidate[]>;
+  /**
+   * Replace the live data file with a backup: close the database, move the
+   * current file aside (it is kept), copy the backup in, and reload.
+   */
+  restoreBackup(backupPath: string): Promise<void>;
   hideCaptureWindow(): Promise<void>;
   /** Start dragging the frameless capture window. */
   startDraggingWindow(): Promise<void>;

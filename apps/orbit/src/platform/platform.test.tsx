@@ -19,6 +19,7 @@ describe('web platform', () => {
     expect(webPlatform.name).toBe('web');
     expect(webPlatform.capabilities).toEqual({
       backgroundReminders: false,
+      nativeReminders: false,
       dataFolder: false,
       globalHotkey: false,
       tray: false,

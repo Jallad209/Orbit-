@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  AppSettingsSchema,
   AreaSchema,
   BillSchema,
   BlockSchema,
@@ -15,6 +16,7 @@ import {
   NoteSchema,
   PersonSchema,
   ProjectSchema,
+  ReminderSchema,
   RoutineInstanceSchema,
   RoutineSchema,
   RuleSchema,
@@ -28,7 +30,7 @@ import type { EntityStore, Repository, StoreName } from '../repository';
 
 export const EXPORT_FORMAT = 'orbit-export';
 /** Bump when the export envelope or any entity shape changes incompatibly. */
-export const EXPORT_SCHEMA_VERSION = 2;
+export const EXPORT_SCHEMA_VERSION = 3;
 
 /** Parents before children so a future FK-checking importer can stream in order. */
 export const STORE_ORDER: StoreName[] = [
@@ -50,6 +52,8 @@ export const STORE_ORDER: StoreName[] = [
   'rules',
   'insightStates',
   'captures',
+  'reminders',
+  'appSettings',
   'links',
 ];
 
@@ -72,6 +76,8 @@ const STORE_SCHEMAS: Record<StoreName, z.ZodTypeAny> = {
   rules: RuleSchema,
   insightStates: InsightStateSchema,
   captures: CaptureSchema,
+  reminders: ReminderSchema,
+  appSettings: AppSettingsSchema,
   links: LinkSchema,
 };
 

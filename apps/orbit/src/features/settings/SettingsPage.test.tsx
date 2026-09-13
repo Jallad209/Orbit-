@@ -10,7 +10,13 @@ import { useToastStore } from '@/components/ui/toastStore';
 const desktop: Platform = {
   ...webPlatform,
   name: 'desktop',
-  capabilities: { backgroundReminders: false, dataFolder: true, globalHotkey: true, tray: false },
+  capabilities: {
+    backgroundReminders: false,
+    nativeReminders: true,
+    dataFolder: true,
+    globalHotkey: true,
+    tray: false,
+  },
   desktop: {
     dataFileStatus: () => ({
       dir: 'D:\\Orbit',
@@ -23,6 +29,7 @@ const desktop: Platform = {
     revealDataFolder: vi.fn(async () => {}),
     pickExportFile: vi.fn(async () => null),
     listBackups: vi.fn(async () => []),
+    restoreBackup: vi.fn(async () => {}),
     hideCaptureWindow: vi.fn(async () => {}),
     startDraggingWindow: vi.fn(async () => {}),
   },
@@ -38,7 +45,9 @@ describe('SettingsPage capability messaging', () => {
 
   it('on the web says scheduled reminders are unavailable and shows the storage status', () => {
     renderWithProviders(<SettingsPage />, { platform: webPlatform, route: '/settings' });
-    expect(screen.getByTestId('reminders-note')).toHaveTextContent('not available in this version');
+    expect(screen.getByTestId('reminders-note')).toHaveTextContent(
+      'inside Orbit while this tab is open',
+    );
     expect(screen.getByTestId('hotkey-note')).toHaveTextContent('while Orbit is focused');
     expect(screen.getByTestId('web-storage')).toHaveTextContent('not guaranteed');
     expect(screen.queryByTestId('integrity')).not.toBeInTheDocument();
@@ -46,7 +55,7 @@ describe('SettingsPage capability messaging', () => {
 
   it('on desktop shows data safety status and does not promise reminders or a tray', () => {
     renderWithProviders(<SettingsPage />, { platform: desktop, route: '/settings' });
-    expect(screen.getByTestId('reminders-note')).toHaveTextContent('not available in this version');
+    expect(screen.getByTestId('reminders-note')).toHaveTextContent('while Orbit is running');
     expect(screen.getByTestId('hotkey-note')).toHaveTextContent('from any app');
     expect(screen.getByTestId('data-dir')).toHaveTextContent('D:\\Orbit');
     expect(screen.getByTestId('integrity')).toHaveTextContent('ok');

@@ -11,3 +11,5 @@ export * from './seed';
 export * from './recurrence';
 export * from './blocks';
 export * from './planner/recalculate';
+export * from './settings';
+export * from './rules';

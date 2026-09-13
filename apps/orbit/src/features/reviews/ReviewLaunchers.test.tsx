@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import { renderWithProviders } from '@/test/render';
-import { EVENING_FALLBACK_MIN, ReviewLaunchers, eveningStartMin } from './ReviewLaunchers';
+import { EVENING_FALLBACK_MIN, ReviewLaunchers } from './ReviewLaunchers';
 
-const WINDOW = { startMin: 540, endMin: 1080 }; // 09:00–18:00
+const EVENING = 1080; // 18:00
 
 describe('ReviewLaunchers', () => {
   it('offers the morning briefing while the day has no commitment', () => {
@@ -12,7 +12,7 @@ describe('ReviewLaunchers', () => {
         date="2026-09-14"
         now={new Date(2026, 8, 14, 8, 0)}
         hasCommitment={false}
-        workingWindow={WINDOW}
+        eveningStartMin={EVENING}
       />,
     );
     expect(screen.getByRole('link', { name: 'Start morning briefing' })).toHaveAttribute(
@@ -22,13 +22,13 @@ describe('ReviewLaunchers', () => {
     expect(screen.queryByRole('link', { name: 'Evening shutdown' })).not.toBeInTheDocument();
   });
 
-  it('offers the evening shutdown once the working window has ended', () => {
+  it('offers the evening shutdown once the evening hour has passed', () => {
     renderWithProviders(
       <ReviewLaunchers
         date="2026-09-15"
         now={new Date(2026, 8, 14, 18, 5)}
         hasCommitment={true}
-        workingWindow={WINDOW}
+        eveningStartMin={EVENING}
       />,
     );
     expect(screen.queryByRole('link', { name: 'Start morning briefing' })).not.toBeInTheDocument();
@@ -44,12 +44,18 @@ describe('ReviewLaunchers', () => {
         date="2026-09-14"
         now={new Date(2026, 8, 14, 12, 0)}
         hasCommitment={true}
-        workingWindow={WINDOW}
+        eveningStartMin={EVENING}
       />,
     );
     expect(container).toBeEmptyDOMElement();
-    expect(eveningStartMin(WINDOW)).toBe(1080);
-    expect(eveningStartMin(null)).toBe(EVENING_FALLBACK_MIN);
-    expect(eveningStartMin(undefined)).toBe(17 * 60);
+    expect(EVENING_FALLBACK_MIN).toBe(17 * 60);
+    renderWithProviders(
+      <ReviewLaunchers
+        date="2026-09-14"
+        now={new Date(2026, 8, 14, 17, 30)}
+        hasCommitment={true}
+      />,
+    );
+    expect(screen.getByRole('link', { name: 'Evening shutdown' })).toBeInTheDocument();
   });
 });

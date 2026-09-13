@@ -10,6 +10,7 @@ export const webPlatform: Platform = {
   name: 'web',
   capabilities: {
     backgroundReminders: false,
+    nativeReminders: false,
     dataFolder: false,
     globalHotkey: false,
     tray: false,

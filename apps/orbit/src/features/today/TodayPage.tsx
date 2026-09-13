@@ -173,7 +173,7 @@ export function TodayPage({ clock = systemClock, date: dateProp }: Props) {
                 date={date}
                 now={data.now}
                 hasCommitment={data.commitment !== null}
-                workingWindow={prefs.workingWindow}
+                eveningStartMin={prefs.eveningStartMin}
               />
               <PlanPanel
                 proposal={data.proposal}

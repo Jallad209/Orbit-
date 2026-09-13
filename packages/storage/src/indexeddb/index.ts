@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie';
 import type { z } from 'zod';
 import {
+  AppSettingsSchema,
   AreaSchema,
   BillSchema,
   BlockSchema,
@@ -15,6 +16,7 @@ import {
   NoteSchema,
   PersonSchema,
   ProjectSchema,
+  ReminderSchema,
   RoutineInstanceSchema,
   RoutineSchema,
   RuleSchema,
@@ -36,7 +38,7 @@ import type {
 } from '../repository';
 import { STORE_ENTITY } from '../repository';
 
-export const INDEXEDDB_SCHEMA_VERSION = 2;
+export const INDEXEDDB_SCHEMA_VERSION = 3;
 export const DEFAULT_DB_NAME = 'orbit';
 
 /**
@@ -46,7 +48,10 @@ export const DEFAULT_DB_NAME = 'orbit';
  * Versions are additive: each `version(n)` lists only what changed, and Dexie
  * upgrades older databases in place. Never edit a shipped version.
  */
-const STORES_V1: Record<Exclude<StoreName, 'captures'> | 'opLog', string> = {
+const STORES_V1: Record<
+  Exclude<StoreName, 'captures' | 'reminders' | 'appSettings'> | 'opLog',
+  string
+> = {
   areas: 'id',
   goals: 'id, areaId, status',
   projects: 'id, areaId, goalId, status',
@@ -73,10 +78,17 @@ const STORES_V2: Partial<Record<StoreName, string>> = {
   captures: 'id, status, type',
 };
 
+/** v3 (week 9): the reminder queue and the settings document. */
+const STORES_V3: Partial<Record<StoreName, string>> = {
+  reminders: 'id, key, status, fireAt',
+  appSettings: 'id',
+};
+
 /** Every shipped schema version, oldest first. The migration matrix replays these. */
 export const SCHEMA_VERSIONS: ReadonlyArray<{ version: number; stores: Record<string, string> }> = [
   { version: 1, stores: STORES_V1 },
   { version: 2, stores: STORES_V2 as Record<string, string> },
+  { version: 3, stores: STORES_V3 as Record<string, string> },
 ];
 
 type OpLogInsert = Omit<OpLogEntry, 'seq'>;
@@ -88,6 +100,7 @@ class OrbitDb extends Dexie {
     super(name, deps ? { indexedDB: deps.indexedDB, IDBKeyRange: deps.IDBKeyRange } : undefined);
     this.version(1).stores(STORES_V1);
     this.version(2).stores(STORES_V2);
+    this.version(3).stores(STORES_V3);
   }
 }
 
@@ -259,6 +272,8 @@ export async function createIndexedDbRepository(
     rules: new IdbStore('rules', RuleSchema, ctx),
     insightStates: new IdbStore('insightStates', InsightStateSchema, ctx),
     captures: new IdbStore('captures', CaptureSchema, ctx),
+    reminders: new IdbStore('reminders', ReminderSchema, ctx),
+    appSettings: new IdbStore('appSettings', AppSettingsSchema, ctx),
     links: new IdbLinkStore('links', LinkSchema, ctx),
     opLog: new IdbOpLog(ctx),
 

@@ -10,7 +10,7 @@ import type {
   Task,
 } from '../schema';
 import { needsActual } from './completion';
-import { suggestRollover } from './rollover';
+import { suggestRollover } from '../rules/rollover';
 import { timeByArea, type AreaMinutes } from './timeByArea';
 
 /**

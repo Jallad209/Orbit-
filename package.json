@@ -39,7 +39,9 @@
     "tauri:dev": "pnpm --filter orbit exec tauri dev",
     "bump": "tsx scripts/bump-version.ts",
     "tauri:build": "pnpm --filter orbit exec tauri build",
-    "tauri:build:bin": "pnpm --filter orbit exec tauri build --no-bundle"
+    "tauri:build:bin": "pnpm --filter orbit exec tauri build --no-bundle",
+    "changelog": "tsx scripts/changelog.ts",
+    "changelog:release": "tsx scripts/changelog.ts release"
   },
   "lint-staged": {
     "*.{ts,tsx,js}": [
@@ -70,6 +72,7 @@
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "git-cliff": "^2.13.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.5.1",
     "pngjs": "^7.0.0",

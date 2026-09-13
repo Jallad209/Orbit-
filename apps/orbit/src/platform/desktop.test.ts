@@ -167,6 +167,7 @@ describe('desktop platform', () => {
     expect(platform.name).toBe('desktop');
     expect(platform.capabilities).toEqual({
       backgroundReminders: false,
+      nativeReminders: true,
       dataFolder: true,
       globalHotkey: true,
       tray: false,

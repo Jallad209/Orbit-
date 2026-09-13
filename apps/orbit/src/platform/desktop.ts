@@ -120,6 +120,14 @@ export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Pla
       const d = await ready();
       return status ? d.invoke<BackupCandidate[]>('data_backups', { path: status.dir }) : [];
     },
+    async restoreBackup(backupPath) {
+      const d = await ready();
+      if (!status) throw new Error('The data file is not open.');
+      await d.invoke<void>('db_close');
+      await d.invoke<string>('data_quarantine', { path: status.path });
+      await d.invoke<void>('data_restore', { from: backupPath, to: status.path });
+      d.reload();
+    },
     async hideCaptureWindow() {
       const d = await ready();
       await d.invoke<void>('capture_hide');
@@ -133,7 +141,8 @@ export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Pla
   return {
     name: 'desktop',
     capabilities: {
-      backgroundReminders: false, // enabled when the reminder scheduler ships
+      backgroundReminders: false, // needs the tray (week 12) so closing the window keeps Orbit alive
+      nativeReminders: true, // scheduler.rs delivers due reminders as OS notifications
       dataFolder: true,
       globalHotkey: true,
       tray: false, // week 12

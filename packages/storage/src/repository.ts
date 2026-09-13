@@ -1,4 +1,5 @@
 import type {
+  AppSettings,
   Area,
   BaseRecord,
   Bill,
@@ -17,6 +18,7 @@ import type {
   OpLogEntry,
   Person,
   Project,
+  Reminder,
   Routine,
   RoutineInstance,
   Rule,
@@ -84,6 +86,8 @@ export interface Repository {
   readonly rules: EntityStore<Rule>;
   readonly insightStates: EntityStore<InsightState>;
   readonly captures: EntityStore<Capture>;
+  readonly reminders: EntityStore<Reminder>;
+  readonly appSettings: EntityStore<AppSettings>;
   readonly links: LinkStore;
   readonly opLog: OpLogReader;
 
@@ -119,6 +123,8 @@ export const STORE_ENTITY: Record<
   rules: 'rule',
   insightStates: 'insightState',
   captures: 'capture',
+  reminders: 'reminder',
+  appSettings: 'appSettings',
   links: 'link',
 };
 

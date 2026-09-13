@@ -12,11 +12,12 @@
  * Windows only for now: tauri-driver has no macOS backend.
  */
 import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { browser } from '@wdio/globals';
+import { SESSION_DIR_FILE } from './session';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../../..');
@@ -65,6 +66,7 @@ export const config: WebdriverIO.Config = {
 
   beforeSession: async () => {
     sessionDir = mkdtempSync(join(tmpdir(), 'orbit-desktop-e2e-'));
+    writeFileSync(SESSION_DIR_FILE, sessionDir);
     tauriDriver = spawn(tauriDriverBin, ['--native-driver', nativeDriver], {
       stdio: ['ignore', process.stdout, process.stderr],
       env: {

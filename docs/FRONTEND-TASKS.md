@@ -3,7 +3,7 @@
 **Tech Stack:** React 18 + Vite + TypeScript + Tailwind CSS + Radix UI Primitives + Framer Motion + Zustand + Vite PWA + Tauri 2 API (from week 7) + Vitest + Testing Library
 **Repository:** `C:\Orbit`
 **Packages Owned:** `apps/orbit/src`
-**Current Status:** Weeks 1-8 ✅ COMPLETE
+**Current Status:** Weeks 1-9 ✅ COMPLETE
 
 > The frontend talks only to `@orbit/core` services, the `Repository` interface, and a `Platform` interface. It never issues SQL, never imports Tauri APIs outside `src/platform/`, and never calls the network. All fonts and assets are bundled. Weeks 1–6 run in a plain browser; the desktop shell is integrated in week 7.
 
@@ -525,7 +525,7 @@ pnpm run dev
 
 ---
 
-## Week 9: Rules & Settings
+## Week 9: Rules & Settings ✅ COMPLETE
 
 **Description:** This week you will build the settings area and the four rule editors. Rules are structured forms, not sentences: time constraints, recurring scheduling, rollover policies, and reminders/follow-ups. Settings also cover working window, rest boundaries, backups, and export/import. Rule conflicts reported by the engine are shown inline. Reminder settings explain that background delivery is desktop-only.
 
@@ -553,11 +553,29 @@ pnpm run dev
 - Export button invokes the platform export with the chosen format
 - Import dry-run report renders counts before confirming
 
+**What was done:**
+
+- Forms without `react-hook-form`: every editor is a plain controlled form that builds a draft record and runs `RuleSchema.safeParse` (or `AppSettingsSchema`) on submit, mapping Zod issues to field messages with `zodErrors.fieldErrors`; `noValidate` so the shared schema, not the browser, is the one validator
+- `SettingsPage` is a sectioned page with an in-page nav: **Planning**, **Rules**, **Data** (with the capability notes), **Appearance**, **Shortcuts**
+- `PlanningSettings`: working window, rest boundaries as an editable list, gap between blocks, default estimate, and the evening hour; end before start is rejected with the first-run wording. `settingsService.loadSettings` creates the `AppSettings` document on first read — copying the working window and rest boundaries from the localStorage era once — and `saveSettings` validates, stores, and mirrors into `usePlanPrefs`, which is now an in-memory mirror (only the per-day energy still lives in localStorage). `SettingsProvider` hydrates before any route renders so the first proposal uses the user's window; `settingsFor` passes `bufferMin`; the evening launcher reads the evening hour; the first-run flow saves through the service
+- `features/rules`: `ConstraintForm` (a toggle between "no demanding work after HH:MM" and "reserve weekday / from / to / for an area or keep free / label"), `RecurringForm` (routine select, times per week), `RolloverForm` (one select per priority), `ReminderForm` (bill within N days / follow up after N days); `RuleList` with enable toggles, edit, delete, a Conflict badge (tooltip) plus the engine's message under the row; `RulesSection` hosts the list and one editor at a time; `ruleService` reads rules with `detectConflicts`
+- Data settings additions: **Export as Markdown** (the per-project and per-note files bundled into one `.md`) next to JSON; **import** with a dry run — pick a file (native dialog on desktop, file input on the web), see add / update / unchanged / remove counts, then Confirm; **backups** on desktop from `platform.desktop.listBackups()` newest first, Restore behind a confirmation that closes the database, sets the current file aside, copies the backup in, and reloads (`DesktopApi.restoreBackup`)
+- `ShortcutsReference` generated from `HotkeyRegistry.list()` (descriptions and groups were already there), grouped and rendered with `Kbd`, plus the screen-bound keys; `AppearanceSettings` with a reduce-motion preference (`data-motion="reduced"` on the root)
+- Reminders on the web: `useReminderScheduler` (mounted in `App`) reconciles the queue from the reminder rules once a minute and after every write on both runtimes, and where the shell has no native scheduler fires due reminders as persistent toasts with Dismiss. `CapabilityNotes` now says, by capability, whether reminders show in-app, as system notifications while running, or in the background
+- 19 new tests: each rule form submits the right shape and the shared schema rejects bad input (`7pm`, a reserved window ending before it starts, 9 times a week); the conflict badge appears on both rules with the engine message and clears when one is disabled; edit keeps the id; the working window end before start is rejected and a valid save lands in the document; JSON and Markdown export call `platform.exportFile` with the right name and type; the dry-run report shows counts before anything is written and the confirm imports; backups list and restore; the shortcuts reference; the settings service migration; the scheduler on web (toast once, dismiss, no duplicate on the next poll) and desktop (queue only)
+- Manual check on `pnpm dev` against last week's data (a real IndexedDB v2 → v3 upgrade): "No demanding work after 19:00" added, the working window widened to 22:00, a 6 h high-energy task left out with "only 5h free in one stretch" while the rule is on and placed 14:00–20:00 with it off; a bill captured due tomorrow with a 3-day rule raised the reminder toast at once
+
+**Files created:**
+
+- `apps/orbit/src/features/rules/{RuleForms.tsx,RuleList.tsx,RulesSection.tsx,ruleService.ts,zodErrors.ts,RulesSection.test.tsx}` ✅
+- `apps/orbit/src/features/settings/{PlanningSettings.tsx,ImportSettings.tsx,BackupList.tsx,ShortcutsReference.tsx,AppearanceSettings.tsx,SettingsProvider.tsx,settingsService.ts,SettingsSections.test.tsx}` ✅
+- `apps/orbit/src/features/reminders/{reminderService.ts,useReminderScheduler.ts,useReminderScheduler.test.tsx}` ✅
+
 **Deliverables:**
 
-- [ ] `apps/orbit/src/features/settings/*`
-- [ ] `apps/orbit/src/features/rules/*`
-- [ ] Unit tests written and passing
+- [x] `apps/orbit/src/features/settings/*`
+- [x] `apps/orbit/src/features/rules/*`
+- [x] Unit tests written and passing
 
 **Verification:**
 
@@ -754,10 +772,10 @@ pnpm run build && pnpm run preview
 | **Week 6**  | Time-Block Timeline                           | ✅ COMPLETE | 100%     |
 | **Week 7**  | Desktop Shell Integration                     | ✅ COMPLETE | 100%     |
 | **Week 8**  | Morning Briefing, Evening Shutdown & Timer    | ✅ COMPLETE | 100%     |
-| **Week 9**  | Rules & Settings                              | ⏳ PENDING  | 0%       |
+| **Week 9**  | Rules & Settings                              | ✅ COMPLETE | 100%     |
 | **Week 10** | Command Palette & Global Search               | ⏳ PENDING  | 0%       |
 | **Week 11** | Insights & Project Health Surfaces            | ⏳ PENDING  | 0%       |
 | **Week 12** | Weekly Review, People, Bills & Notes          | ⏳ PENDING  | 0%       |
 | **Week 13** | Mobile PWA Layouts, Accessibility & Polish    | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 8/13 weeks complete (62%)
+**Total Progress:** 9/13 weeks complete (69%)

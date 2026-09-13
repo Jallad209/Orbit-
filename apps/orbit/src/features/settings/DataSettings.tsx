@@ -1,6 +1,7 @@
-import { exportJson, serializeExport } from '@orbit/storage';
-import { toLocalDate } from '@orbit/core';
-import { Download, FolderOpen, HardDrive, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { exportJson, exportMarkdown, serializeExport } from '@orbit/storage';
+import { systemClock, toLocalDate } from '@orbit/core';
+import type { Clock } from '@orbit/core';
+import { Download, FileText, FolderOpen, HardDrive, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -9,12 +10,14 @@ import { Toggle } from '@/components/ui/Checkbox';
 import { toast } from '@/components/ui/toastStore';
 import { useAppStore } from '@/app/store';
 import { usePlatform, useRepository } from '@/platform';
+import { BackupList } from './BackupList';
+import { ImportSettings } from './ImportSettings';
 
 /**
  * Data section of Settings. Desktop: the data folder, integrity status, and
  * close-to-tray. Web: honest storage status. Both: export.
  */
-export function DataSettings() {
+export function DataSettings({ clock = systemClock }: { clock?: Clock } = {}) {
   const platform = usePlatform();
   const repo = useRepository();
   const storage = useAppStore((s) => s.storageStatus);
@@ -24,11 +27,20 @@ export function DataSettings() {
   const desktop = platform.desktop;
   const status = desktop?.dataFileStatus() ?? null;
 
-  const exportNow = async () => {
+  const exportNow = async (format: 'json' | 'markdown') => {
     setBusy(true);
     try {
-      const name = `orbit-export-${toLocalDate(new Date())}.json`;
-      await platform.exportFile(name, serializeExport(await exportJson(repo)));
+      const date = toLocalDate(clock.now());
+      const name = format === 'json' ? `orbit-export-${date}.json` : `orbit-export-${date}.md`;
+      if (format === 'json') {
+        await platform.exportFile(name, serializeExport(await exportJson(repo)));
+      } else {
+        await platform.exportFile(
+          name,
+          bundleMarkdown(await exportMarkdown(repo)),
+          'text/markdown',
+        );
+      }
       toast({ title: 'Export saved', description: name, variant: 'success' });
     } catch (e) {
       toast({
@@ -133,11 +145,21 @@ export function DataSettings() {
           </p>
         </div>
       )}
-      <div className="mt-4">
-        <Button size="sm" variant="gold" loading={busy} onClick={exportNow}>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button size="sm" variant="gold" loading={busy} onClick={() => exportNow('json')}>
           <Download className="size-3.5" aria-hidden="true" /> Export everything as JSON
         </Button>
+        <Button size="sm" variant="secondary" disabled={busy} onClick={() => exportNow('markdown')}>
+          <FileText className="size-3.5" aria-hidden="true" /> Export as Markdown
+        </Button>
       </div>
+      <ImportSettings />
+      <BackupList />
     </Card>
   );
+}
+
+/** One readable document out of the per-project and per-note files. */
+export function bundleMarkdown(files: ReadonlyArray<{ path: string; content: string }>): string {
+  return files.map((f) => `<!-- ${f.path} -->\n${f.content.trimEnd()}\n`).join('\n---\n\n');
 }

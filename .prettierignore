@@ -5,3 +5,4 @@ pnpm-lock.yaml
 apps/orbit/src-tauri/target
 tests/fixtures/
 packages/core/test/planner/fixtures/
+*.toml

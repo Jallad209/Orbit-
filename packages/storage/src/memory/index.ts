@@ -1,5 +1,6 @@
 import type { z } from 'zod';
 import {
+  AppSettingsSchema,
   AreaSchema,
   BillSchema,
   BlockSchema,
@@ -14,6 +15,7 @@ import {
   NoteSchema,
   PersonSchema,
   ProjectSchema,
+  ReminderSchema,
   RoutineInstanceSchema,
   RoutineSchema,
   RuleSchema,
@@ -189,6 +191,8 @@ export function createMemoryRepository(options: MemoryRepositoryOptions = {}): R
     rules: new MemoryStore('rules', RuleSchema, ctx),
     insightStates: new MemoryStore('insightStates', InsightStateSchema, ctx),
     captures: new MemoryStore('captures', CaptureSchema, ctx),
+    reminders: new MemoryStore('reminders', ReminderSchema, ctx),
+    appSettings: new MemoryStore('appSettings', AppSettingsSchema, ctx),
     links: new MemoryLinkStore('links', LinkSchema, ctx),
     opLog: new MemoryOpLog(ctx),
 
