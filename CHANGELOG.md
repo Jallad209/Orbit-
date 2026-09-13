@@ -3,7 +3,10 @@
 All notable changes to Orbit. Generated from Conventional Commits with git-cliff,
 then edited by hand before each release.
 
-## [Unreleased]
+## [0.1.0-alpha.2] — 2026-09-13
+
+Unsigned pre-release (the signed `-beta` channel opens once code-signing identity
+validation clears). Desktop installers are NSIS only on pre-release tags.
 
 ### Added
 
@@ -26,6 +29,10 @@ then edited by hand before each release.
 
 - The storage schema is now IndexedDB v3 / SQLite v2 / export v3 (reminders and the settings
   document); older files upgrade in place.
+
+### Fixed
+
+- Desktop startup and data-safety stabilisation after the first pre-release.
 
 ## [0.1.0-alpha.1] — 2026-09-13
 
