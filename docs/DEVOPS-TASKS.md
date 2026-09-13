@@ -3,7 +3,7 @@
 **Tech Stack:** pnpm + GitHub Actions + Vitest + Playwright + Vite PWA + Lighthouse + Rust toolchain & Tauri CLI (from week 7) + tauri-driver/WebdriverIO + NSIS/MSI + Tauri Updater (manual check)
 **Repository:** `C:\Orbit`
 **Owned:** `.github/`, `scripts/`, `apps/orbit/src-tauri/tauri.conf.json` (build/security sections, from week 7), release process
-**Current Status:** Weeks 1-4 ✅ COMPLETE (branch protection pending: needs `gh auth login` or the GitHub UI)
+**Current Status:** Weeks 1-5 ✅ COMPLETE (branch protection pending: needs `gh auth login` or the GitHub UI)
 
 > There are no servers to run. DevOps for Orbit means: reproducible builds, CI that guards the engine, a static PWA build, data-safety verification, signed desktop installers, and a release process. Weeks 1–6 need no Rust. Nothing here may introduce a network dependency into the app itself.
 
@@ -220,7 +220,7 @@ pnpm run e2e
 
 ---
 
-## Week 5: Data Safety Verification (Web)
+## Week 5: Data Safety Verification (Web) ✅ COMPLETE
 
 **Description:** This week you will verify, in CI, that user data cannot be silently lost in the browser runtime. You will build export/import round-trip checks over large seeded datasets, Dexie schema migration tests from fixture snapshots, and a persistence check that a reload keeps every record. The SQLite side of this suite is added in week 8.
 
@@ -239,11 +239,27 @@ pnpm run e2e
 4. **Quota E2E** — Simulate denied persistence; assert banner and export prompt
 5. **Fixture Generation Script** — `scripts/make-fixture.ts` (part of release checklist)
 
+**What was done:**
+
+- `packages/storage/test/data-safety/roundtrip.test.ts`: seed → export → import into a fresh repository (replace) → export; the two exports are byte-identical, the report shows only creates, and soft-deleted rows survive; `ROUNDTRIP_SIZE` sets the task count (5,000 locally, 50,000 in CI); the IndexedDB variant runs a tenth of that through fake-indexeddb
+- `migrations.test.ts`: for every `tests/fixtures/idb/v*.json` a Dexie database is built at exactly that version from `SCHEMA_VERSIONS`, filled, then opened with today's adapter; row counts per store must match, stores added later must be writable, and `indexedDbVersion()` must report the current version; every `tests/fixtures/export/v*.json` must import cleanly
+- `scripts/make-fixture.ts` (`pnpm run make:fixture`, via tsx) writes the current-version fixtures from the seeded world; v1 fixtures were derived once and are never regenerated
+- `data-safety.yml`: on every PR, nightly at 04:00 UTC, and on demand — job 1 runs the 50k round trip, the migration matrix, and fails if `make:fixture` would change a committed fixture; job 2 runs `data-safety.spec.ts` in Chromium
+- `tests/e2e/playwright/data-safety.spec.ts`: five areas and four captures survive a reload and a second tab; with `navigator.storage.persist()` stubbed to refuse, the banner appears and "Export now" downloads a valid `orbit-export-YYYY-MM-DD.json` containing the data
+- Root scripts `test:roundtrip`, `test:migrations`, `make:fixture`, `bench:planner`; `@types/node` added for core/storage tests; `tests/fixtures` excluded from Prettier
+
+**Files created:**
+
+- `.github/workflows/data-safety.yml` ✅
+- `scripts/make-fixture.ts` ✅
+- `tests/fixtures/export/{v1,v2}.json`, `tests/fixtures/idb/{v1,v2}.json` ✅
+- `packages/storage/test/data-safety/{roundtrip,migrations}.test.ts`, `tests/e2e/playwright/data-safety.spec.ts` ✅
+
 **Deliverables:**
 
-- [ ] `.github/workflows/data-safety.yml`
-- [ ] `scripts/make-fixture.ts`
-- [ ] `tests/fixtures/export/v*.json`
+- [x] `.github/workflows/data-safety.yml`
+- [x] `scripts/make-fixture.ts`
+- [x] `tests/fixtures/export/v*.json`
 
 **Verification:**
 
@@ -541,7 +557,7 @@ git tag v1.0.0 && git push --tags
 | **Week 2**  | Continuous Integration                            | ✅ COMPLETE | 90%      |
 | **Week 3**  | PWA Build & Static Preview                        | ✅ COMPLETE | 100%     |
 | **Week 4**  | Test Infrastructure & Browser End-to-End          | ✅ COMPLETE | 100%     |
-| **Week 5**  | Data Safety Verification (Web)                    | ⏳ PENDING  | 0%       |
+| **Week 5**  | Data Safety Verification (Web)                    | ✅ COMPLETE | 100%     |
 | **Week 6**  | Performance Benchmarks                            | ⏳ PENDING  | 0%       |
 | **Week 7**  | Rust Toolchain, Tauri Build Pipeline & Installers | ⏳ PENDING  | 0%       |
 | **Week 8**  | Desktop E2E & SQLite Data Safety                  | ⏳ PENDING  | 0%       |
@@ -551,4 +567,4 @@ git tag v1.0.0 && git push --tags
 | **Week 12** | Optional Updater (Manual Check)                   | ⏳ PENDING  | 0%       |
 | **Week 13** | Security Review & 1.0 Release                     | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 4/13 weeks complete (31%)
+**Total Progress:** 5/13 weeks complete (38%)

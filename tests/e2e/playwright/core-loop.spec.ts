@@ -97,6 +97,52 @@ test('project page: milestones drive progress and the next action clears the fla
   await expect(page.getByText('Next', { exact: true })).toBeVisible();
 });
 
-test.fixme('plans the day, accepts, drags a block, locks it, and runs the evening review', async () => {
-  // Weeks 5–8.
+test('proposes a plan with reasons, accepts it, and keeps the commitment after a reload', async ({
+  page,
+}) => {
+  await createArea(page, 'Study');
+  await page.goto('/projects');
+  await page.getByRole('textbox', { name: 'Project title' }).fill('Thesis');
+  await page.getByRole('button', { name: 'Add project' }).click();
+  await page.getByRole('link', { name: /Thesis/ }).click();
+  const task = page.getByRole('textbox', { name: 'Task title' });
+  for (const title of ['Write intro', 'Literature review', 'Email the supervisor']) {
+    await task.fill(title);
+    await task.press('Enter');
+    await expect(
+      page
+        .getByRole('listbox', { name: 'Project tasks' })
+        .getByRole('option', { name: new RegExp(title) }),
+    ).toBeVisible();
+  }
+
+  await page.goto('/today');
+  const plan = page.getByRole('list', { name: 'Proposed plan' });
+  await expect(plan.getByRole('listitem')).toHaveCount(3);
+  await expect(page.getByTestId('focus').getByRole('heading', { level: 2 })).toHaveText(
+    'Write intro',
+  );
+
+  await page.getByRole('button', { name: 'Why Write intro' }).click();
+  const why = page.getByTestId('why-popover');
+  await expect(why).toContainText('Next action for “Thesis”');
+  await page.keyboard.press('Escape');
+
+  await page.getByRole('button', { name: 'Remove Email the supervisor' }).click();
+  await expect(plan.getByRole('listitem')).toHaveCount(2);
+  await expect(page.getByRole('list', { name: 'Left out' })).toContainText('Email the supervisor');
+
+  await page.getByRole('button', { name: 'Accept' }).click();
+  const panel = page.getByTestId('plan-panel');
+  await expect(panel).toHaveAttribute('data-mode', 'committed');
+  await expect(
+    panel.getByRole('list', { name: 'Committed plan' }).getByRole('listitem'),
+  ).toHaveCount(2);
+
+  await page.reload();
+  await expect(page.getByTestId('plan-panel')).toHaveAttribute('data-mode', 'committed');
+});
+
+test.fixme('drags a block, locks it, and runs the evening review', async () => {
+  // Weeks 6–8.
 });

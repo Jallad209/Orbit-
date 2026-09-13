@@ -27,7 +27,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.test.{ts,tsx}', '**/test/**/*.{ts,tsx}'],
+    files: ['**/*.test.{ts,tsx}', '**/test/**/*.{ts,tsx}', '**/bench/**/*.ts', 'tests/**/*.ts'],
     rules: { 'no-console': 'off' },
   },
   {

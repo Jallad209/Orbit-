@@ -3,7 +3,7 @@
 **Tech Stack:** TypeScript (strict) + Zod + Vitest + Dexie (IndexedDB) + SQLite (Tauri SQL plugin, from week 7) + MiniSearch / FTS5 + Tauri 2 Rust commands (from week 7)
 **Repository:** `C:\Orbit`
 **Packages Owned:** `packages/core`, `packages/storage`, `apps/orbit/src-tauri` (from week 7)
-**Current Status:** Weeks 1-4 ✅ COMPLETE
+**Current Status:** Weeks 1-5 ✅ COMPLETE
 
 > In Orbit there is no server. "Backend" means the pure domain engine (`packages/core`), the storage layer (`packages/storage`), and, from week 7, the Rust shell commands. Weeks 1–6 run entirely in the browser against IndexedDB. Everything here must run with the network cable unplugged.
 
@@ -271,7 +271,7 @@ pnpm run test --filter @orbit/core -- services
 
 ---
 
-## Week 5: Planning Engine v1
+## Week 5: Planning Engine v1 ✅ COMPLETE
 
 **Description:** This week you will build the heart of Orbit: `planDay`. It is a pure function from a state snapshot, a date, and settings to a proposal containing time blocks, a proposed commitment, an explanation per task, and an explicit "left out" list with reasons. Constraints are applied first, then a transparent score, then greedy fill. Acceptance turns the proposal into a `DayCommitment`.
 
@@ -301,11 +301,29 @@ pnpm run test --filter @orbit/core -- services
 - Low-energy day excludes high-energy tasks with reason `energy`
 - Same snapshot planned twice yields identical output
 
+**What was done:**
+
+- `planDay(snapshot, date, settings, clock)` in `packages/core/src/planner`: pure, deterministic (every sort has a total order), returns blocks, a commitment, an explanation per placed item, a left-out list with reasons, capacity, and stats
+- `capacity.ts`: working window minus rest boundaries, events (instants clipped to the local day), fixed blocks (locked or manual), the past when planning today (rounded up to the grid), and constraint rules: `reserve` (area-only or blocked off) and `noHighEnergyAfter` mark free intervals rather than removing them
+- `candidates.ts`: open tasks in active projects plus today's planned routine instances; constraints first: `user` (removed on the screen), `scheduled` (already fixed today), `blocked` (names the tasks it waits on), `energy` (two steps above the day's energy); effective due date falls back to the project deadline; readiness uses one shared map (the per-task `blockers()` call was O(n²) and cost 370 ms at 2k tasks)
+- `score.ts`: `pressure × importance × priority × staleness × energyFit × overdueBoost × nextAction`, every factor kept on the result; pressure 3 at due/overdue decaying to 1, overdue boost up to +70 %, goal importance 0.8–1.6, priority 1.3/1/0.8, staleness up to +50 % after 30 untouched days, energy fit 1/0.9/0.8/0.6, next action ×1.25; routines get a flat 2.5 base
+- `fill.ts`: greedy earliest-fit by score with a buffer after each block; routines prefer their window, tasks with a due time prefer intervals that end before it; tasks longer than the split threshold may split into two parts of at least 30 min; `capacity` reasons say how much was free ("Needs 1h, only 20m free in one stretch"); `lowScore` when below `minScore`
+- `explain.ts`: plain-language reasons in the order a person would give them ("Due 4 days ago", "Goal “Graduate” is importance 5/5", "Next action for “Thesis”", "Untouched for 8 days", "Matches a medium-energy day")
+- `accept.ts`: `materializePlan(proposal, clock, existing)` turns a proposal into a `DayCommitment` and planner `Block`s, reusing the day's commitment id so accepting twice updates
+- `seed.ts`: deterministic world generator (`seedWorld({ seed, sizes })`, PRNG-drawn UUID-shaped ids) shared by the benchmark, the round-trip job, and the fixture script
+- 16 planner tests including the six required, a golden proposal for a fixture world, and `bench/planner.bench.ts`: 2.6 ms mean for 2,050 open tasks against the 50 ms budget
+
+**Files created:**
+
+- `packages/core/src/planner/{types,capacity,candidates,score,fill,explain,accept,index}.ts`, `packages/core/src/seed.ts` ✅
+- `packages/core/test/planner/planner.test.ts`, `packages/core/test/planner/fixtures/{world,world.expected}.json` ✅
+- `packages/core/bench/planner.bench.ts` (`pnpm run bench:planner`) ✅
+
 **Deliverables:**
 
-- [ ] `packages/core/src/planner/{capacity,candidates,score,fill,explain,index}.ts`
-- [ ] Fixture snapshots in `packages/core/test/planner/fixtures/`
-- [ ] Unit tests written and passing
+- [x] `packages/core/src/planner/{capacity,candidates,score,fill,explain,index}.ts`
+- [x] Fixture snapshots in `packages/core/test/planner/fixtures/`
+- [x] Unit tests written and passing
 
 **Verification:**
 
@@ -669,7 +687,7 @@ pnpm run test
 | **Week 2**  | IndexedDB Adapter, Op Log, Persistence & Export/Import | ✅ COMPLETE | 100%     |
 | **Week 3**  | Capture Parser & Classifier                            | ✅ COMPLETE | 100%     |
 | **Week 4**  | Structure Services — Hierarchy, Links & Project Health | ✅ COMPLETE | 100%     |
-| **Week 5**  | Planning Engine v1                                     | ⏳ PENDING  | 0%       |
+| **Week 5**  | Planning Engine v1                                     | ✅ COMPLETE | 100%     |
 | **Week 6**  | Recurrence, Blocks & Recalculation                     | ⏳ PENDING  | 0%       |
 | **Week 7**  | Desktop Shell — Tauri, SQLite Adapter & Data File      | ⏳ PENDING  | 0%       |
 | **Week 8**  | Actuals, Sessions & Review Data Services               | ⏳ PENDING  | 0%       |
@@ -679,4 +697,4 @@ pnpm run test
 | **Week 12** | Weekly Review, People, Bills & Tray                    | ⏳ PENDING  | 0%       |
 | **Week 13** | Hardening, Performance & Data Safety                   | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 4/13 weeks complete (31%)
+**Total Progress:** 5/13 weeks complete (38%)

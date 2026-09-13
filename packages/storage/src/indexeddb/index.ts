@@ -73,6 +73,12 @@ const STORES_V2: Partial<Record<StoreName, string>> = {
   captures: 'id, status, type',
 };
 
+/** Every shipped schema version, oldest first. The migration matrix replays these. */
+export const SCHEMA_VERSIONS: ReadonlyArray<{ version: number; stores: Record<string, string> }> = [
+  { version: 1, stores: STORES_V1 },
+  { version: 2, stores: STORES_V2 as Record<string, string> },
+];
+
 type OpLogInsert = Omit<OpLogEntry, 'seq'>;
 
 class OrbitDb extends Dexie {
@@ -266,6 +272,21 @@ export async function createIndexedDbRepository(
   };
 
   return repo;
+}
+
+/** The schema version a stored database is at, without declaring any schema. */
+export async function indexedDbVersion(
+  name = DEFAULT_DB_NAME,
+  deps?: { indexedDB: IDBFactory; IDBKeyRange: typeof IDBKeyRange },
+): Promise<number> {
+  const db = new Dexie(
+    name,
+    deps ? { indexedDB: deps.indexedDB, IDBKeyRange: deps.IDBKeyRange } : undefined,
+  );
+  await db.open();
+  const version = db.verno;
+  db.close();
+  return version;
 }
 
 /** Permanently delete a database. Used by tests and by "reset all data". */

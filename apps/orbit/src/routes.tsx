@@ -7,6 +7,7 @@ import { AreasPage } from '@/features/structure/AreasPage';
 import { GoalPage, GoalsPage } from '@/features/structure/GoalsPage';
 import { ProjectsPage } from '@/features/structure/ProjectsPage';
 import { ProjectPage } from '@/features/structure/ProjectPage';
+import { TodayPage } from '@/features/today/TodayPage';
 
 const ComponentsGallery = import.meta.env.DEV
   ? lazy(() =>
@@ -23,15 +24,7 @@ export function AppRoutes() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route index element={<Navigate to="/today" replace />} />
-        <Route
-          path="/today"
-          element={
-            <Placeholder
-              title="Today"
-              description="What matters, what is next, what is at risk. Arrives in week 5."
-            />
-          }
-        />
+        <Route path="/today" element={<TodayPage />} />
         <Route path="/inbox" element={<InboxPage />} />
         <Route
           path="/timeline"

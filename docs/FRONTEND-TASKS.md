@@ -3,7 +3,7 @@
 **Tech Stack:** React 18 + Vite + TypeScript + Tailwind CSS + Radix UI Primitives + Framer Motion + Zustand + Vite PWA + Tauri 2 API (from week 7) + Vitest + Testing Library
 **Repository:** `C:\Orbit`
 **Packages Owned:** `apps/orbit/src`
-**Current Status:** Weeks 1-4 ✅ COMPLETE
+**Current Status:** Weeks 1-5 ✅ COMPLETE
 
 > The frontend talks only to `@orbit/core` services, the `Repository` interface, and a `Platform` interface. It never issues SQL, never imports Tauri APIs outside `src/platform/`, and never calls the network. All fonts and assets are bundled. Weeks 1–6 run in a plain browser; the desktop shell is integrated in week 7.
 
@@ -283,7 +283,7 @@ pnpm run dev
 
 ---
 
-## Week 5: Today Screen & Plan Proposal
+## Week 5: Today Screen & Plan Proposal ✅ COMPLETE
 
 **Description:** This week you will build the primary experience. The Today screen answers what matters, what to do next, what is at risk, where time is going, and what is neglected. It shows the main focus, the plan proposal with a "why" for each item and a "left out" list, at-risk items, a compact timeline, active projects, upcoming commitments, and the insights strip. The user accepts, regenerates, or edits the proposal.
 
@@ -311,10 +311,27 @@ pnpm run dev
 - Accept calls `acceptPlan` and switches panel to committed state
 - Regenerate highlights added/removed items
 
+**What was done:**
+
+- `todayService.ts`: `loadToday` reads every store once, runs `planDay`, and derives the committed timeline, at-risk items (overdue, due within 3 days without a block, projects within 7 days of deadline), time by area for the last 7 days, upcoming commitments, active projects with health, and a three-signal insight stub (neglected goals, stale projects, blocked projects, overdue tasks) with evidence lines; `acceptPlan` replaces the day's unlocked planner blocks and writes the commitment in one transaction; `unplanDay`, `startSession`, `stopSession`; `defaultPlanDate` plans tomorrow once the working window is over
+- `planSettings.ts`: working window, rest boundaries, and energy per date in a persisted zustand store (Settings edits it in week 9)
+- `TodayPage`: Today / Tomorrow switch, Low / Medium / High energy radio, focus header, insights strip, three columns above 900 px (plan, compact timeline, signals) and one column below with the timeline behind a disclosure
+- `FocusHeader`: the next block ahead of now (or the first proposed), project link, Start / Stop (creates and closes a session) and Done (completes the task)
+- `PlanPanel`: proposed rows with time, duration, "why" popover, remove; left-out list with reason chips and "Add back" for user removals; Accept and Regenerate; committed state lists the stored blocks with Re-plan; regenerate diff highlights new rows and names what was dropped
+- `WhyPopover`: reasons as bullets, non-neutral score factors, the total, and where it was placed
+- `CompactTimeline`: every block in time order with a now marker, past blocks dimmed, locked marker
+- Storage banner gained "Export now" (JSON export through the platform) so a browser that refuses persistence still has a one-click backup
+- 7 tests: next action rendered, why popover components, remove → `user` and add back, accept writes commitment + blocks and switches to committed (re-plan and accept again updates the same commitment), regenerate highlights added and dropped, energy switch leaves high-energy work out, at-risk and insight evidence
+
+**Files created:**
+
+- `apps/orbit/src/features/today/{todayService.ts,planSettings.ts,TodayPage.tsx,FocusHeader.tsx,PlanPanel.tsx,WhyPopover.tsx,CompactTimeline.tsx,SidePanels.tsx}` ✅
+- `apps/orbit/src/features/today/TodayPage.test.tsx` ✅
+
 **Deliverables:**
 
-- [ ] `apps/orbit/src/features/today/*`
-- [ ] Unit tests written and passing
+- [x] `apps/orbit/src/features/today/*`
+- [x] Unit tests written and passing
 
 **Verification:**
 
@@ -678,7 +695,7 @@ pnpm run build && pnpm run preview
 | **Week 2**  | Base Component Library & PWA Shell            | ✅ COMPLETE | 100%     |
 | **Week 3**  | Universal Inbox                               | ✅ COMPLETE | 100%     |
 | **Week 4**  | Areas, Goals, Projects & Tasks                | ✅ COMPLETE | 100%     |
-| **Week 5**  | Today Screen & Plan Proposal                  | ⏳ PENDING  | 0%       |
+| **Week 5**  | Today Screen & Plan Proposal                  | ✅ COMPLETE | 100%     |
 | **Week 6**  | Time-Block Timeline                           | ⏳ PENDING  | 0%       |
 | **Week 7**  | Desktop Shell Integration                     | ⏳ PENDING  | 0%       |
 | **Week 8**  | Morning Briefing, Evening Shutdown & Timer    | ⏳ PENDING  | 0%       |
@@ -688,4 +705,4 @@ pnpm run build && pnpm run preview
 | **Week 12** | Weekly Review, People, Bills & Notes          | ⏳ PENDING  | 0%       |
 | **Week 13** | Mobile PWA Layouts, Accessibility & Polish    | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 4/13 weeks complete (31%)
+**Total Progress:** 5/13 weeks complete (38%)

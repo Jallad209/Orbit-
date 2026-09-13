@@ -1,8 +1,11 @@
-import { HardDrive, X } from 'lucide-react';
-import { useEffect } from 'react';
+import { exportJson, serializeExport } from '@orbit/storage';
+import { toLocalDate } from '@orbit/core';
+import { Download, HardDrive, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useAppStore } from '@/app/store';
-import { usePlatform } from '@/platform';
+import { usePlatform, useRepository } from '@/platform';
 import { Button } from '@/components/ui/Button';
+import { toast } from '@/components/ui/toastStore';
 
 function formatBytes(n: number | null): string | null {
   if (n === null) return null;
@@ -17,6 +20,8 @@ function formatBytes(n: number | null): string | null {
  */
 export function StorageBanner() {
   const platform = usePlatform();
+  const repo = useRepository();
+  const [exporting, setExporting] = useState(false);
   const status = useAppStore((s) => s.storageStatus);
   const dismissed = useAppStore((s) => s.storageBannerDismissed);
   const setStatus = useAppStore((s) => s.setStorageStatus);
@@ -37,6 +42,24 @@ export function StorageBanner() {
 
   const usage = formatBytes(status.usageBytes);
 
+  const exportNow = async () => {
+    setExporting(true);
+    try {
+      const envelope = await exportJson(repo);
+      const name = `orbit-export-${toLocalDate(new Date())}.json`;
+      await platform.exportFile(name, serializeExport(envelope));
+      toast({ title: 'Export saved', description: name });
+    } catch (e) {
+      toast({
+        title: 'Export failed',
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'danger',
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div
       role="status"
@@ -51,6 +74,10 @@ export function StorageBanner() {
         It may clear it under storage pressure. Install Orbit or export regularly.
         {usage ? <span className="ml-1 text-gold-ink/70">Using {usage}.</span> : null}
       </p>
+      <Button size="sm" variant="gold" loading={exporting} onClick={exportNow}>
+        <Download className="size-3.5" aria-hidden="true" />
+        Export now
+      </Button>
       <Button size="icon-sm" variant="ghost" aria-label="Dismiss" onClick={dismiss}>
         <X className="size-4" aria-hidden="true" />
       </Button>
