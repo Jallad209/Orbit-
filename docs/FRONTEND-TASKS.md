@@ -3,7 +3,7 @@
 **Tech Stack:** React 18 + Vite + TypeScript + Tailwind CSS + Radix UI Primitives + Framer Motion + Zustand + Vite PWA + Tauri 2 API (from week 7) + Vitest + Testing Library
 **Repository:** `C:\Orbit`
 **Packages Owned:** `apps/orbit/src`
-**Current Status:** Weeks 1-5 ✅ COMPLETE
+**Current Status:** Weeks 1-6 ✅ COMPLETE
 
 > The frontend talks only to `@orbit/core` services, the `Repository` interface, and a `Platform` interface. It never issues SQL, never imports Tauri APIs outside `src/platform/`, and never calls the network. All fonts and assets are bundled. Weeks 1–6 run in a plain browser; the desktop shell is integrated in week 7.
 
@@ -342,7 +342,7 @@ pnpm run dev
 
 ---
 
-## Week 6: Time-Block Timeline
+## Week 6: Time-Block Timeline ✅ COMPLETE
 
 **Description:** This week you will build the full timeline. Events and suggested blocks appear on one day timeline. Users drag tasks from a side list into free time, resize blocks, move them, and lock important ones. Any change triggers recalculation of the rest of the day without moving locked blocks. Everything is reachable from the keyboard: arrows nudge by 15 minutes, `l` locks, `Delete` removes. Under 900px the timeline renders as a list so the PWA works on a phone.
 
@@ -371,10 +371,26 @@ pnpm run dev
 - Recalculation never changes locked or past blocks (assert via mocked engine result)
 - List variant renders under the breakpoint
 
+**What was done:**
+
+- `timelineService.ts`: `loadDay` (materializes routine instances and recurring-rule instances for the rolling window on the way in), `moveBlockTo` / `resizeBlockTo` / `dropTask` / `removeBlock` each validate through the core block operations, store the change, then `recalculate` the rest of the day in one transaction and return a summary; `toggleLock`; `firstFreeSlot` for keyboard-only scheduling
+- `TimelineCanvas`: one pixel per minute, hour gutter, working-window shading, events, blocks, a live now line, opens scrolled to now; the canvas is the `@dnd-kit` drop target and the drop minute comes from the dragged element's translated top
+- `TimelineBlock`: task / routine variants, locked and past states, duration label, draggable unless locked or past, bottom-edge pointer resize with live preview, snapped on release
+- `UnscheduledPanel`: open tasks without a block today, draggable by their grip, or "Schedule" into the first free slot after now
+- Keyboard on the selected block: ↑ / ↓ move 15 min, Shift+↑ / ↓ resize the end, `l` locks and unlocks, Delete removes, Esc deselects; every rejected change shows a toast with the engine's reason; every accepted change shows "Day re-planned: 2 moved, 1 kept"; moved blocks animate through a CSS transition on top and height
+- `DayNav`: previous / next / today and a Monday-first week strip; `TimelineList` renders under 900 px (`useMediaQuery`) with the same actions as buttons (Earlier, Later, Lock, Remove)
+- 8 tests: drop creates a manual block at the snapped time, Schedule uses the first free slot after now, arrows move 15 min and Shift resizes, resize below 15 min is refused with a reason, a locked block ignores moves and `l` unlocks it, a move onto a locked block is rejected and recalculation leaves past and locked blocks untouched, Delete removes, list variant under the breakpoint
+- `@dnd-kit/core` added; the bundle baseline was re-based (264.6 KB gzip) after the +19.8 % growth it caused
+
+**Files created:**
+
+- `apps/orbit/src/features/timeline/{timelineService.ts,layout.ts,TimelinePage.tsx,TimelineCanvas.tsx,TimelineBlock.tsx,UnscheduledPanel.tsx,TimelineList.tsx,DayNav.tsx}`, `apps/orbit/src/lib/useMediaQuery.ts` ✅
+- `apps/orbit/src/features/timeline/TimelinePage.test.tsx` ✅
+
 **Deliverables:**
 
-- [ ] `apps/orbit/src/features/timeline/*`
-- [ ] Unit tests written and passing
+- [x] `apps/orbit/src/features/timeline/*`
+- [x] Unit tests written and passing
 
 **Verification:**
 
@@ -696,7 +712,7 @@ pnpm run build && pnpm run preview
 | **Week 3**  | Universal Inbox                               | ✅ COMPLETE | 100%     |
 | **Week 4**  | Areas, Goals, Projects & Tasks                | ✅ COMPLETE | 100%     |
 | **Week 5**  | Today Screen & Plan Proposal                  | ✅ COMPLETE | 100%     |
-| **Week 6**  | Time-Block Timeline                           | ⏳ PENDING  | 0%       |
+| **Week 6**  | Time-Block Timeline                           | ✅ COMPLETE | 100%     |
 | **Week 7**  | Desktop Shell Integration                     | ⏳ PENDING  | 0%       |
 | **Week 8**  | Morning Briefing, Evening Shutdown & Timer    | ⏳ PENDING  | 0%       |
 | **Week 9**  | Rules & Settings                              | ⏳ PENDING  | 0%       |
@@ -705,4 +721,4 @@ pnpm run build && pnpm run preview
 | **Week 12** | Weekly Review, People, Bills & Notes          | ⏳ PENDING  | 0%       |
 | **Week 13** | Mobile PWA Layouts, Accessibility & Polish    | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 5/13 weeks complete (38%)
+**Total Progress:** 6/13 weeks complete (46%)

@@ -1,0 +1,72 @@
+import { appendFileSync } from 'node:fs';
+import { expect, test } from '@playwright/test';
+import { seedCount, seedWorld } from '@orbit/core';
+
+/**
+ * Startup benchmark (DEVOPS-TASKS week 6): cold start to an interactive
+ * Today screen with a seeded IndexedDB. The seed goes straight into the
+ * database the app created, through the raw IndexedDB API, so no app code
+ * exists only for tests.
+ */
+const BUDGET_MS = process.env.CI ? 3000 : 1500; // shared CI runners are slower
+const SIZES = { tasks: 5000, notes: 1000, days: 90, projects: 120, goals: 25, people: 20 };
+
+test('cold start to interactive stays inside the budget with 5k tasks', async ({ page }) => {
+  test.setTimeout(120_000);
+  const world = seedWorld({ seed: 5, sizes: SIZES });
+  const stores = Object.fromEntries(Object.entries(world).map(([k, rows]) => [k, rows]));
+
+  // First visit creates the database at the current schema version.
+  await page.goto('/areas');
+  await expect(page.getByRole('heading', { level: 1, name: 'Areas' })).toBeVisible();
+
+  const inserted = await page.evaluate(async (data: Record<string, unknown[]>) => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const req = indexedDB.open('orbit');
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    const names = Object.keys(data).filter((n) => db.objectStoreNames.contains(n));
+    let n = 0;
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(names, 'readwrite');
+      for (const name of names) {
+        const store = tx.objectStore(name);
+        for (const row of data[name]!) {
+          store.put(row);
+          n++;
+        }
+      }
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+    return n;
+  }, stores);
+  expect(inserted).toBe(seedCount(world));
+
+  // Cold start: a fresh navigation, measured from navigation start.
+  await page.goto('/today');
+  await expect(page.getByTestId('focus')).toBeVisible();
+  await expect(page.getByTestId('plan-panel')).toBeVisible();
+  const ms = await page.evaluate(() => performance.now());
+  const rows = await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve) => {
+      const req = indexedDB.open('orbit');
+      req.onsuccess = () => resolve(req.result);
+    });
+    const count = await new Promise<number>((resolve) => {
+      const req = db.transaction('tasks').objectStore('tasks').count();
+      req.onsuccess = () => resolve(req.result);
+    });
+    db.close();
+    return count;
+  });
+  expect(rows).toBe(SIZES.tasks);
+
+  const line = `Cold start to interactive with ${inserted} records: ${Math.round(ms)} ms (budget ${BUDGET_MS} ms)`;
+  console.log(line);
+  if (process.env.GITHUB_STEP_SUMMARY)
+    appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Startup\n\n${line}\n`);
+  expect(ms).toBeLessThan(BUDGET_MS);
+});

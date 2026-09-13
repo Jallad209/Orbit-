@@ -1,0 +1,83 @@
+name: Benchmarks
+
+# Performance is a guarded number. Engine benchmarks compare with the committed
+# baseline and fail on a >25 % regression or a blown budget; the startup
+# benchmark measures cold start to interactive in Chromium with a seeded
+# IndexedDB. Run "update baseline" to get a results.json artifact to commit
+# as bench/baseline.json when the runner hardware changes.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      tolerance:
+        description: 'Allowed regression in percent'
+        default: '25'
+
+concurrency:
+  group: bench-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  engine:
+    name: Engine benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Run benchmarks
+        run: pnpm run bench -- --tolerance ${{ github.event.inputs.tolerance || '25' }}
+
+      - name: Upload results (commit as bench/baseline.json to rebase)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-results
+          path: bench/results.json
+          retention-days: 30
+
+  startup:
+    name: Cold start with seeded data
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build
+        run: pnpm --filter orbit run build
+
+      - name: Measure startup
+        run: pnpm exec playwright test tests/e2e/playwright/startup.spec.ts
+        env:
+          CI: true
+
+      - name: Upload traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: startup-playwright
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

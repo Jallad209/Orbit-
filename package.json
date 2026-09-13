@@ -28,7 +28,10 @@
     "bench:planner": "pnpm --filter @orbit/core exec vitest bench --run",
     "test:roundtrip": "vitest run --project storage roundtrip",
     "test:migrations": "vitest run --project storage migrations",
-    "make:fixture": "tsx scripts/make-fixture.ts"
+    "make:fixture": "tsx scripts/make-fixture.ts",
+    "seed": "tsx scripts/seed.ts",
+    "bench": "tsx scripts/bench.ts",
+    "e2e:startup": "playwright test tests/e2e/playwright/startup.spec.ts"
   },
   "lint-staged": {
     "*.{ts,tsx,js}": [
@@ -55,6 +58,7 @@
     "lint-staged": "^17.5.1",
     "pngjs": "^7.0.0",
     "prettier": "^3.9.6",
+    "tinybench": "^6",
     "tsx": "^4.23.13",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.70.0",

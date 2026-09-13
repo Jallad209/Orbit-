@@ -41,6 +41,7 @@ export function selectCandidates(
     snapshot.tasks.filter((t) => t.deletedAt === null).map((t) => [t.id, t]),
   );
   const excluded = new Set(settings.excludeTaskIds);
+  const only = settings.candidateIds ? new Set(settings.candidateIds) : null;
 
   const lastSession = new Map<Id, string>();
   for (const s of snapshot.sessions ?? []) {
@@ -54,6 +55,7 @@ export function selectCandidates(
     if (t.deletedAt !== null || t.status !== 'open') continue;
     const project = t.projectId ? projects.get(t.projectId) : undefined;
     if (t.projectId && (!project || project.status !== 'active')) continue;
+    if (only && !only.has(t.id)) continue;
 
     if (excluded.has(t.id)) {
       leftOut.push(left('task', t, 'user', 'Removed from today by you'));
@@ -122,6 +124,7 @@ export function selectCandidates(
     if (inst.deletedAt !== null || inst.date !== date || inst.status !== 'planned') continue;
     const routine = routines.get(inst.routineId);
     if (!routine) continue;
+    if (only && !only.has(inst.id)) continue;
     if (fixed.has(inst.id)) {
       leftOut.push({
         kind: 'routine',

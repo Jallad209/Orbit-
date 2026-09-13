@@ -3,7 +3,7 @@
 **Tech Stack:** TypeScript (strict) + Zod + Vitest + Dexie (IndexedDB) + SQLite (Tauri SQL plugin, from week 7) + MiniSearch / FTS5 + Tauri 2 Rust commands (from week 7)
 **Repository:** `C:\Orbit`
 **Packages Owned:** `packages/core`, `packages/storage`, `apps/orbit/src-tauri` (from week 7)
-**Current Status:** Weeks 1-5 ✅ COMPLETE
+**Current Status:** Weeks 1-6 ✅ COMPLETE
 
 > In Orbit there is no server. "Backend" means the pure domain engine (`packages/core`), the storage layer (`packages/storage`), and, from week 7, the Rust shell commands. Weeks 1–6 run entirely in the browser against IndexedDB. Everything here must run with the network cable unplugged.
 
@@ -334,7 +334,7 @@ pnpm run bench:planner   # < 50 ms for 2,000 open tasks
 
 ---
 
-## Week 6: Recurrence, Blocks & Recalculation
+## Week 6: Recurrence, Blocks & Recalculation ✅ COMPLETE
 
 **Description:** This week you will implement routine recurrence, routine instances with exceptions, calendar events, and the block model used by the timeline. You will also implement `recalculateDay`, which re-plans the remainder of a day after the user moves, resizes, locks, or completes something, without touching locked blocks or elapsed time.
 
@@ -362,11 +362,25 @@ pnpm run bench:planner   # < 50 ms for 2,000 open tasks
 - Recalculation after 14:00 never changes blocks before 14:00
 - Weekly rule produces exactly N instances across a week when capacity exists
 
+**What was done:**
+
+- `recurrence/expand.ts`: `expandRecurrence(recurrence, anchor, range)` for DAILY / WEEKLY / MONTHLY with INTERVAL, BYDAY, BYMONTHDAY, COUNT, UNTIL; monthly on the 31st lands on the last day of shorter months (what bills need) instead of being skipped; `occursOn`, `startOfWeek` (Monday)
+- `recurrence/instances.ts`: `materializeInstances` fills a rolling 28-day window; any date that already has an instance, whatever its status (done, skipped, even soft-deleted), is an exception and is never regenerated; `markInstance`; `applyRecurringRules` implements "exercise three times per week": counts the routine's instances in the week, adds the missing ones on free days spread evenly from today, never on a day that has one and never in the past
+- `Routine.startDate` added (nullable, defaults to the creation date) as the recurrence anchor
+- `blocks/index.ts`: `snapToGrid` (15 min), `overlaps`, `obstaclesFor` (locked and manual blocks plus events; unlocked planner blocks are not obstacles because recalculation re-places them), `validatePlacement`, `moveBlock` / `resizeBlock` (result becomes `manual` so recalculation leaves it alone), `lockBlock` / `unlockBlock`, `splitBlock`, `placeTask` (drop → manual block, length rounded up to the grid); typed `BlockError` with codes `locked`, `overlap`, `too-short`, `out-of-day`, `split-point` and messages that name the obstacle ("That would overlap Standup (10:00–10:30).")
+- `planner/recalculate.ts`: `recalculateDay` freezes locked, manual, elapsed, and in-progress blocks, removes the remaining planner blocks, and re-runs `planDay` with a candidate allowlist so only displaced work is re-placed (free time is never filled with new tasks); returns frozen / removed / created and a summary ("2 moved, 1 kept"); `PlanSettings.candidateIds` added for this
+- 13 new tests including the five required (monthly 31st, skipped instance not regenerated, move onto a locked block rejected with a reason, recalculation after 14:00 never touches blocks before 14:00, weekly rule produces exactly N instances that the planner then places)
+
+**Files created:**
+
+- `packages/core/src/recurrence/{expand,instances,index}.ts`, `packages/core/src/blocks/index.ts`, `packages/core/src/planner/recalculate.ts` ✅
+- `packages/core/test/recurrence/recurrence.test.ts`, `packages/core/test/blocks/blocks.test.ts` ✅
+
 **Deliverables:**
 
-- [ ] `packages/core/src/recurrence/*`, `packages/core/src/blocks/*`
-- [ ] `packages/core/src/planner/recalculate.ts`
-- [ ] Unit tests written and passing
+- [x] `packages/core/src/recurrence/*`, `packages/core/src/blocks/*`
+- [x] `packages/core/src/planner/recalculate.ts`
+- [x] Unit tests written and passing
 
 **Verification:**
 
@@ -688,7 +702,7 @@ pnpm run test
 | **Week 3**  | Capture Parser & Classifier                            | ✅ COMPLETE | 100%     |
 | **Week 4**  | Structure Services — Hierarchy, Links & Project Health | ✅ COMPLETE | 100%     |
 | **Week 5**  | Planning Engine v1                                     | ✅ COMPLETE | 100%     |
-| **Week 6**  | Recurrence, Blocks & Recalculation                     | ⏳ PENDING  | 0%       |
+| **Week 6**  | Recurrence, Blocks & Recalculation                     | ✅ COMPLETE | 100%     |
 | **Week 7**  | Desktop Shell — Tauri, SQLite Adapter & Data File      | ⏳ PENDING  | 0%       |
 | **Week 8**  | Actuals, Sessions & Review Data Services               | ⏳ PENDING  | 0%       |
 | **Week 9**  | Rules Engine & Reminder Scheduler                      | ⏳ PENDING  | 0%       |
@@ -697,4 +711,4 @@ pnpm run test
 | **Week 12** | Weekly Review, People, Bills & Tray                    | ⏳ PENDING  | 0%       |
 | **Week 13** | Hardening, Performance & Data Safety                   | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 5/13 weeks complete (38%)
+**Total Progress:** 6/13 weeks complete (46%)

@@ -37,3 +37,7 @@ Thumbs.db
 # Test artifacts
 test-results/
 playwright-report/
+
+# Benchmark data and results (baseline is committed)
+bench/data/
+bench/results.json

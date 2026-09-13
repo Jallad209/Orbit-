@@ -8,3 +8,6 @@ export * from './durations';
 export * from './services';
 export * from './planner';
 export * from './seed';
+export * from './recurrence';
+export * from './blocks';
+export * from './planner/recalculate';

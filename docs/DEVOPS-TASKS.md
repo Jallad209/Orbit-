@@ -3,7 +3,7 @@
 **Tech Stack:** pnpm + GitHub Actions + Vitest + Playwright + Vite PWA + Lighthouse + Rust toolchain & Tauri CLI (from week 7) + tauri-driver/WebdriverIO + NSIS/MSI + Tauri Updater (manual check)
 **Repository:** `C:\Orbit`
 **Owned:** `.github/`, `scripts/`, `apps/orbit/src-tauri/tauri.conf.json` (build/security sections, from week 7), release process
-**Current Status:** Weeks 1-5 ✅ COMPLETE (branch protection pending: needs `gh auth login` or the GitHub UI)
+**Current Status:** Weeks 1-6 ✅ COMPLETE (branch protection pending: needs `gh auth login` or the GitHub UI)
 
 > There are no servers to run. DevOps for Orbit means: reproducible builds, CI that guards the engine, a static PWA build, data-safety verification, signed desktop installers, and a release process. Weeks 1–6 need no Rust. Nothing here may introduce a network dependency into the app itself.
 
@@ -270,7 +270,7 @@ pnpm run test:migrations
 
 ---
 
-## Week 6: Performance Benchmarks
+## Week 6: Performance Benchmarks ✅ COMPLETE
 
 **Description:** This week you will make performance a guarded number rather than a hope. Seed scripts generate realistic large datasets; benchmark scripts time planner runs, search queries, and Today screen render. Results are posted to the CI job summary and regressions beyond a threshold fail the job.
 
@@ -288,10 +288,24 @@ pnpm run test:migrations
 3. **Startup Benchmark** — Web cold start to interactive < 1.5 s with seeded IndexedDB (e2e-measured)
 4. **CI Bench Job** — Runs on main; compares with committed baseline; fails on > 25% regression
 
+**What was done:**
+
+- `scripts/seed.ts` (`pnpm run seed -- --tasks 50000 --notes 10000 --days 365`): a realistic export with projects, milestones, sessions, blocks, day commitments, routines with instances, and an op log, written under `bench/data/` (git-ignored); the shapes come from `seedWorld` in core
+- `scripts/bench.ts` (`pnpm run bench`): tinybench runs of planner (2k open tasks, budget 50 ms), search (title scan over 50k tasks, 30 ms, placeholder until week 10), insights (health + attention over a 50k world, 200 ms), recurrence (one year of routines, 20 ms), capture parsing (30 ms); every run fails on a blown budget or a mean more than `--tolerance` (25 %) slower than `bench/baseline.json`; `--update` rewrites the baseline; results go to `bench/results.json` and to the CI job summary
+- Reference numbers on the development machine: planner 3.0 ms, search 2.4 ms, insights 84 ms, recurrence 3.9 ms, capture 1.9 ms
+- `tests/e2e/playwright/startup.spec.ts`: seeds 7,464 records straight into the app's IndexedDB through the raw API (no test-only app code), then measures a cold navigation to an interactive Today screen: 614 ms locally against a 1.5 s budget (3 s on shared CI runners)
+- `bench.yml`: on every push to main and on demand (with a tolerance input): engine job with the results artifact, startup job in Chromium; when runner hardware changes, download `bench-results` and commit it as the baseline
+- Bundle baseline re-based to 264.6 KB gzip after `@dnd-kit` (the growth guard would otherwise trip at +20 %)
+
+**Files created:**
+
+- `scripts/seed.ts`, `scripts/bench.ts`, `bench/baseline.json` ✅
+- `.github/workflows/bench.yml`, `tests/e2e/playwright/startup.spec.ts` ✅
+
 **Deliverables:**
 
-- [ ] `scripts/seed.ts`, `scripts/bench.ts`, `bench/baseline.json`
-- [ ] `.github/workflows/bench.yml`
+- [x] `scripts/seed.ts`, `scripts/bench.ts`, `bench/baseline.json`
+- [x] `.github/workflows/bench.yml`
 
 **Verification:**
 
@@ -558,7 +572,7 @@ git tag v1.0.0 && git push --tags
 | **Week 3**  | PWA Build & Static Preview                        | ✅ COMPLETE | 100%     |
 | **Week 4**  | Test Infrastructure & Browser End-to-End          | ✅ COMPLETE | 100%     |
 | **Week 5**  | Data Safety Verification (Web)                    | ✅ COMPLETE | 100%     |
-| **Week 6**  | Performance Benchmarks                            | ⏳ PENDING  | 0%       |
+| **Week 6**  | Performance Benchmarks                            | ✅ COMPLETE | 100%     |
 | **Week 7**  | Rust Toolchain, Tauri Build Pipeline & Installers | ⏳ PENDING  | 0%       |
 | **Week 8**  | Desktop E2E & SQLite Data Safety                  | ⏳ PENDING  | 0%       |
 | **Week 9**  | Code Signing & Release Process                    | ⏳ PENDING  | 0%       |
@@ -567,4 +581,4 @@ git tag v1.0.0 && git push --tags
 | **Week 12** | Optional Updater (Manual Check)                   | ⏳ PENDING  | 0%       |
 | **Week 13** | Security Review & 1.0 Release                     | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 5/13 weeks complete (38%)
+**Total Progress:** 6/13 weeks complete (46%)

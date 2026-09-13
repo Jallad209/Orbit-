@@ -53,6 +53,8 @@ export interface PlanSettings {
   minScore: number;
   /** Tasks the user removed from the proposal; left out with reason `user`. */
   excludeTaskIds: readonly Id[];
+  /** When set, only these task / routine-instance ids are candidates (recalculation). */
+  candidateIds: readonly Id[] | null;
 }
 
 export const DEFAULT_PLAN_SETTINGS: PlanSettings = {
@@ -67,6 +69,7 @@ export const DEFAULT_PLAN_SETTINGS: PlanSettings = {
   maxSplitParts: 2,
   minScore: 0,
   excludeTaskIds: [],
+  candidateIds: null,
 };
 
 /** A stretch of time the planner may fill, with the constraints that apply inside it. */

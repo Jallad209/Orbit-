@@ -117,6 +117,8 @@ export type TimeWindow = z.infer<typeof TimeWindowSchema>;
 export const RoutineSchema = BaseRecordSchema.extend({
   title,
   recurrence: RecurrenceSchema,
+  /** First day the recurrence counts from; the creation date when null. */
+  startDate: nullableDate,
   durationMin: z.number().int().min(5).default(30),
   energy: EnergySchema.default('medium'),
   preferredWindow: TimeWindowSchema.nullable().default(null),

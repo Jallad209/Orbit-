@@ -143,6 +143,52 @@ test('proposes a plan with reasons, accepts it, and keeps the commitment after a
   await expect(page.getByTestId('plan-panel')).toHaveAttribute('data-mode', 'committed');
 });
 
-test.fixme('drags a block, locks it, and runs the evening review', async () => {
-  // Weeks 6–8.
+test('timeline: schedules a task, locks it, moves another around it, and re-plans', async ({
+  page,
+}) => {
+  await createArea(page, 'Study');
+  await page.goto('/projects');
+  await page.getByRole('textbox', { name: 'Project title' }).fill('Thesis');
+  await page.getByRole('button', { name: 'Add project' }).click();
+  await page.getByRole('link', { name: /Thesis/ }).click();
+  const task = page.getByRole('textbox', { name: 'Task title' });
+  for (const title of ['Write intro', 'Literature review']) {
+    await task.fill(title);
+    await task.press('Enter');
+    await expect(
+      page
+        .getByRole('listbox', { name: 'Project tasks' })
+        .getByRole('option', { name: new RegExp(title) }),
+    ).toBeVisible();
+  }
+
+  await page.goto('/timeline');
+  await expect(page.getByRole('heading', { level: 1, name: 'Timeline' })).toBeVisible();
+  await page.getByRole('button', { name: 'Schedule Write intro' }).click();
+  const intro = page.getByRole('button', { name: /^Write intro \d/ });
+  await expect(intro).toBeVisible();
+  const introStart = Number(await intro.getAttribute('data-start'));
+
+  // Lock it with the keyboard, then it refuses to move.
+  await intro.click();
+  await page.keyboard.press('l');
+  await expect(intro).toHaveAttribute('data-locked', 'true');
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByText('Unlock the block to move it.')).toBeVisible();
+  expect(Number(await intro.getAttribute('data-start'))).toBe(introStart);
+
+  // Schedule the other task and nudge it later; the locked block stays put.
+  await page.getByRole('button', { name: 'Schedule Literature review' }).click();
+  const lit = page.getByRole('button', { name: /^Literature review \d/ });
+  await expect(lit).toBeVisible();
+  const litStart = Number(await lit.getAttribute('data-start'));
+  await lit.click();
+  await page.keyboard.press('ArrowDown');
+  await expect(lit).toHaveAttribute('data-start', String(litStart + 15));
+  expect(Number(await intro.getAttribute('data-start'))).toBe(introStart);
+  await expect(page.getByText('Day re-planned').first()).toBeVisible();
+});
+
+test.fixme('runs the evening review', async () => {
+  // Week 8.
 });
