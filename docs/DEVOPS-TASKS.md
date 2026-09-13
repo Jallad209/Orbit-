@@ -427,7 +427,7 @@ pnpm run edge:driver && pnpm run tauri:build:bin && pnpm run e2e:desktop   # Pow
 
 ---
 
-## Week 9: Code Signing & Release Process ✅ COMPLETE (first signed beta pending identity validation)
+## Week 9: Code Signing & Release Process ✅ COMPLETE (signing skipped by decision)
 
 **Description:** This week you will make installers trustworthy and releases repeatable. You will set up Windows code signing (certificate stored as a GitHub secret), automate changelog generation from conventional commits, define the release checklist covering both the PWA bundle and the desktop installers, and cut the first signed beta.
 
@@ -449,12 +449,12 @@ pnpm run edge:driver && pnpm run tauri:build:bin && pnpm run e2e:desktop   # Pow
 **What was done:**
 
 - **Signing route: Azure Trusted Signing** (about $10 a month, no hardware token, works in CI, earns SmartScreen reputation over time; an OV certificate now ships on a token, which is awkward in CI, and self-signed does nothing for SmartScreen). `release.yml` signs when the `AZURE_CLIENT_ID` secret exists: installs `trusted-signing-cli` (cached in `~/.cargo/bin`), writes a `--config` overlay with `bundle.windows.signCommand` built from `AZURE_ENDPOINT` / `AZURE_ACCOUNT` / `AZURE_PROFILE`, passes `AZURE_TENANT_ID` / `AZURE_CLIENT_ID` / `AZURE_CLIENT_SECRET` to `tauri-action`, and afterwards runs `Get-AuthenticodeSignature` over `orbit.exe` and every installer, failing the job unless each is `Valid`. Local builds never sign
-- **Identity validation is the external clock** and needs the account owner (an Azure account, payment, identity documents), so it is started rather than finished: the setup steps and the six secrets are in `docs/RELEASE.md` § Signing setup; the workflow needs no change once they exist. Until then tags build unsigned and the release notes say so
+- **Signing skipped by decision:** Orbit is for its author and people who trust them, so a certificate (an Azure account, a monthly fee, identity documents) is not worth it yet. Builds stay unsigned, SmartScreen's one-time warning is documented in the release notes, and the workflow keeps the signing path ready behind the `AZURE_*` secrets should that change (`docs/RELEASE.md` § If signing is ever wanted)
 - **Changelog:** `git-cliff` (npm package, no extra toolchain) with `cliff.toml` grouping by Conventional Commit type (feat → Added, fix → Fixed, perf, refactor → Changed, docs, chore/build → Maintenance; test / ci / style / release commits skipped). `scripts/changelog.ts`: `pnpm run changelog` prints what is unreleased, `pnpm run changelog:release -- v<tag>` inserts the tag's section at the top of `CHANGELOG.md` keeping every hand-edited section below it. `CHANGELOG.md` written by hand for `0.1.0-alpha.1` and the unreleased weeks 8–9. In `release.yml` the section for the current tag (`git-cliff --current`) plus install notes and the checksum pointer become the draft release body
 - **`docs/RELEASE.md`:** the channels table (`-alpha.N` unsigned, `-beta.N` signed pre-release, `vX.Y.Z` stable with MSI), the checklist in order — gate, fixtures and migrations on a schema bump, backup verify and round trip, bench, desktop e2e, docs, bump, changelog, commit, tag, watch the workflow, verify the draft (signature on a clean machine, install, PWA, checksums), publish, announce — the one-time signing setup, and what to do when a run fails
 - **PWA zip** attached automatically (`orbit-pwa-<tag>.zip` from the `dist` the shell build produced) and listed in `SHA256SUMS.txt` with the installers
 - **Pre-release channel:** any hyphenated tag is a pre-release and ships NSIS only — the MSI's version field cannot carry `-alpha.N` / `-beta.N`, which is what broke `tauri:build` in week 8; stable tags ship NSIS + MSI. `-alpha.N` documented as the unsigned channel, `-beta.N` as the signed one
-- **First signed beta:** not cut — identity validation has not cleared (it has not been submitted yet; that is the owner's step). Per the plan, `v0.1.0-alpha.2` is cut unsigned instead, which also exercises the changelog, PWA zip, and NSIS-only paths of the new workflow. `v0.1.0-beta.1` follows the first dry run that produces a signed artifact
+- **First beta:** `v0.1.0-alpha.2` cut unsigned (weeks 8–9), which also exercises the changelog, PWA zip, and NSIS-only paths of the new workflow; the `-beta.N` channel is "ready for the trusted circle", not "signed"
 - Desktop e2e gained `specs/reminders.spec.ts`: a 3-day bill rule and a bill due tomorrow are queued by the web side and fired by the Rust scheduler within a poll, checked by reading the SQLite file through a second connection while the app runs
 
 **Files created:**
@@ -466,7 +466,7 @@ pnpm run edge:driver && pnpm run tauri:build:bin && pnpm run e2e:desktop   # Pow
 
 **Deliverables:**
 
-- [ ] Signing configured and verified (no SmartScreen "unknown publisher" on a clean VM) — **in progress:** the workflow side is done and verifies signatures; waiting on Azure identity validation and the six repository secrets
+- [x] ~~Signing configured and verified (no SmartScreen "unknown publisher" on a clean VM)~~ — **skipped by decision** (author and trusted users only); the workflow signs and verifies the moment the `AZURE_*` secrets exist
 - [x] `docs/RELEASE.md`
 - [x] `CHANGELOG.md` automation
 
@@ -475,8 +475,8 @@ pnpm run edge:driver && pnpm run tauri:build:bin && pnpm run e2e:desktop   # Pow
 ```bash
 pnpm run changelog                         # what is unreleased
 pnpm run changelog:release -- v0.1.0-beta.1
-git tag v0.1.0-beta.1 && git push --tags   # once the AZURE_* secrets exist
-# Download installer; check signature properties in Windows Explorer
+git tag v0.1.0-beta.1 && git push --tags
+# Download the installer on a clean machine; SmartScreen warns once (unsigned), install completes
 ```
 
 ---
@@ -631,10 +631,10 @@ git tag v1.0.0 && git push --tags
 | **Week 6**  | Performance Benchmarks                            | ✅ COMPLETE | 100%     |
 | **Week 7**  | Rust Toolchain, Tauri Build Pipeline & Installers | ✅ COMPLETE | 100%     |
 | **Week 8**  | Desktop E2E & SQLite Data Safety                  | ✅ COMPLETE | 100%     |
-| **Week 9**  | Code Signing & Release Process                    | ✅ COMPLETE | 90%      |
+| **Week 9**  | Code Signing & Release Process                    | ✅ COMPLETE | 100%     |
 | **Week 10** | Local Diagnostics & Logging (No Telemetry)        | ⏳ PENDING  | 0%       |
 | **Week 11** | Tray, Autostart & Notification Packaging          | ⏳ PENDING  | 0%       |
 | **Week 12** | Optional Updater (Manual Check)                   | ⏳ PENDING  | 0%       |
 | **Week 13** | Security Review & 1.0 Release                     | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 9/13 weeks complete (69%) — signed beta pending identity validation
+**Total Progress:** 9/13 weeks complete (69%)

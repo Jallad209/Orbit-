@@ -5,8 +5,9 @@ then edited by hand before each release.
 
 ## [0.1.0-alpha.2] — 2026-09-13
 
-Unsigned pre-release (the signed `-beta` channel opens once code-signing identity
-validation clears). Desktop installers are NSIS only on pre-release tags.
+Unsigned pre-release: Orbit builds are not code-signed by decision (author and trusted
+users only), so Windows warns once on first run. Desktop installers are NSIS only on
+pre-release tags.
 
 ### Added
 

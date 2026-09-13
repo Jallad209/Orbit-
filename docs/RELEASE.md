@@ -5,16 +5,19 @@ signing, and attaching, and leaves a **draft** on GitHub for you to read and pub
 
 ## Channels
 
-| Tag              | Marked as   | Installers | Signed                      | When                                  |
-| ---------------- | ----------- | ---------- | --------------------------- | ------------------------------------- |
-| `v0.1.0-alpha.N` | pre-release | NSIS       | no                          | internal builds, before signing works |
-| `v0.1.0-beta.N`  | pre-release | NSIS       | yes (Azure Trusted Signing) | public testing                        |
-| `v0.1.0`         | release     | NSIS + MSI | yes                         | stable                                |
+| Tag              | Marked as   | Installers | When                         |
+| ---------------- | ----------- | ---------- | ---------------------------- |
+| `v0.1.0-alpha.N` | pre-release | NSIS       | trying things out            |
+| `v0.1.0-beta.N`  | pre-release | NSIS       | ready for the trusted circle |
+| `v0.1.0`         | release     | NSIS + MSI | stable                       |
 
 Any tag with a hyphen is a pre-release and ships NSIS only: the MSI's version field cannot
-carry a pre-release identifier. Signing switches on by itself when the `AZURE_CLIENT_ID`
-secret exists in the repository; without it the workflow builds unsigned and says so in the
-release notes.
+carry a pre-release identifier.
+
+**Builds are unsigned by decision** (week 9): Orbit is for its author and people who trust
+them, so a code-signing certificate is not worth its cost yet. Windows shows a SmartScreen
+"unknown publisher" warning on first run — _More info → Run anyway_ — and the release notes
+say so. The workflow still knows how to sign (see the last section) should that change.
 
 ## Before tagging
 
@@ -69,11 +72,9 @@ release notes.
 
 11. Open the draft release. Attached: `Orbit_<version>_x64-setup.exe` (and the `.msi` on a stable
     tag), `orbit-pwa-<tag>.zip`, `SHA256SUMS.txt`.
-12. **Signature check on a machine that has never seen Orbit** (a clean VM is best): download the
-    installer, right-click → Properties → **Digital Signatures**. The signer must be your Trusted
-    Signing identity and the status "This digital signature is OK". Run it: no SmartScreen
-    "unknown publisher" warning. Note that a brand-new certificate can still trigger SmartScreen
-    until it has reputation; that clears with downloads, not with configuration.
+12. **Install on a machine that has never seen Orbit** (a clean VM is best): download the
+    installer and run it. Expect the SmartScreen warning (builds are unsigned); confirm
+    _More info → Run anyway_ gets through and the installer completes.
 13. **Install check.** First run creates the data folder (`%APPDATA%\app.orbit.desktop\data`) with
     `orbit.db`; Settings → Data shows the integrity check as ok.
 14. **PWA check.** Unzip the bundle, serve it (`npx serve dist` or any static server), open it,
@@ -87,10 +88,13 @@ release notes.
 17. Publish the draft. Pre-release tags stay marked as pre-release.
 18. Announce: link the release, paste the "Added" bullets, say which channel it is.
 
-## Signing setup (once)
+## If signing is ever wanted
 
-Azure Trusted Signing (recommended over an OV certificate: no hardware token, works in CI,
-earns SmartScreen reputation over time):
+Skipped for now by decision. Should Orbit go to strangers, Azure Trusted Signing is the route
+(about $10 a month, no hardware token, works in CI, earns SmartScreen reputation over time;
+an OV certificate ships on a token now and is awkward in CI; self-signed does nothing for
+SmartScreen). The workflow switches signing on by itself when the `AZURE_CLIENT_ID` secret
+exists and verifies every signature; nothing in the code needs to change:
 
 1. Azure account → **Trusted Signing** resource → submit **identity validation** (this is the
    slow part; days). Then create a **certificate profile** (public trust).
