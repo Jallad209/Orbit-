@@ -14,6 +14,7 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react';
+import { CommandPaletteTrigger } from '@/features/palette/CommandPalette';
 import { cn } from '@/lib/cn';
 import { formatHotkey, useHotkey } from '@/lib/hotkeys';
 
@@ -59,6 +60,10 @@ export function NavRail() {
           <Compass className="size-4" strokeWidth={2.25} />
         </span>
         <span className="hidden text-base font-semibold tracking-tight md:inline">Orbit</span>
+      </div>
+
+      <div className="px-2 pb-1">
+        <CommandPaletteTrigger className="flex h-9 w-full items-center gap-3 rounded-md px-2 text-sm text-nav-muted hover:bg-nav-2 hover:text-nav-fg focus-visible:outline-lime-2" />
       </div>
 
       <ul className="flex flex-1 flex-col gap-0.5 px-2 py-2">

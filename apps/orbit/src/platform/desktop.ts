@@ -1,7 +1,15 @@
-import { chooseRestore, integrityCheck, openRepository } from '@orbit/storage';
-import type { BackupCandidate, Repository } from '@orbit/storage';
+import { chooseRestore, createSearchService, integrityCheck, openRepository } from '@orbit/storage';
+import type { BackupCandidate, Repository, SqlDriver } from '@orbit/storage';
+import { recordEvent } from '@/lib/diagnostics';
 import { tauriSqlDriver, type Invoke } from './tauriSqlDriver';
-import type { DataFileStatus, DesktopApi, Platform, StorageStatus } from './types';
+import type {
+  DataFileStatus,
+  DesktopApi,
+  DiagnosticsBundle,
+  LastRun,
+  Platform,
+  StorageStatus,
+} from './types';
 
 /**
  * Desktop runtime on Tauri. Data is a SQLite file in a user-chosen folder,
@@ -57,9 +65,12 @@ async function loadDeps(): Promise<Deps> {
  * corrupt: quarantine it, restore the newest backup if there is one, and
  * open again. Pure of Tauri so tests can drive it with a fake `deps`.
  */
-export async function openDesktopRepository(
-  deps: Pick<Deps, 'invoke' | 'join'>,
-): Promise<{ repository: Repository; status: DataFileStatus; generation: number }> {
+export async function openDesktopRepository(deps: Pick<Deps, 'invoke' | 'join'>): Promise<{
+  repository: Repository;
+  status: DataFileStatus;
+  generation: number;
+  driver: SqlDriver;
+}> {
   const { invoke, join } = deps;
   let dir = await invoke<string | null>('data_dir_get');
   if (!dir)
@@ -84,13 +95,14 @@ export async function openDesktopRepository(
   }
 
   const repository = await openRepository({ kind: 'sqlite', driver });
-  return { repository, status: { dir, path, integrity, recovery }, generation };
+  return { repository, status: { dir, path, integrity, recovery }, generation, driver };
 }
 
 export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Platform {
   let deps: Deps | null = null;
   let status: DataFileStatus | null = null;
   let generation = 0;
+  let driver: SqlDriver | null = null;
   const ready = async () => (deps ??= await load());
 
   const desktop: DesktopApi = {
@@ -135,6 +147,23 @@ export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Pla
       const d = await ready();
       await d.window.startDragging();
     },
+    async lastRun() {
+      const d = await ready();
+      return d.invoke<LastRun>('diagnostics_last_run');
+    },
+    async saveDiagnostics(report, defaultName) {
+      const d = await ready();
+      const path = await d.saveDialog({
+        defaultPath: defaultName,
+        title: 'Save diagnostics bundle',
+      });
+      if (!path) return null;
+      return d.invoke<DiagnosticsBundle>('diagnostics_export', { path, report });
+    },
+    async logEvent(level, kind, fields) {
+      const d = await ready();
+      await d.invoke<void>('diagnostics_log', { level, kind, fields: fields ?? {} });
+    },
   };
 
   return {
@@ -153,7 +182,20 @@ export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Pla
       const opened = await openDesktopRepository(d);
       status = opened.status;
       generation = opened.generation;
+      driver = opened.driver;
+      // Outcome flags only: no path, no messages.
+      recordEvent('info', 'data-file:open', {
+        integrityOk: opened.status.integrity.ok,
+        fts5: opened.status.integrity.fts5,
+        recovered: opened.status.recovery !== null,
+        generation: opened.generation,
+      });
       return opened.repository;
+    },
+
+    async createSearchService(repository) {
+      // FTS5 when the bundled SQLite has it (the integrity check already reports it); MiniSearch otherwise.
+      return createSearchService({ repo: repository, driver: driver ?? undefined });
     },
 
     async notify(title, body) {

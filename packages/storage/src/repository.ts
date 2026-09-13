@@ -37,6 +37,17 @@ export interface UpsertOptions {
    * Used by import so a round trip is lossless. Default false.
    */
   preserveUpdatedAt?: boolean;
+  /**
+   * Extra keys recorded in the op-log patch alongside the changed fields,
+   * e.g. `{ undoOf: entryId }` so a compensating write is recognisable.
+   * Never stored on the record itself.
+   */
+  opMeta?: Record<string, unknown>;
+}
+
+export interface DeleteOptions {
+  /** See `UpsertOptions.opMeta`. */
+  opMeta?: Record<string, unknown>;
 }
 
 /**
@@ -53,7 +64,7 @@ export interface EntityStore<T extends BaseRecord> {
   /** Insert or replace. Throws on schema violation. */
   upsert(record: T, options?: UpsertOptions): Promise<T>;
   /** Soft delete: sets `deletedAt`. No-op if already deleted. */
-  softDelete(id: Id): Promise<void>;
+  softDelete(id: Id, options?: DeleteOptions): Promise<void>;
 }
 
 export interface LinkStore extends EntityStore<Link> {

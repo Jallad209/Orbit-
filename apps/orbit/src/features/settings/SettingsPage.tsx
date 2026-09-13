@@ -6,6 +6,7 @@ import { usePlatform } from '@/platform';
 import { RulesSection } from '@/features/rules/RulesSection';
 import { AppearanceSettings } from './AppearanceSettings';
 import { DataSettings } from './DataSettings';
+import { DiagnosticsSettings } from './DiagnosticsSettings';
 import { PlanningSettings } from './PlanningSettings';
 import { ShortcutsReference } from './ShortcutsReference';
 
@@ -92,6 +93,7 @@ export function SettingsPage() {
           </section>
           <section id="data" aria-label="Data" className="scroll-mt-4 flex flex-col gap-5">
             <DataSettings />
+            <DiagnosticsSettings />
             <CapabilityNotes />
           </section>
           <section id="appearance" aria-label="Appearance" className="scroll-mt-4">

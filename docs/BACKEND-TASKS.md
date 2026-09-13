@@ -3,7 +3,7 @@
 **Tech Stack:** TypeScript (strict) + Zod + Vitest + Dexie (IndexedDB) + SQLite (Tauri SQL plugin, from week 7) + MiniSearch / FTS5 + Tauri 2 Rust commands (from week 7)
 **Repository:** `C:\Orbit`
 **Packages Owned:** `packages/core`, `packages/storage`, `apps/orbit/src-tauri` (from week 7)
-**Current Status:** Weeks 1-9 ✅ COMPLETE
+**Current Status:** Weeks 1-10 ✅ COMPLETE
 
 > In Orbit there is no server. "Backend" means the pure domain engine (`packages/core`), the storage layer (`packages/storage`), and, from week 7, the Rust shell commands. Weeks 1–6 run entirely in the browser against IndexedDB. Everything here must run with the network cable unplugged.
 
@@ -574,7 +574,7 @@ pnpm run tauri:build:bin && pnpm run e2e:desktop   # PowerShell; the reminders s
 
 ---
 
-## Week 10: Search Index & Command Registry
+## Week 10: Search Index & Command Registry ✅ COMPLETE
 
 **Description:** This week you will build global search and the command registry behind the palette. Search uses a MiniSearch in-process index on both runtimes, rebuilt from the op log and updated incrementally, with SQLite FTS5 as the desktop backend when available. The command registry exposes typed commands ("Add task", "Plan my day", "Show neglected goals", "Reschedule unfinished work") with argument schemas so the UI can render them uniformly.
 
@@ -601,17 +601,34 @@ pnpm run tauri:build:bin && pnpm run e2e:desktop   # PowerShell; the reminders s
 - Command arg validation rejects bad input with a message
 - Undo reverses the last mutation and appends a compensating op
 
+**What was done:**
+
+- **One search contract** in `packages/storage/src/search/`: `SearchService { ready, search(query, filters?, limit?), refresh, invalidate, close? }` returning `SearchHit { id, type, title, snippet, score, matchedFields, areaId, updatedAt }` over four types (task, note, project, person). `documents.ts` fixes what each record indexes — task: title + "project · area"; note: title + body; project: title + "outcome · area"; person: name + contact — and `query.ts` is the shared parser: `type:note`, `area:<name or id>` (quoted names allowed), unknown `foo:bar` stays text, malformed filters come back as messages while the rest still searches. `queryTerms` drops stop words from queries (never from the index) so "review the contract" cannot match half the file; `terms.ts` holds the matcher both backends use for `matchedFields`, highlight ranges, and snippets. One ranking rule (`compareRank`): title match first, then the engine's score, then `updatedAt`, then id
+- **MiniSearch** (`minisearch.ts`, pinned 7.2.0): title boost 3, prefix on, fuzzy 0.2 for terms of four letters or more (capped at two edits), stored fields only. Built from live records with `addAllAsync`, then kept current from the op log: a pass applies the entries since its cursor (areas and projects first, because other documents name them) and advances the cursor only after they are in; more than 500 pending entries, or `invalidate()`, means a rebuild; a failed pass leaves the old index answering and schedules one. Concurrent `refresh()` calls coalesce into one pass plus one follow-up. Candidates are ranked on what the engine already knows and only the shown hits are built (a common word matching 40,000 documents costs 5 ms, not 170). `serialize()`/`serialized` exist for measurement: the 55k-document index builds in ~0.8 s and loads from 17 MB of JSON in ~0.17 s, so nothing is persisted — the app warms the index 400 ms after the first paint instead
+- **FTS5** (`fts5.ts`): a rebuildable cache inside the data file, not a migration. `search_fts` (type/id/areaId/updatedAt unindexed, title, body, `unicode61 remove_diacritics 2`), a `search_vocab` table for typo tolerance (vocabulary terms within the same edit budget as MiniSearch, OR-ed into the MATCH), `search_meta` with a schema marker, and triggers on tasks/notes/projects/people (insert, update, delete) plus cascades for a renamed project or area — the SQL builds the same document `documents.ts` does, and a parity test compares every row. `ready()` validates (marker, every table and trigger present, live-row counts per type, FTS5's own `integrity-check`) and rebuilds in one transaction when anything is off; rows written by an older build, or by the capture window, are indexed by the triggers with no service involved. `fts5Available` probes with a `temp` virtual table; `createSearchService({ repo, driver })` picks FTS5 or falls back. Restore skips `search_*` tables when checking a backup's shape, so a week 9 backup restores into a file that has the cache and the cache is rebuilt on the next open (`a_backup_without_the_search_cache_restores…` in Rust, the week 9 fixture in TS); `verify:backup` now carries the cache through backup → restore and compares rows and one query
+- **Commands** in `packages/core/src/commands/`: `CommandDefinition { id, title, keywords, group, shortcut?, args? (Zod), prompt? (text | choice), preview?, available?, run }`, a `CommandContext` (a structural `CommandRepository` the storage `Repository` satisfies, clock, navigate, notify, capabilities, settings, capture names) and `createCommandRegistry` that validates arguments (field → message) before `run`, turns thrown errors into failed results, and records what changed. Ten core commands: add task / note / event (through `parseCapture` → `reclassify` → `materializeCapture`, with the saved default estimate), plan my day, regenerate today's proposal (`/today?regenerate=1`), reschedule unfinished work (today's committed-and-unfinished tasks through the rollover rule or an explicit target, with a preview line before it writes), show neglected goals (`/goals?filter=neglected` until the insights screen exists), review this week (an honest notice until week 12), open project (a choice prompt), and undo
+- **Undo** (`undo.ts`): a session stack of the last 20 command entries, each holding every record's `before` and `after`. `undoLast` restores newest-change-first in one transaction, refuses with a plain message when any record's `updatedAt` moved since (nothing written — the whole entry rolls back), soft-deletes created records, and marks every compensating write with `undoOf: <entryId>` in its op-log patch through the new `opMeta` write option (all three adapters). It does not survive a restart and the UI says so
+- Tests: 64 in `test/search/` (parser and matcher; the behaviour contract run against both backends — prefix, typo, accents, title-before-body, filters, blank query, limit and stable order, update/delete/create lifecycle, renamed area and project, malformed filter with no writes, invalidate; MiniSearch incremental/rebuild/failure/serialize and a 50,000-task world; refresh coalescing and searching during a rebuild; FTS5 parity, backfill, older-build writes, marker and drift rebuilds, the week 9 fixture, and the fallback), 17 in `core/test/commands/` (registry listing and validation, every command, previews, stale undo, atomic rollback), and 6 in `storage/test/commands/undo.test.ts` running the undo model on memory, IndexedDB, and SQLite
+
+**Files created:**
+
+- `packages/storage/src/search/{types,query,documents,terms,minisearch,fts5,factory,index}.ts` ✅
+- `packages/storage/test/search/{fixture,contract,query.test,minisearch.test,sqlite.test,concurrency.test}.ts`, `packages/storage/test/commands/undo.test.ts` ✅
+- `packages/core/src/commands/{types,undo,commands,registry,index}.ts` ✅
+- `packages/core/test/commands/{fakeRepository,commands.test,undo.test}.ts` ✅
+
 **Deliverables:**
 
-- [ ] `packages/storage/src/search/{minisearch,fts5,index}.ts`
-- [ ] `packages/core/src/commands/*`
-- [ ] Unit tests written and passing
+- [x] `packages/storage/src/search/{minisearch,fts5,index}.ts`
+- [x] `packages/core/src/commands/*`
+- [x] Unit tests written and passing
 
 **Verification:**
 
 ```bash
-pnpm run test --filter @orbit/storage -- search
-pnpm run bench:search   # < 30 ms for 50k notes
+pnpm exec vitest run --project storage search commands
+pnpm exec vitest run --project core commands
+pnpm run bench   # search: minisearch query, 50k tasks + 5k notes — 5 ms mean, budget 30 ms
 ```
 
 ---
@@ -759,9 +776,9 @@ pnpm run test
 | **Week 7**  | Desktop Shell — Tauri, SQLite Adapter & Data File      | ✅ COMPLETE | 100%     |
 | **Week 8**  | Actuals, Sessions & Review Data Services               | ✅ COMPLETE | 100%     |
 | **Week 9**  | Rules Engine & Reminder Scheduler                      | ✅ COMPLETE | 100%     |
-| **Week 10** | Search Index & Command Registry                        | ⏳ PENDING  | 0%       |
+| **Week 10** | Search Index & Command Registry                        | ✅ COMPLETE | 100%     |
 | **Week 11** | Insights Engine                                        | ⏳ PENDING  | 0%       |
 | **Week 12** | Weekly Review, People, Bills & Tray                    | ⏳ PENDING  | 0%       |
 | **Week 13** | Hardening, Performance & Data Safety                   | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 9/13 weeks complete (69%)
+**Total Progress:** 10/13 weeks complete (77%)

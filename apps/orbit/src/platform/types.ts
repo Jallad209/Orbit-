@@ -1,4 +1,4 @@
-import type { BackupCandidate, IntegrityResult, Repository } from '@orbit/storage';
+import type { BackupCandidate, IntegrityResult, Repository, SearchService } from '@orbit/storage';
 
 /**
  * What the current runtime can do. The UI renders by these flags and never
@@ -33,6 +33,22 @@ export interface DataFileStatus {
   recovery: null | { quarantinedTo: string; restoredFrom: string | null };
 }
 
+/** What the desktop shell knows about the previous run (the last-run marker). */
+export interface LastRun {
+  /** The previous run did not write its clean-exit marker. */
+  crashedLastTime: boolean;
+  startedAt: string | null;
+  /** The panic hook's record, when the previous run panicked. Location and a redacted message only. */
+  crash: { at: string; location: string; message: string } | null;
+}
+
+/** What the desktop puts in a diagnostics zip. */
+export interface DiagnosticsBundle {
+  path: string;
+  files: string[];
+  bytes: number;
+}
+
 /** Desktop-only operations. Present when `capabilities.dataFolder` is true. */
 export interface DesktopApi {
   dataFileStatus(): DataFileStatus | null;
@@ -52,6 +68,15 @@ export interface DesktopApi {
   hideCaptureWindow(): Promise<void>;
   /** Start dragging the frameless capture window. */
   startDraggingWindow(): Promise<void>;
+  /** The previous run's outcome, from the shell's last-run marker. */
+  lastRun(): Promise<LastRun>;
+  /**
+   * Save a diagnostics zip (rolling logs, the report, the last-run marker)
+   * through a save dialog. Null when the dialog was cancelled.
+   */
+  saveDiagnostics(report: unknown, defaultName: string): Promise<DiagnosticsBundle | null>;
+  /** Forward one redacted diagnostic event to the shell's log file. */
+  logEvent(level: string, kind: string, fields?: Record<string, number | boolean>): Promise<void>;
 }
 
 export interface Platform {
@@ -59,6 +84,12 @@ export interface Platform {
   readonly capabilities: PlatformCapabilities;
   /** Open the runtime's repository. Called once at startup. */
   createRepository(): Promise<Repository>;
+  /**
+   * The search index over that repository: FTS5 inside the data file when
+   * the desktop's SQLite has it, MiniSearch in memory otherwise. Not built
+   * until `ready()` is called, so opening never waits on it.
+   */
+  createSearchService(repository: Repository): Promise<SearchService>;
   /** Best-effort notification. In-app fallback is the caller's job. */
   notify(title: string, body?: string): Promise<boolean>;
   /** Hand the user a file: download on web, save dialog on desktop. */

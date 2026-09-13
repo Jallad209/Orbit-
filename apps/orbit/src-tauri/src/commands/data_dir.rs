@@ -12,7 +12,10 @@ use rusqlite::{
     Connection, OpenFlags, MAIN_DB,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::Map;
 use tauri::{AppHandle, Manager, State};
+
+use crate::logging::{self, Level};
 
 use super::db::Db;
 
@@ -55,7 +58,7 @@ fn write_settings(app: &AppHandle, settings: &Settings) -> Result<(), String> {
 
 /// `ORBIT_DATA_DIR` pins the data folder for a run — the desktop e2e harness
 /// uses it so a test never opens the user's real database or settings.
-fn env_data_dir() -> Option<PathBuf> {
+pub fn env_data_dir() -> Option<PathBuf> {
     std::env::var_os("ORBIT_DATA_DIR")
         .filter(|v| !v.is_empty())
         .map(PathBuf::from)
@@ -122,7 +125,9 @@ pub fn data_dir_relocate(
         let mut settings = read_settings(&app)?;
         settings.data_dir = Some(dir.to_string_lossy().into_owned());
         write_settings(&app, &settings)
-    })?;
+    })
+    .inspect_err(|e| logging::error("data", "relocate", e))?;
+    logging::event(Level::Info, "data", "relocate", Map::new());
     Ok(dir.to_string_lossy().into_owned())
 }
 
@@ -347,7 +352,9 @@ pub fn data_restore_backup(
     guard.authorize(None)?;
     let preserved = restore_connection(&mut guard.connection, Path::new(&from), |source, dest| {
         copy_into(source, dest)
-    })?;
+    })
+    .inspect_err(|e| logging::error("data", "restore", e))?;
+    logging::event(Level::Info, "data", "restore", Map::new());
     guard.generation += 1; // Already-queued work from an old webview must not overwrite restored data.
                            // Reload the other webview as well so cached settings and records are discarded.
     for (label, other) in app.webview_windows() {
@@ -403,6 +410,11 @@ fn restore_connection(
         .map_err(|e| e.to_string())?;
     for table in tables {
         if source_version == 1 && matches!(table.as_str(), "reminders" | "appSettings") {
+            continue;
+        }
+        // The search index (week 10) is a rebuildable cache, not part of the data:
+        // a backup made before it existed is still a complete Orbit file.
+        if table.starts_with("search_") {
             continue;
         }
         source
@@ -527,6 +539,37 @@ mod tests {
             .unwrap()
             .execute_batch("INSERT INTO tasks VALUES ('still-usable', '{}')")
             .unwrap();
+    }
+
+    #[test]
+    fn a_backup_without_the_search_cache_restores_into_a_file_that_has_one() {
+        let temp = tempfile::tempdir().unwrap();
+        let live = temp.path().join("live");
+        let backup_dir = temp.path().join("backup");
+        let mut active = Some(seed(&live));
+        active
+            .as_ref()
+            .unwrap()
+            .execute_batch(
+                "CREATE VIRTUAL TABLE search_fts USING fts5(title);
+                 CREATE TABLE search_meta(key TEXT PRIMARY KEY, value TEXT);
+                 INSERT INTO search_meta VALUES ('schema', '1');
+                 INSERT INTO tasks VALUES ('task-2', '{}')",
+            )
+            .unwrap();
+        seed(&backup_dir).close().unwrap();
+        restore_connection(&mut active, &backup_dir.join(DATA_FILE), copy_into).unwrap();
+        let conn = active.as_ref().unwrap();
+        assert_eq!(count(conn), 1);
+        // The restored file is the backup: no cache tables until the app rebuilds them.
+        let cache: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM sqlite_schema WHERE name LIKE 'search%'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(cache, 0);
     }
 
     #[test]

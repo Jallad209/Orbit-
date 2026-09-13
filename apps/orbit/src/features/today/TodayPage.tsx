@@ -1,6 +1,7 @@
 import type { Clock, Id, LocalDate, PlanProposal } from '@orbit/core';
 import { addDays, minuteOfDay, systemClock, toLocalDate } from '@orbit/core';
 import { useCallback, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import type { Repository } from '@orbit/storage';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Card';
@@ -55,8 +56,16 @@ export function TodayPage({ clock = systemClock, date: dateProp }: Props) {
 
   const [excluded, setExcluded] = useState<readonly Id[]>([]);
   const [previous, setPrevious] = useState<PlanProposal | null>(null);
-  const [replanning, setReplanning] = useState(false);
+  const [replanChoice, setReplanChoice] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [params, setParams] = useSearchParams();
+  // `?regenerate=1` (the "Regenerate today's proposal" command) opens in proposal
+  // mode like the Re-plan button; accepting or clearing drops the parameter.
+  const replanning = replanChoice || params.get('regenerate') === '1';
+  const setReplanning = (on: boolean) => {
+    setReplanChoice(on);
+    if (!on && params.has('regenerate')) setParams({}, { replace: true });
+  };
 
   const settings = useMemo(() => settingsFor(prefs, date, excluded), [prefs, date, excluded]);
   const query = useCallback(

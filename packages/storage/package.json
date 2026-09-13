@@ -7,6 +7,7 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./search/minisearch": "./src/search/minisearch.ts",
     "./test/contract": "./test/contract.ts",
     "./test/betterSqliteDriver": "./test/betterSqliteDriver.ts"
   },
@@ -16,6 +17,7 @@
   "dependencies": {
     "@orbit/core": "workspace:*",
     "dexie": "^4.4.6",
+    "minisearch": "7.2.0",
     "zod": "^3.25"
   },
   "devDependencies": {

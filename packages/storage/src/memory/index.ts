@@ -27,6 +27,7 @@ import {
 } from '@orbit/core';
 import type { BaseRecord, Clock, EntityType, Id, Link, Op, OpLogEntry } from '@orbit/core';
 import type {
+  DeleteOptions,
   EntityStore,
   LinkStore,
   ListOptions,
@@ -117,21 +118,25 @@ class MemoryStore<T extends BaseRecord> implements EntityStore<T> {
     const updatedAt = options?.preserveUpdatedAt ? record.updatedAt : nowIso(this.ctx.clock);
     const stamped = this.schema.parse({ ...record, updatedAt });
     this.table.set(stamped.id, stamped);
+    const meta = options?.opMeta ?? {};
     if (prev) {
-      this.log('update', stamped.id, shallowPatch(prev, stamped) as Record<string, unknown>);
+      this.log('update', stamped.id, {
+        ...(shallowPatch(prev, stamped) as Record<string, unknown>),
+        ...meta,
+      });
     } else {
-      this.log('create', stamped.id, { ...stamped });
+      this.log('create', stamped.id, { ...stamped, ...meta });
     }
     return stamped;
   }
 
-  async softDelete(id: Id): Promise<void> {
+  async softDelete(id: Id, options?: DeleteOptions): Promise<void> {
     const prev = this.table.get(id);
     if (!prev || prev.deletedAt !== null) return;
     const at = nowIso(this.ctx.clock);
     const next = { ...prev, deletedAt: at, updatedAt: at };
     this.table.set(id, next);
-    this.log('delete', id, { deletedAt: at });
+    this.log('delete', id, { deletedAt: at, ...options?.opMeta });
   }
 }
 

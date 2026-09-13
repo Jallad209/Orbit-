@@ -9,6 +9,10 @@
  * committed baseline mean. The run fails when a mean is over budget or more
  * than `tolerance` percent slower than the baseline. Results go to
  * bench/results.json and, in CI, to the job summary.
+ *
+ * The search entries (week 10) run the real MiniSearch service over a
+ * 50,000-task / 5,000-note world: one query, and the one-off index build
+ * whose cost is why the app warms the index after the first paint.
  */
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { Bench } from 'tinybench';
@@ -22,11 +26,15 @@ import {
   planDay,
   seedWorld,
 } from '@orbit/core';
+import { createMemoryRepository } from '@orbit/storage';
+import { createMiniSearchService } from '@orbit/storage/search/minisearch';
 
 interface Entry {
   name: string;
   budgetMs: number;
-  fn: () => void;
+  fn: () => unknown;
+  /** Seconds-long work: a few samples rather than the usual 64. */
+  heavy?: boolean;
 }
 
 const BASELINE_PATH = 'bench/baseline.json';
@@ -49,6 +57,30 @@ const health = {
 const attention = { ...bigWorld, now };
 const routines = bigWorld.routines;
 
+// The search index over the big world, built once; the query benchmark
+// runs against it, the build benchmark rebuilds it from a fresh service.
+console.log('building the search index…');
+const searchRepo = createMemoryRepository({ clock });
+await searchRepo.transaction(async (tx) => {
+  for (const a of bigWorld.areas) await tx.areas.upsert(a, { preserveUpdatedAt: true });
+  for (const p of bigWorld.projects) await tx.projects.upsert(p, { preserveUpdatedAt: true });
+  for (const t of bigWorld.tasks) await tx.tasks.upsert(t, { preserveUpdatedAt: true });
+  for (const n of bigWorld.notes) await tx.notes.upsert(n, { preserveUpdatedAt: true });
+  for (const p of bigWorld.people) await tx.people.upsert(p, { preserveUpdatedAt: true });
+});
+const search = createMiniSearchService({ repo: searchRepo });
+const buildStart = performance.now();
+await search.ready();
+const buildMs = performance.now() - buildStart;
+const serialized = search.serialize();
+const loadStart = performance.now();
+createMiniSearchService({ repo: searchRepo, serialized });
+const loadMs = performance.now() - loadStart;
+console.log(
+  `index: ${search.stats().documents} documents, built in ${buildMs.toFixed(0)} ms, ` +
+    `loaded from ${(serialized.length / 1024 / 1024).toFixed(1)} MB of JSON in ${loadMs.toFixed(0)} ms`,
+);
+
 const entries: Entry[] = [
   {
     name: 'planner: planDay, 2k open tasks',
@@ -56,13 +88,17 @@ const entries: Entry[] = [
     fn: () => planDay(planWorld, '2026-09-14', { energy: 'medium' }, clock),
   },
   {
-    name: 'search: title scan, 50k tasks',
+    name: 'search: minisearch query, 50k tasks + 5k notes',
     budgetMs: 30,
+    fn: () => search.search('review the', undefined, 20),
+  },
+  {
+    name: 'search: rebuild index, 55k documents',
+    budgetMs: 5000,
+    heavy: true,
     fn: () => {
-      const q = 'review the';
-      let n = 0;
-      for (const t of bigWorld.tasks) if (t.title.toLowerCase().includes(q)) n++;
-      return n;
+      const fresh = createMiniSearchService({ repo: searchRepo });
+      return fresh.ready();
     },
   },
   {
@@ -107,8 +143,10 @@ const entries: Entry[] = [
 ];
 
 const bench = new Bench({ time: 800, warmupTime: 200 });
-for (const e of entries) bench.add(e.name, e.fn);
+const heavy = new Bench({ time: 0, iterations: 3, warmupTime: 0, warmupIterations: 1 });
+for (const e of entries) (e.heavy ? heavy : bench).add(e.name, e.fn);
 await bench.run();
+await heavy.run();
 
 interface Result {
   meanMs: number;
@@ -116,7 +154,7 @@ interface Result {
   samples: number;
 }
 const results: Record<string, Result> = {};
-for (const task of bench.tasks) {
+for (const task of [...bench.tasks, ...heavy.tasks]) {
   const r = task.result;
   if (!r || r.state !== 'completed') throw new Error(`benchmark failed: ${task.name}`);
   results[task.name] = {

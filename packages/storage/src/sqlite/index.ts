@@ -27,6 +27,7 @@ import {
 } from '@orbit/core';
 import type { BaseRecord, Clock, EntityType, Id, Link, Op, OpLogEntry } from '@orbit/core';
 import type {
+  DeleteOptions,
   EntityStore,
   LinkStore,
   ListOptions,
@@ -129,20 +130,20 @@ class SqliteStore<T extends BaseRecord> implements EntityStore<T> {
         `INSERT INTO ${this.name}(id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data`,
         [stamped.id, JSON.stringify(stamped)],
       );
+      const meta = options?.opMeta ?? {};
       if (prev) {
-        await store.log(
-          'update',
-          stamped.id,
-          shallowPatch(prev, stamped) as Record<string, unknown>,
-        );
+        await store.log('update', stamped.id, {
+          ...(shallowPatch(prev, stamped) as Record<string, unknown>),
+          ...meta,
+        });
       } else {
-        await store.log('create', stamped.id, { ...stamped });
+        await store.log('create', stamped.id, { ...stamped, ...meta });
       }
       return stamped;
     });
   }
 
-  async softDelete(id: Id): Promise<void> {
+  async softDelete(id: Id, options?: DeleteOptions): Promise<void> {
     await withTx(this.ctx, async (ctx) => {
       const store = new SqliteStore(this.name, this.schema, ctx);
       const prev = await store.get(id);
@@ -152,7 +153,7 @@ class SqliteStore<T extends BaseRecord> implements EntityStore<T> {
         JSON.stringify({ ...prev, deletedAt: at, updatedAt: at }),
         id,
       ]);
-      await store.log('delete', id, { deletedAt: at });
+      await store.log('delete', id, { deletedAt: at, ...options?.opMeta });
     });
   }
 }

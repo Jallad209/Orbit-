@@ -4,7 +4,10 @@ import { PlatformProvider } from '@/platform';
 import { AppRoutes } from '@/routes';
 import { Toaster } from '@/components/ui/Toast';
 import { TooltipProvider } from '@/components/ui/Popover';
+import { CommandRegistryProvider } from '@/features/palette/commandRegistry';
 import { useReminderScheduler } from '@/features/reminders/useReminderScheduler';
+import { SearchProvider } from '@/features/search/SearchProvider';
+import { DiagnosticsBridge } from '@/features/settings/DiagnosticsBridge';
 import { SettingsProvider } from '@/features/settings/SettingsProvider';
 import { usePwa } from '@/pwa/usePwa';
 
@@ -26,16 +29,21 @@ export function App() {
   return (
     <PlatformProvider fallback={opening}>
       <SettingsProvider fallback={opening}>
-        <TooltipProvider delayDuration={400}>
-          <BrowserRouter>
-            <HotkeyProvider>
-              <AppRoutes />
-            </HotkeyProvider>
-          </BrowserRouter>
-          <Toaster />
-          <PwaBridge />
-          <ReminderBridge />
-        </TooltipProvider>
+        <SearchProvider>
+          <CommandRegistryProvider>
+            <TooltipProvider delayDuration={400}>
+              <BrowserRouter>
+                <HotkeyProvider>
+                  <AppRoutes />
+                </HotkeyProvider>
+              </BrowserRouter>
+              <Toaster />
+              <PwaBridge />
+              <ReminderBridge />
+              <DiagnosticsBridge />
+            </TooltipProvider>
+          </CommandRegistryProvider>
+        </SearchProvider>
       </SettingsProvider>
     </PlatformProvider>
   );

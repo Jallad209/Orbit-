@@ -80,7 +80,11 @@ describe('useTimer', () => {
         endAt: null,
       }),
     );
-    renderWithProviders(<Harness clock={clock} taskId={intro.id} />, { repository: repo });
+    // No search provider: its refresh timers would show up in the timer count below.
+    renderWithProviders(<Harness clock={clock} taskId={intro.id} />, {
+      repository: repo,
+      search: false,
+    });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0);
     });

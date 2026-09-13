@@ -275,6 +275,9 @@ describe('DataSettings', () => {
         restoreBackup: async () => {},
         hideCaptureWindow: async () => {},
         startDraggingWindow: async () => {},
+        lastRun: async () => ({ crashedLastTime: false, startedAt: null, crash: null }),
+        saveDiagnostics: async () => null,
+        logEvent: async () => {},
       },
     };
     const repo = createMemoryRepository({ clock });
@@ -327,6 +330,9 @@ describe('DataSettings', () => {
         restoreBackup,
         hideCaptureWindow: async () => {},
         startDraggingWindow: async () => {},
+        lastRun: async () => ({ crashedLastTime: false, startedAt: null, crash: null }),
+        saveDiagnostics: async () => null,
+        logEvent: async () => {},
       },
     };
     renderWithProviders(<DataSettings />, { platform, route: '/settings' });

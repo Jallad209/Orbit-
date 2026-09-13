@@ -3,7 +3,7 @@
 **Tech Stack:** pnpm + GitHub Actions + Vitest + Playwright + Vite PWA + Lighthouse + Rust toolchain & Tauri CLI (from week 7) + tauri-driver/WebdriverIO + NSIS/MSI + Tauri Updater (manual check)
 **Repository:** `C:\Orbit`
 **Owned:** `.github/`, `scripts/`, `apps/orbit/src-tauri/tauri.conf.json` (build/security sections, from week 7), release process
-**Current Status:** Weeks 1-9 ✅ COMPLETE (branch protection pending: needs `gh auth login` or the GitHub UI)
+**Current Status:** Weeks 1-10 ✅ COMPLETE (branch protection pending: needs `gh auth login` or the GitHub UI)
 
 > There are no servers to run. DevOps for Orbit means: reproducible builds, CI that guards the engine, a static PWA build, data-safety verification, signed desktop installers, and a release process. Weeks 1–6 need no Rust. Nothing here may introduce a network dependency into the app itself.
 
@@ -481,7 +481,7 @@ git tag v0.1.0-beta.1 && git push --tags
 
 ---
 
-## Week 10: Local Diagnostics & Logging (No Telemetry)
+## Week 10: Local Diagnostics & Logging (No Telemetry) ✅ COMPLETE
 
 **Description:** This week you will give users and developers a way to debug issues without any data leaving the machine. Structured local logs with rotation on desktop, a Rust panic hook that writes to the log, a "Save diagnostics bundle" command producing a zip with logs, schema version, integrity result, and machine info, an equivalent JSON download on web, and a documented bug-report flow.
 
@@ -501,17 +501,35 @@ git tag v0.1.0-beta.1 && git push --tags
 5. **Diagnostics Bundle** — Zip command + Settings button (desktop); JSON download (web); content review checklist
 6. **Bug Report Doc** — `docs/BUG-REPORTS.md` explaining what the bundle contains and does not contain
 
+**What was done:**
+
+- **`logging.rs`** (desktop): one JSON object per line — `ts`, `level`, `subsystem`, `op`, `fields` — in `<app data dir>/logs/orbit-<date>.<nnn>.log`; a new file each day and whenever one reaches 10 MB, the seven newest kept, a restart appends to the day's newest file when it has room. `debug` in development, `info` in release. Redaction is enforced by the writer, not by care: every string field has quoted segments replaced by `…` and is cut to 80 characters, nested values are dropped, keys are trimmed. Instrumented: process start/exit, database open (and failures), data-folder relocation, backup restore, reminder delivery counts and notification failures, webview events, and the diagnostics export itself — never a path, a title, or SQL
+- **Panic hook and last-run marker**: `install_panic_hook` writes a redacted crash record (`file:line`, message ≤ 200 chars) to `last-run.json` and the log, guarded against re-entry, then hands over to the default hook. `begin_run` reads the previous marker (crashed if it never ended cleanly) and claims the run; `RunEvent::Exit` flips it clean. `diagnostics_last_run` returns `{ crashedLastTime, startedAt, crash }`; the app shows one gentle toast per crashed run and Settings → Data → Diagnostics states it
+- **Web ring buffer** (`lib/diagnostics.ts`): the last 500 events in memory. `installDiagnostics()` (in `main.tsx`) wraps `console.error` (the original still prints), `window.onerror`, and `unhandledrejection`; an event is a timestamp, level, source, the error class or operation name, the route with ids replaced, the script path without query or origin plus line/column, an FNV-1a digest of the message (grouping without the text), and small numbers or flags — never the message. On desktop `DiagnosticsBridge` forwards each event to the shell log through `diagnostics_log`, which clips the kind and sanitizes the fields again
+- **Diagnostics bundle**: `buildDiagnosticsReport` (versions, build, capabilities, browser family and OS family — never the raw user agent — language, time zone, schema versions, storage status, live/total row counts per store, search backend, integrity ok/message count/FTS5, recovery flag, last run, events). Web: a JSON download through `platform.exportFile`. Desktop: `diagnostics_export` writes a zip through a save dialog — `report.json` (the report plus shell version, Tauri version, OS, arch, log-file count, the marker), `last-run.json`, and `logs/*` — and returns the path and file list. `DiagnosticsSettings` on Settings → Data: what is inside, what never is, the previous run's outcome, the button with busy/saved/error states, and a link to the bug-report guide. The plan's stop condition holds: the button ships because the redaction is proven, not assumed
+- **`docs/BUG-REPORTS.md`**: what to send, the contents of `report.json` and the desktop extras, the never-list, how the redaction is enforced, "read it before you share it", and what the crash notice means
+- Tests: 7 Rust (redaction and field sanitizing, rotation by size and by day with retention and same-day reopen, JSON lines above the level, the marker across clean / crashed / killed runs, the bundle's entries with a marker string proven absent, a bundle without a log folder) and 12 web (buffer kinds/positions/digests with sensitive strings absent across every channel, the 500 cap and subscribers, route/script sanitizing, coarse user agent; report contents with marker records in every store proven absent, web download and desktop zip paths, the settings card's saved and failed states, the last-run line)
+
+**Files created:**
+
+- `apps/orbit/src-tauri/src/{logging,time}.rs`, `apps/orbit/src-tauri/src/commands/diagnostics.rs` ✅
+- `apps/orbit/src/lib/diagnostics.ts`, `apps/orbit/src/lib/diagnostics.test.ts` ✅
+- `apps/orbit/src/features/settings/{DiagnosticsSettings,DiagnosticsBridge}.tsx`, `diagnosticsService.ts`, `DiagnosticsSettings.test.tsx` ✅
+- `docs/BUG-REPORTS.md` ✅
+
 **Deliverables:**
 
-- [ ] `apps/orbit/src-tauri/src/logging.rs`
-- [ ] Diagnostics wired to Settings on both runtimes
-- [ ] `docs/BUG-REPORTS.md`
+- [x] `apps/orbit/src-tauri/src/logging.rs`
+- [x] Diagnostics wired to Settings on both runtimes
+- [x] `docs/BUG-REPORTS.md`
 
 **Verification:**
 
 ```bash
+cargo test --manifest-path apps/orbit/src-tauri/Cargo.toml logging diagnostics
+pnpm exec vitest run --project orbit diagnostics
 pnpm run tauri dev
-# Trigger an error; Settings → Save diagnostics; inspect zip contents
+# Settings → Data → Save diagnostics bundle; open the zip: report.json, last-run.json, logs/
 ```
 
 ---
@@ -632,9 +650,9 @@ git tag v1.0.0 && git push --tags
 | **Week 7**  | Rust Toolchain, Tauri Build Pipeline & Installers | ✅ COMPLETE | 100%     |
 | **Week 8**  | Desktop E2E & SQLite Data Safety                  | ✅ COMPLETE | 100%     |
 | **Week 9**  | Code Signing & Release Process                    | ✅ COMPLETE | 100%     |
-| **Week 10** | Local Diagnostics & Logging (No Telemetry)        | ⏳ PENDING  | 0%       |
+| **Week 10** | Local Diagnostics & Logging (No Telemetry)        | ✅ COMPLETE | 100%     |
 | **Week 11** | Tray, Autostart & Notification Packaging          | ⏳ PENDING  | 0%       |
 | **Week 12** | Optional Updater (Manual Check)                   | ⏳ PENDING  | 0%       |
 | **Week 13** | Security Review & 1.0 Release                     | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 9/13 weeks complete (69%)
+**Total Progress:** 10/13 weeks complete (77%)

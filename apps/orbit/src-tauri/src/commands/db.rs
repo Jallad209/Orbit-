@@ -11,6 +11,8 @@ use rusqlite::{params_from_iter, Connection};
 use serde_json::{Map, Value as Json};
 use tauri::State;
 
+use crate::logging::{self, Level};
+
 #[derive(Default)]
 pub struct Database {
     pub connection: Option<Connection>,
@@ -164,8 +166,17 @@ fn open_connection(active: &mut Option<Connection>, path: &str) -> Result<(), St
                 .into(),
         );
     }
-    *active = Some(Connection::open(path).map_err(|e| e.to_string())?);
-    Ok(())
+    match Connection::open(path) {
+        Ok(conn) => {
+            *active = Some(conn);
+            logging::event(Level::Info, "db", "open", Map::new());
+            Ok(())
+        }
+        Err(e) => {
+            logging::error("db", "open", &e.to_string());
+            Err(e.to_string())
+        }
+    }
 }
 
 #[tauri::command]

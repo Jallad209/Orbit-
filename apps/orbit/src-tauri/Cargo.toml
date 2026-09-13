@@ -24,6 +24,9 @@ rusqlite = { version = "0.40", features = ["bundled", "backup"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tempfile = "3"
+# Diagnostics bundles (week 10): deflate only, no encryption or exotic codecs.
+zip = { version = "6", default-features = false, features = ["deflate-flate2"] }
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
 
 # Small, fast release binaries (DEVOPS-TASKS week 7).
 [profile.release]

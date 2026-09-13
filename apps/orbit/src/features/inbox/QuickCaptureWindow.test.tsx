@@ -30,6 +30,9 @@ describe('QuickCaptureWindow', () => {
         restoreBackup: async () => {},
         hideCaptureWindow,
         startDraggingWindow: async () => {},
+        lastRun: async () => ({ crashedLastTime: false, startedAt: null, crash: null }),
+        saveDiagnostics: async () => null,
+        logEvent: async () => {},
       },
     };
     const repository = createMemoryRepository();

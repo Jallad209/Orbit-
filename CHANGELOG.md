@@ -3,6 +3,29 @@
 All notable changes to Orbit. Generated from Conventional Commits with git-cliff,
 then edited by hand before each release.
 
+## [Unreleased]
+
+### Added
+
+- Command palette: `Ctrl+K` (or the Search button on the rail) opens one box for commands and
+  search. Commands — add task / note / event, plan my day, regenerate today's proposal,
+  reschedule unfinished work, show neglected goals, review this week, open project, go to any
+  screen — validate their input inline and offer **Undo** on the toast (this session, last 20).
+- Global search across tasks, notes, projects, and people, with prefix and typo tolerance,
+  `type:note` / `area:name` filters, highlighted snippets, and a `/search` page whose URL is
+  the state. Desktop uses SQLite FTS5 inside the data file when available; the web (and a
+  SQLite without FTS5) uses an in-memory index. Notes and people open in a read-only preview.
+- Local diagnostics, never telemetry: rolling JSON logs on desktop (daily, 10 MB, seven kept)
+  with a redacting writer and a crash marker; a bounded event buffer on the web; Settings →
+  Data → **Save diagnostics bundle** writes a zip (desktop) or JSON (web) that holds versions,
+  counts, and error kinds — no titles, bodies, names, queries, or paths. See
+  `docs/BUG-REPORTS.md`.
+
+### Changed
+
+- Restoring a backup made before the search index existed is accepted; the index is rebuilt on
+  the next open.
+
 ## [0.1.0-alpha.2] — 2026-09-13
 
 Unsigned pre-release: Orbit builds are not code-signed by decision (author and trusted

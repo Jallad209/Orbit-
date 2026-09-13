@@ -56,6 +56,7 @@ describe('AppLayout', () => {
     const user = userEvent.setup();
     renderWithProviders(<AppRoutes />);
     await user.tab(); // skip link
+    await user.tab(); // search and commands
     await user.tab(); // first nav link
     const link = screen.getByRole('link', { name: /^Today/ });
     expect(link).toHaveFocus();

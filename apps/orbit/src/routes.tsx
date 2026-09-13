@@ -17,6 +17,11 @@ import { MorningFlow } from '@/features/reviews/MorningFlow';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { usePlatform } from '@/platform';
 
+// The search page (and its result/preview UI) loads on first visit.
+const SearchPage = lazy(() =>
+  import('@/features/search/SearchPage').then((m) => ({ default: m.SearchPage })),
+);
+
 const ComponentsGallery = import.meta.env.DEV
   ? lazy(() =>
       import('@/pages/dev/ComponentsGallery').then((m) => ({ default: m.ComponentsGallery })),
@@ -69,7 +74,11 @@ export function AppRoutes() {
         />
         <Route
           path="/search"
-          element={<Placeholder title="Search" description="Arrives in week 10." />}
+          element={
+            <Suspense fallback={null}>
+              <SearchPage />
+            </Suspense>
+          }
         />
         <Route path="/settings" element={<SettingsPage />} />
         {ComponentsGallery ? (

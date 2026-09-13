@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router';
 import { StorageBanner } from '@/components/StorageBanner';
 import { QuickCaptureOverlay } from '@/features/inbox/QuickCaptureOverlay';
+import { CommandPalette } from '@/features/palette/CommandPalette';
 import { NavRail } from './NavRail';
 
 /**
@@ -24,6 +25,7 @@ export function AppLayout() {
         </main>
       </div>
       <QuickCaptureOverlay />
+      <CommandPalette />
     </div>
   );
 }

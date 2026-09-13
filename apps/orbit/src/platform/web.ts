@@ -25,6 +25,12 @@ export const webPlatform: Platform = {
     return openRepository({ kind: 'indexeddb' });
   },
 
+  async createSearchService(repository) {
+    // The index library loads after the first paint, not with the app.
+    const { createMiniSearchService } = await import('@orbit/storage/search/minisearch');
+    return createMiniSearchService({ repo: repository });
+  },
+
   async notify(title, body) {
     if (typeof Notification === 'undefined') return false;
     if (Notification.permission !== 'granted') return false;

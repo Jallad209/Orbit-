@@ -28,6 +28,7 @@ import {
 } from '@orbit/core';
 import type { BaseRecord, Clock, EntityType, Id, Link, Op, OpLogEntry } from '@orbit/core';
 import type {
+  DeleteOptions,
   EntityStore,
   LinkStore,
   ListOptions,
@@ -166,27 +167,27 @@ class IdbStore<T extends BaseRecord> implements EntityStore<T> {
     return db.transaction('rw', [this.table, db.opLog], async () => {
       const prev = await this.table.get(stamped.id);
       await this.table.put(stamped);
+      const meta = options?.opMeta ?? {};
       if (prev) {
-        await this.log(
-          'update',
-          stamped.id,
-          shallowPatch(prev, stamped) as Record<string, unknown>,
-        );
+        await this.log('update', stamped.id, {
+          ...(shallowPatch(prev, stamped) as Record<string, unknown>),
+          ...meta,
+        });
       } else {
-        await this.log('create', stamped.id, { ...stamped });
+        await this.log('create', stamped.id, { ...stamped, ...meta });
       }
       return stamped;
     });
   }
 
-  async softDelete(id: Id): Promise<void> {
+  async softDelete(id: Id, options?: DeleteOptions): Promise<void> {
     const { db, clock } = this.ctx;
     await db.transaction('rw', [this.table, db.opLog], async () => {
       const prev = await this.table.get(id);
       if (!prev || prev.deletedAt !== null) return;
       const at = nowIso(clock);
       await this.table.put({ ...prev, deletedAt: at, updatedAt: at });
-      await this.log('delete', id, { deletedAt: at });
+      await this.log('delete', id, { deletedAt: at, ...options?.opMeta });
     });
   }
 }

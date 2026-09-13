@@ -1,7 +1,7 @@
 import type { Goal } from '@orbit/core';
 import { Target } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, EmptyState, ProgressBar, SectionHeader } from '@/components/ui/Card';
@@ -56,6 +56,9 @@ function NeglectBadge({
 export function GoalsPage() {
   const repo = useRepository();
   const { data, loading } = useStructure();
+  const [params, setParams] = useSearchParams();
+  // `?filter=neglected` (the "Show neglected goals" command) narrows the list.
+  const neglectedOnly = params.get('filter') === 'neglected';
   const [title, setTitle] = useState('');
   const [areaId, setAreaId] = useState('');
   const [importance, setImportance] = useState(3);
@@ -77,6 +80,19 @@ export function GoalsPage() {
           Outcomes worth weeks or months. Projects advance them; the planner weighs tasks by their
           importance.
         </p>
+        {neglectedOnly ? (
+          <p className="mt-2 flex items-center gap-2 text-[13px]" data-testid="goals-filter">
+            <Badge tone="gold">Neglected only</Badge>
+            <span className="text-ink-muted">Goals that got no time in the last 14 days.</span>
+            <button
+              type="button"
+              className="underline"
+              onClick={() => setParams({}, { replace: true })}
+            >
+              Show all
+            </button>
+          </p>
+        ) : null}
       </div>
 
       <form onSubmit={submit} className="flex flex-wrap gap-2" aria-label="New goal">
@@ -133,8 +149,20 @@ export function GoalsPage() {
         />
       ) : null}
 
+      {neglectedOnly && data && !data.goals.some((g) => data.goalAttention.get(g.id)?.neglected) ? (
+        <EmptyState
+          icon={<Target />}
+          title="No neglected goals"
+          description="Every active goal got some time in the last 14 days."
+        />
+      ) : null}
+
       {data?.areas.map((area) => {
-        const goals = data.goals.filter((g) => g.areaId === area.id);
+        const goals = data.goals.filter(
+          (g) =>
+            g.areaId === area.id &&
+            (!neglectedOnly || (data.goalAttention.get(g.id)?.neglected ?? false)),
+        );
         if (!goals.length) return null;
         return (
           <section key={area.id} aria-label={area.name}>

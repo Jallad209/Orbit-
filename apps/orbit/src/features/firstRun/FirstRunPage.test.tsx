@@ -38,6 +38,9 @@ function desktopMock(overrides: Partial<NonNullable<Platform['desktop']>> = {}):
       restoreBackup: vi.fn(async () => {}),
       hideCaptureWindow: vi.fn(async () => {}),
       startDraggingWindow: vi.fn(async () => {}),
+      lastRun: vi.fn(async () => ({ crashedLastTime: false, startedAt: null, crash: null })),
+      saveDiagnostics: vi.fn(async () => null),
+      logEvent: vi.fn(async () => {}),
       ...overrides,
     },
   };

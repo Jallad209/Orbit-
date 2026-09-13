@@ -3,7 +3,7 @@
 **Tech Stack:** React 18 + Vite + TypeScript + Tailwind CSS + Radix UI Primitives + Framer Motion + Zustand + Vite PWA + Tauri 2 API (from week 7) + Vitest + Testing Library
 **Repository:** `C:\Orbit`
 **Packages Owned:** `apps/orbit/src`
-**Current Status:** Weeks 1-9 ✅ COMPLETE
+**Current Status:** Weeks 1-10 ✅ COMPLETE
 
 > The frontend talks only to `@orbit/core` services, the `Repository` interface, and a `Platform` interface. It never issues SQL, never imports Tauri APIs outside `src/platform/`, and never calls the network. All fonts and assets are bundled. Weeks 1–6 run in a plain browser; the desktop shell is integrated in week 7.
 
@@ -586,7 +586,7 @@ pnpm run dev
 
 ---
 
-## Week 10: Command Palette & Global Search
+## Week 10: Command Palette & Global Search ✅ COMPLETE
 
 **Description:** This week you will build the keyboard command center. `Ctrl+K` opens a palette that mixes commands ("Add task", "Plan my day", "Show neglected goals", "Review this week", "Reschedule unfinished work") with global search results across tasks, notes, projects, and people. Commands with arguments prompt inline. Results show type chips and snippets and open the entity on Enter.
 
@@ -613,17 +613,31 @@ pnpm run dev
 - Search results show correct type chips
 - `type:note` filter excludes tasks
 
+**What was done:**
+
+- **Palette** (`features/palette/`): `Ctrl+K` through the hotkey registry (`allowInInput` for the chord only) or the "Search…" button at the top of the rail. A Radix dialog with a labelled `combobox` input, a `listbox` of grouped `option`s with `aria-activedescendant`, a polite status line ("3 commands, 5 results"), arrow keys / Home / End, Enter to run or open, Escape to close — focus goes back to what had it (the palette records the opener, since Radix would only return focus to a `Dialog.Trigger`). Commands match locally and instantly (`matchCommands`: title, title word, keyword, substring, multi-word, subsequence; recent ids break ties); search results arrive a beat later from the index (`useSearch`: 120 ms debounce, a key per query so a late answer for an older query is dropped, the previous hits stay while loading). Empty box: Recent (ids only, capped at 10 in localStorage) then every command; with text: matching commands, results with type chips and highlighted snippets, and "Search everything for …". Hits open the project page or the search preview; the undo command appears only while the stack has something
+- **Argument prompts** (`ArgumentPrompt`): a text field or a filtered choice list, validated through `registry.validate` before anything runs — errors show under the field (`role="alert"`) and focus stays; a command with a `preview` shows what will happen and waits for one more Enter (or Run); Escape steps back to the list instead of closing. `runCommand` turns the outcome into a success toast with an **Undo** action (and `bumpData()`), or a danger toast when it fails; `useCommandContext` builds the context from the repository, router, toasts, planner prefs, and capture names; `navigationCommands` adds "Go to …" for every rail destination
+- **`/search`** (`features/search/`): the URL is the state — `q` holds the free text with its `type:`/`area:` tokens (typing replaces the entry, Enter pushes one, so back and forward walk through searches) and `open=type:id` names the preview. A filter sidebar (type checkboxes, area select) edits the same query string through `formatSearchQuery`; malformed filters are listed as an alert while the rest still searches. Results: type chip, highlighted title and snippet as React text segments (`highlightSegments`, never HTML), stable prompt / loading / empty / error states, arrow keys between rows, Enter opens. Quick actions only where behaviour already exists: preview, complete (`completeTask`), schedule today (the timeline's first-free-slot placement), link (the existing `LinkPicker`), open project. `SearchPreview` is a read-only drawer for tasks, notes (the body), people (contact, last contact, open commitments) and projects, so a result never dead-ends on a week 12 placeholder. `SearchProvider` (App.tsx) creates the runtime's index through `platform.createSearchService` (FTS5 or MiniSearch), warms it 400 ms after mount, and refreshes it 250 ms after the last write
+- Goals gained `?filter=neglected` (the "Show neglected goals" command) and Today `?regenerate=1` (proposal mode, cleared on accept or clear)
+- Tests: 7 in `CommandPalette.test.tsx` (matching; Ctrl+K opens, Escape closes, focus returns; "plan" first and runs on Enter; add task prompts, validates in place, writes once, Undo reverses; Escape in a prompt steps back; type chips, `type:note`, opening a hit into the preview; recent commands and their cap) and 5 in `SearchPage.test.tsx` (URL query, chips, highlights, the type checkbox editing the query; area filter and malformed filters; note and person previews with arrow-key rows; complete and schedule quick actions; the empty prompt and opening a project)
+
+**Files created:**
+
+- `apps/orbit/src/features/palette/{CommandPalette,PaletteResults,ArgumentPrompt}.tsx`, `{commandRegistry.tsx,matchCommands.ts,useCommandPalette.ts}`, `CommandPalette.test.tsx` ✅
+- `apps/orbit/src/features/search/{SearchPage,SearchResults,SearchPreview,SearchProvider}.tsx`, `{searchService,searchActions}.ts`, `SearchPage.test.tsx` ✅
+
 **Deliverables:**
 
-- [ ] `apps/orbit/src/features/palette/*`
-- [ ] `apps/orbit/src/features/search/*`
-- [ ] Unit tests written and passing
+- [x] `apps/orbit/src/features/palette/*`
+- [x] `apps/orbit/src/features/search/*`
+- [x] Unit tests written and passing
 
 **Verification:**
 
 ```bash
+pnpm exec vitest run --project orbit palette search
 pnpm run dev
-# Ctrl+K → "find notes about university" → open a note
+# Ctrl+K → "find notes about university" → Enter on the note → the preview drawer on /search
 ```
 
 ---
@@ -773,9 +787,9 @@ pnpm run build && pnpm run preview
 | **Week 7**  | Desktop Shell Integration                     | ✅ COMPLETE | 100%     |
 | **Week 8**  | Morning Briefing, Evening Shutdown & Timer    | ✅ COMPLETE | 100%     |
 | **Week 9**  | Rules & Settings                              | ✅ COMPLETE | 100%     |
-| **Week 10** | Command Palette & Global Search               | ⏳ PENDING  | 0%       |
+| **Week 10** | Command Palette & Global Search               | ✅ COMPLETE | 100%     |
 | **Week 11** | Insights & Project Health Surfaces            | ⏳ PENDING  | 0%       |
 | **Week 12** | Weekly Review, People, Bills & Notes          | ⏳ PENDING  | 0%       |
 | **Week 13** | Mobile PWA Layouts, Accessibility & Polish    | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 9/13 weeks complete (69%)
+**Total Progress:** 10/13 weeks complete (77%)

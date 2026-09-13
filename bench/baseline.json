@@ -1,31 +1,36 @@
 {
   "note": "Means in ms. Regenerate with `pnpm run bench -- --update` on the reference machine.",
   "machine": "win32 x64 node v24.20.0",
-  "at": "2026-09-13T00:22:02.548Z",
+  "at": "2026-09-13T21:36:26.965Z",
   "results": {
     "planner: planDay, 2k open tasks": {
-      "meanMs": 2.9904093283582087,
-      "p99Ms": 4.7354900000001425,
+      "meanMs": 2.6839505016722436,
+      "p99Ms": 3.347951999999367,
       "samples": 0
     },
-    "search: title scan, 50k tasks": {
-      "meanMs": 2.4000742514969953,
-      "p99Ms": 4.06577200000048,
+    "search: minisearch query, 50k tasks + 5k notes": {
+      "meanMs": 5.06666265822783,
+      "p99Ms": 8.288960000000209,
       "samples": 0
     },
     "insights: health + attention, 50k world": {
-      "meanMs": 83.98453437499982,
-      "p99Ms": 111.23146599999994,
+      "meanMs": 76.9955124999999,
+      "p99Ms": 92.78473299999992,
       "samples": 0
     },
     "recurrence: one year of routines": {
-      "meanMs": 3.8553658653845573,
-      "p99Ms": 4.508003000000281,
+      "meanMs": 3.685415596330313,
+      "p99Ms": 4.614381000001413,
       "samples": 0
     },
     "capture: parse 100 phrases": {
-      "meanMs": 1.855296990740725,
-      "p99Ms": 2.603380999999481,
+      "meanMs": 1.7841465478842229,
+      "p99Ms": 2.4732359999994507,
+      "samples": 0
+    },
+    "search: rebuild index, 55k documents": {
+      "meanMs": 857.6533999999998,
+      "p99Ms": 861.0973519999993,
       "samples": 0
     }
   }
