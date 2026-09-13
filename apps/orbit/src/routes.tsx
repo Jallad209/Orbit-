@@ -12,6 +12,8 @@ import { TimelinePage } from '@/features/timeline/TimelinePage';
 import { FirstRunPage } from '@/features/firstRun/FirstRunPage';
 import { isFirstRunDone } from '@/features/firstRun/firstRun';
 import { QuickCaptureWindow } from '@/features/inbox/QuickCaptureWindow';
+import { EveningFlow } from '@/features/reviews/EveningFlow';
+import { MorningFlow } from '@/features/reviews/MorningFlow';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { usePlatform } from '@/platform';
 
@@ -59,14 +61,8 @@ export function AppRoutes() {
           path="/notes"
           element={<Placeholder title="Notes" description="Arrives in week 12." />}
         />
-        <Route
-          path="/review/morning"
-          element={<Placeholder title="Morning briefing" description="Arrives in week 8." />}
-        />
-        <Route
-          path="/review/evening"
-          element={<Placeholder title="Evening shutdown" description="Arrives in week 8." />}
-        />
+        <Route path="/review/morning" element={<MorningFlow />} />
+        <Route path="/review/evening" element={<EveningFlow />} />
         <Route
           path="/review/weekly"
           element={<Placeholder title="Weekly review" description="Arrives in week 12." />}

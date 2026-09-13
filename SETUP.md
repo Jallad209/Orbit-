@@ -83,3 +83,16 @@ Run cargo from PowerShell or cmd, not Git Bash: Git's `usr/bin` carries a GNU `l
 Where the data goes: first run uses `%APPDATA%app.orbit.desktopdataorbit.db` (WAL mode, so `orbit.db-wal` and `orbit.db-shm` sit next to it). Change the folder from Settings → Data; Orbit restarts on the new location. The chosen folder is remembered in `%APPDATA%app.orbit.desktopsettings.json`.
 
 Release: `pnpm run bump -- 0.1.0-alpha.1`, commit, `git tag v0.1.0-alpha.1 && git push --tags`. The Release workflow builds the installers, attaches them with a SHA-256 list, and creates a draft release to publish.
+
+## 7. Desktop end-to-end tests (Windows)
+
+`pnpm run e2e:desktop` drives the real release build through WebDriver: WebdriverIO → `tauri-driver` → Microsoft Edge WebDriver → Orbit's WebView2 window. Every run gets a throwaway data folder (`ORBIT_DATA_DIR`) and WebView2 profile (`WEBVIEW2_USER_DATA_FOLDER`), so it never touches your own database or settings. The same job runs on GitHub's Windows runner in `data-safety.yml`.
+
+| Step                                  | Command (PowerShell)                                                          |
+| ------------------------------------- | ----------------------------------------------------------------------------- |
+| tauri-driver (once)                   | `cargo install tauri-driver --locked`                                         |
+| Edge WebDriver matching your WebView2 | `pnpm run edge:driver` (detects the runtime version; downloads once)          |
+| Release binary                        | `pnpm run tauri:build:bin` (binary only; `tauri:build` also makes installers) |
+| Run                                   | `pnpm run e2e:desktop`                                                        |
+
+The harness lives in `tests/e2e/tauri/` (`wdio.conf.ts` plus `specs/`). After a WebView2 update, run `pnpm run edge:driver` again; a version mismatch fails at session start with an Edge Driver message naming both versions.

@@ -241,11 +241,13 @@ export const ConstraintConfigSchema = z.discriminatedUnion('kind', [
 ]);
 
 export const RolloverTargetSchema = z.enum(['tomorrow', 'nextWeek', 'inbox']);
+export type RolloverTarget = z.infer<typeof RolloverTargetSchema>;
 export const RolloverConfigSchema = z.object({
   p1: RolloverTargetSchema.default('tomorrow'),
   p2: RolloverTargetSchema.default('tomorrow'),
   p3: RolloverTargetSchema.default('nextWeek'),
 });
+export type RolloverConfig = z.infer<typeof RolloverConfigSchema>;
 
 export const ReminderConfigSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('billDueWithin'), days: z.number().int().min(0).max(60) }),

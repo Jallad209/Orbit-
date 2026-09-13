@@ -1,14 +1,13 @@
-import type { Clock, ProposedBlock } from '@orbit/core';
+import type { Clock, ProposedBlock, Task } from '@orbit/core';
 import { formatDuration, formatMinute } from '@orbit/core';
 import { Check, Play, Square } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { Button } from '@/components/ui/Button';
 import { toast } from '@/components/ui/toastStore';
-import { useRepository } from '@/platform';
-import { completeTask } from '@/features/structure/structureService';
+import { CompleteTaskDialog } from '@/features/timer/CompleteTaskDialog';
+import { useTimer } from '@/features/timer/useTimer';
 import type { TodayData } from './todayService';
-import { startSession, stopSession } from './todayService';
 
 interface Props {
   data: TodayData;
@@ -19,35 +18,25 @@ interface Props {
 
 /** The one dominant element: what to do next, with Start and Done. */
 export function FocusHeader({ data, block, mode, clock }: Props) {
-  const repo = useRepository();
+  const timer = useTimer(clock);
   const [busy, setBusy] = useState(false);
+  const [completing, setCompleting] = useState<Task | null>(null);
   const task = block?.taskId ? data.taskById.get(block.taskId) : undefined;
   const project = task?.projectId ? data.projectById.get(task.projectId) : undefined;
-  const running = data.runningSession && task && data.runningSession.taskId === task.id;
+  const running = !!(timer.active && task && timer.active.session.taskId === task.id);
+  const elsewhere = timer.active && !running ? timer.active : null;
 
   const toggleSession = async () => {
     if (!task) return;
     setBusy(true);
     try {
       if (running) {
-        await stopSession(repo, data.runningSession!, clock);
-        toast('Session stopped');
+        await timer.stop();
+        toast({ title: 'Session stopped', description: timer.elapsed });
       } else {
-        await startSession(repo, task.id, clock);
+        await timer.start(task.id);
         toast({ title: 'Session started', description: task.title });
       }
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const done = async () => {
-    if (!task) return;
-    setBusy(true);
-    try {
-      if (running) await stopSession(repo, data.runningSession!, clock);
-      await completeTask(repo, task, null, clock);
-      toast({ title: 'Done', description: task.title, variant: 'success' });
     } finally {
       setBusy(false);
     }
@@ -82,11 +71,20 @@ export function FocusHeader({ data, block, mode, clock }: Props) {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {running ? (
+              <output
+                data-testid="timer-elapsed"
+                aria-label="Elapsed"
+                className="text-[15px] font-semibold text-gold-2 tnum"
+              >
+                {timer.elapsed}
+              </output>
+            ) : null}
             <Button
               variant={running ? 'gold' : 'primary'}
               onClick={toggleSession}
               loading={busy}
-              aria-pressed={!!running}
+              aria-pressed={running}
             >
               {running ? (
                 <Square className="size-4" aria-hidden="true" />
@@ -95,7 +93,7 @@ export function FocusHeader({ data, block, mode, clock }: Props) {
               )}
               {running ? 'Stop' : 'Start'}
             </Button>
-            <Button variant="secondary" onClick={done} disabled={busy}>
+            <Button variant="secondary" onClick={() => setCompleting(task)} disabled={busy}>
               <Check className="size-4" aria-hidden="true" />
               Done
             </Button>
@@ -106,6 +104,12 @@ export function FocusHeader({ data, block, mode, clock }: Props) {
           Nothing planned yet
         </h2>
       )}
+      {elsewhere ? (
+        <p className="mt-2 text-[13px] text-nav-muted" data-testid="timer-elsewhere">
+          Timer running on “{elsewhere.task?.title ?? 'a task'}” · {timer.elapsed}
+        </p>
+      ) : null}
+      <CompleteTaskDialog task={completing} onClose={() => setCompleting(null)} clock={clock} />
     </section>
   );
 }

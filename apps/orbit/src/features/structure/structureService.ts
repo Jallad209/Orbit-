@@ -6,6 +6,7 @@ import {
   TaskSchema,
   archiveProjectCascade,
   assertAreaDeletable,
+  completeTask as completeTaskRecord,
   computeAreaAttention,
   computeGoalAttention,
   computeProjectHealth,
@@ -13,6 +14,7 @@ import {
   groupLinked,
   makeLink,
   resolveTaskParent,
+  stopSession,
   systemClock,
   validateDependencies,
   validateGoalParent,
@@ -306,17 +308,26 @@ export async function updateTask(
   return next;
 }
 
+/**
+ * Mark a task done. A running timer on it stops first; with sessions the
+ * actual comes from them when none is given, otherwise it stays null for
+ * the evening review to ask.
+ */
 export async function completeTask(
   repo: Repository,
   task: Task,
   actualMin: number | null,
   clock: Clock = systemClock,
 ): Promise<Task> {
-  const next = await repo.tasks.upsert({
-    ...task,
-    status: 'done',
-    actualMin,
-    completedAt: clock.now().toISOString(),
+  const sessions = await repo.sessions.query((s) => s.taskId === task.id);
+  const running = sessions.find((s) => s.endAt === null);
+  const next = await repo.transaction(async (tx) => {
+    let all = sessions;
+    if (running) {
+      const stopped = await tx.sessions.upsert(stopSession(running, clock));
+      all = sessions.map((s) => (s.id === running.id ? stopped : s));
+    }
+    return tx.tasks.upsert(completeTaskRecord(task, actualMin, all, clock));
   });
   bumpData();
   return next;

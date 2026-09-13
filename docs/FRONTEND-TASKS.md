@@ -3,7 +3,7 @@
 **Tech Stack:** React 18 + Vite + TypeScript + Tailwind CSS + Radix UI Primitives + Framer Motion + Zustand + Vite PWA + Tauri 2 API (from week 7) + Vitest + Testing Library
 **Repository:** `C:\Orbit`
 **Packages Owned:** `apps/orbit/src`
-**Current Status:** Weeks 1-7 ✅ COMPLETE
+**Current Status:** Weeks 1-8 ✅ COMPLETE
 
 > The frontend talks only to `@orbit/core` services, the `Repository` interface, and a `Platform` interface. It never issues SQL, never imports Tauri APIs outside `src/platform/`, and never calls the network. All fonts and assets are bundled. Weeks 1–6 run in a plain browser; the desktop shell is integrated in week 7.
 
@@ -460,7 +460,7 @@ pnpm run tauri dev
 
 ---
 
-## Week 8: Morning Briefing, Evening Shutdown & Timer
+## Week 8: Morning Briefing, Evening Shutdown & Timer ✅ COMPLETE
 
 **Description:** This week you will build the two daily review flows and the work timer. The morning briefing asks for energy level, shows at-risk items and bills due, then presents the plan for acceptance. The evening shutdown compares the commitment with what was done, asks for actual durations where no timer ran, and applies rollover choices. The timer runs from the Today screen and survives restarts.
 
@@ -487,15 +487,38 @@ pnpm run tauri dev
 - Timer state restored from repository on mount
 - Completion dialog prefills estimate
 
+**What was done:**
+
+- `features/timer/useTimer.ts`: reads the active session (and its task) from the repository on mount, so a restart resumes where the timer was; elapsed time is always `clock.now() − startAt`, a once-a-second tick only forces a render; one interval per running session kept in a ref and cleared on stop and unmount; `document.title` becomes `25:13 · Task name` while running and the page's own title comes back when it stops; exposes `start`, `stop`, `elapsed`
+- `features/timer/timerService.ts`: `loadActiveTimer`, `startSession` (closes whatever was running in the same transaction), `stopSession`, `stopActiveSession`, `formatElapsed` (`m:ss`, `h:mm:ss` past an hour)
+- `features/timer/CompleteTaskDialog.tsx` on the `Dialog` primitive: prefills the estimate (`1h 30m`, selected for overtyping), accepts `25`, `1h`, `1h30` through `parseDuration` with an inline error otherwise, has Skip; when the task already has a session it never shows and completes straight away with the actual taken from the sessions. Wired into the focus header's Done button and the project page task checkbox
+- `FocusHeader` now runs on the hook: elapsed counter next to Stop, a note when the timer runs on a different task, Done opens the dialog
+- `features/reviews/ReviewLaunchers.tsx` above the plan panel: "Start morning briefing" (for the day Today is planning) while it has no commitment; "Evening shutdown" (for today) once the working window has ended — `eveningStartMin` reads `usePlanPrefs` with 17:00 as the fallback until Settings arrive in week 9
+- `features/reviews/MorningFlow.tsx` at `/review/morning?date=`: four steps on a shared `FlowShell` + `Stepper` (completed steps clickable, `aria-current="step"`). Energy uses the same `EnergyPicker` as Today (extracted into `features/today/EnergyPicker.tsx`) with `1` / `2` / `3` hotkeys through `useHotkey` that act on step one only; then at-risk and bills; then `PlanPanel` unchanged (remove, restore, regenerate, accept all work); then a summary. Accept calls the existing `acceptPlan` and navigates to Today
+- `features/reviews/EveningFlow.tsx` at `/review/evening?date=`: committed vs done with a progress bar; an actual prompt per task completed without a session (prefilled from the estimate, blank skips, bad input blocks Next with a field error); a three-way segmented control per unfinished task defaulting to the rule's suggestion and showing where each choice lands; a summary with time by area. Submit goes through `submitEvening`, which writes every actual and rollover in one `repo.transaction`, then navigates to Today
+- `features/reviews/reviewService.ts`: `loadMorning` / `loadEvening` build the core briefings from one repository read; `submitEvening` is the single write
+- Today's at-risk panel and "where time went" now come from the shared core rules (`computeAtRisk`, `timeByArea` over the last seven local days, sessions split at midnight)
+- 20 new tests (`Timer.test.tsx`, `CompleteTaskDialog.test.tsx`, `MorningFlow.test.tsx`, `EveningFlow.test.tsx`, `ReviewLaunchers.test.tsx`, three more in `TodayPage.test.tsx`): the five required ones — energy chosen with the `3` hotkey reaches `usePlanPrefs`, the proposal's `energy` field, and the stored commitment; the evening lists exactly the unfinished committed tasks; every rollover choice is submitted (P1 to tomorrow keeping its 17:00 due time, P3 switched to inbox); the timer restores a session seeded with `endAt: null` and shows `25:13` in the header and window title; the dialog prefills the estimate — plus ticking with fake timers and interval cleanup, closing the previous session on start, the dialog skipping itself, launcher visibility, and the empty evening
+- `tests/e2e/playwright/core-loop.spec.ts`: the `test.fixme` is now a real run — morning briefing by hotkey → accept → timer survives a reload and titles the window → Done without a prompt → completion prompt from the project page → evening shutdown with one rollover to next week → the task carries next Monday's due date. The milestone test also waits for each milestone before adding the next (it raced under load)
+- Manual cycle on `pnpm dev` done end to end; the rolled task is the first block in Monday's proposal
+
+**Files created:**
+
+- `apps/orbit/src/features/timer/{useTimer.ts,timerService.ts,CompleteTaskDialog.tsx,Timer.test.tsx,CompleteTaskDialog.test.tsx}` ✅
+- `apps/orbit/src/features/reviews/{MorningFlow.tsx,EveningFlow.tsx,ReviewLaunchers.tsx,Stepper.tsx,reviewService.ts,MorningFlow.test.tsx,EveningFlow.test.tsx,ReviewLaunchers.test.tsx}` ✅
+- `apps/orbit/src/features/today/EnergyPicker.tsx` ✅
+
 **Deliverables:**
 
-- [ ] `apps/orbit/src/features/reviews/{MorningFlow,EveningFlow}.tsx`
-- [ ] `apps/orbit/src/features/timer/*`
-- [ ] Unit tests written and passing
+- [x] `apps/orbit/src/features/reviews/{MorningFlow,EveningFlow}.tsx`
+- [x] `apps/orbit/src/features/timer/*`
+- [x] Unit tests written and passing
 
 **Verification:**
 
 ```bash
+pnpm exec vitest run --project orbit reviews timer
+pnpm run e2e
 pnpm run dev
 # Run a full morning → work with timer → evening cycle
 ```
@@ -730,11 +753,11 @@ pnpm run build && pnpm run preview
 | **Week 5**  | Today Screen & Plan Proposal                  | ✅ COMPLETE | 100%     |
 | **Week 6**  | Time-Block Timeline                           | ✅ COMPLETE | 100%     |
 | **Week 7**  | Desktop Shell Integration                     | ✅ COMPLETE | 100%     |
-| **Week 8**  | Morning Briefing, Evening Shutdown & Timer    | ⏳ PENDING  | 0%       |
+| **Week 8**  | Morning Briefing, Evening Shutdown & Timer    | ✅ COMPLETE | 100%     |
 | **Week 9**  | Rules & Settings                              | ⏳ PENDING  | 0%       |
 | **Week 10** | Command Palette & Global Search               | ⏳ PENDING  | 0%       |
 | **Week 11** | Insights & Project Health Surfaces            | ⏳ PENDING  | 0%       |
 | **Week 12** | Weekly Review, People, Bills & Notes          | ⏳ PENDING  | 0%       |
 | **Week 13** | Mobile PWA Layouts, Accessibility & Polish    | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 7/13 weeks complete (54%)
+**Total Progress:** 8/13 weeks complete (62%)

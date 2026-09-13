@@ -81,10 +81,11 @@ test('project page: milestones drive progress and the next action clears the fla
   await page.getByRole('link', { name: /Training plan/ }).click();
 
   const milestone = page.getByRole('textbox', { name: 'Milestone title' });
-  await milestone.fill('Buy shoes');
-  await milestone.press('Enter');
-  await milestone.fill('Run 5k');
-  await milestone.press('Enter');
+  for (const title of ['Buy shoes', 'Run 5k']) {
+    await milestone.fill(title);
+    await milestone.press('Enter');
+    await expect(page.getByRole('checkbox', { name: `${title} done` })).toBeVisible();
+  }
   await page.getByRole('checkbox', { name: 'Buy shoes done' }).click();
   await expect(page.getByTestId('progress-label')).toContainText('50%');
 
@@ -189,6 +190,104 @@ test('timeline: schedules a task, locks it, moves another around it, and re-plan
   await expect(page.getByText('Day re-planned').first()).toBeVisible();
 });
 
-test.fixme('runs the evening review', async () => {
-  // Week 8.
+test('morning briefing → timer → completion prompt → evening shutdown with a rollover', async ({
+  page,
+}) => {
+  await createArea(page, 'Study');
+  await page.goto('/projects');
+  await page.getByRole('textbox', { name: 'Project title' }).fill('Thesis');
+  await page.getByRole('button', { name: 'Add project' }).click();
+  await page.getByRole('link', { name: /Thesis/ }).click();
+  const task = page.getByRole('textbox', { name: 'Task title' });
+  for (const title of ['Write intro', 'Literature review', 'Email the supervisor']) {
+    await task.fill(title);
+    await task.press('Enter');
+    await expect(
+      page
+        .getByRole('listbox', { name: 'Project tasks' })
+        .getByRole('option', { name: new RegExp(title) }),
+    ).toBeVisible();
+  }
+
+  // Morning: energy by hotkey, at-risk, plan, accept.
+  await page.goto('/today');
+  const launcher = page.getByRole('link', { name: 'Start morning briefing' });
+  const date = new URL(
+    await launcher.getAttribute('href').then((h) => h!),
+    'http://x',
+  ).searchParams.get('date')!;
+  await launcher.click();
+  const flow = page.getByTestId('morning-flow');
+  await expect(flow).toHaveAttribute('data-step', '0');
+  await page.keyboard.press('3');
+  await expect(page.getByRole('radio', { name: /high/ })).toBeChecked();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByTestId('morning-at-risk')).toBeVisible();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByTestId('morning-plan')).toHaveAttribute('data-energy', 'high');
+  await expect(page.getByRole('list', { name: 'Proposed plan' }).getByRole('listitem')).toHaveCount(
+    3,
+  );
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Accept plan' }).click();
+  await expect(page.getByTestId('plan-panel')).toHaveAttribute('data-mode', 'committed');
+  await expect(page.getByRole('link', { name: 'Start morning briefing' })).toHaveCount(0);
+
+  // Timer on the focus task; a reload keeps it running.
+  const focus = page.getByTestId('focus');
+  await expect(focus.getByRole('heading', { level: 2 })).toHaveText('Write intro');
+  await focus.getByRole('button', { name: 'Start' }).click();
+  await expect(focus.getByRole('button', { name: 'Stop' })).toBeVisible();
+  await expect(focus.getByTestId('timer-elapsed')).toBeVisible();
+  await expect(page).toHaveTitle(/^\d+:\d\d · Write intro$/);
+  await page.reload();
+  await expect(focus.getByRole('button', { name: 'Stop' })).toBeVisible();
+  await focus.getByRole('button', { name: 'Stop' }).click();
+  await expect(focus.getByRole('button', { name: 'Start' })).toBeVisible();
+  await expect(page).toHaveTitle('Orbit');
+  // Done on a task with a session: no prompt, the actual comes from the timer.
+  await focus.getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Write intro' })).toBeVisible();
+  await expect(page.getByTestId('complete-dialog')).toHaveCount(0);
+
+  // Complete a second task without a timer: the prompt asks for the actual.
+  await page.goto('/projects');
+  await page.getByRole('link', { name: /Thesis/ }).click();
+  await page.getByRole('checkbox', { name: 'Complete Literature review' }).click();
+  const dialog = page.getByTestId('complete-dialog');
+  await expect(dialog).toBeVisible();
+  const actual = dialog.getByRole('textbox', { name: 'Actual time' });
+  await expect(actual).toHaveValue('30m');
+  await actual.fill('45');
+  await actual.press('Enter');
+  await expect(dialog).toHaveCount(0);
+
+  // Evening: two done, one unfinished, rolled over to next week.
+  await page.goto(`/review/evening?date=${date}`);
+  await expect(page.getByTestId('evening-committed')).toContainText('2 of 3 committed tasks done');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByTestId('evening-no-actuals')).toBeVisible();
+  await page.getByRole('button', { name: 'Next' }).click();
+  const rows = page.getByRole('list', { name: 'Unfinished tasks' }).getByRole('listitem');
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText('Email the supervisor');
+  await rows.first().getByRole('radio', { name: 'Next week' }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByTestId('evening-summary')).toContainText('1 to next week');
+  await page.getByRole('button', { name: 'Close the day' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: /Today|Tomorrow/ })).toBeVisible();
+  await expect(page.getByText('Day closed')).toBeVisible();
+
+  // The rolled task now carries next Monday's due date.
+  const now = new Date();
+  const dow = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + (dow === 0 ? 1 : 8 - dow));
+  monday.setHours(23, 59, 0, 0);
+  await page.goto('/projects');
+  await page.getByRole('link', { name: /Thesis/ }).click();
+  const row = page
+    .getByRole('listbox', { name: 'Project tasks' })
+    .getByRole('option', { name: /Email the supervisor/ });
+  await expect(row).toContainText(monday.toISOString().slice(0, 10));
 });

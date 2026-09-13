@@ -17,6 +17,8 @@ apps/orbit/src-tauri/gen/
 *.db-shm
 *.sqlite
 backups/
+# …except the generated migration fixtures (scripts/make-fixture.ts)
+!tests/fixtures/db/*.db
 
 # Logs
 logs/
@@ -41,3 +43,6 @@ playwright-report/
 # Benchmark data and results (baseline is committed)
 bench/data/
 bench/results.json
+
+# Desktop e2e: the Edge WebDriver fetched by scripts/edge-driver.ts
+tests/e2e/tauri/.driver/

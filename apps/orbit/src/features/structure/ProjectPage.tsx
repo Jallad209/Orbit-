@@ -14,11 +14,11 @@ import { Input, Label, Select, Textarea } from '@/components/ui/Input';
 import { List, ListRow } from '@/components/ui/List';
 import { useRepoQuery } from '@/data/useQuery';
 import { useRepository } from '@/platform';
+import { CompleteTaskDialog } from '@/features/timer/CompleteTaskDialog';
 import {
   addLink,
   addMilestone,
   archiveProject,
-  completeTask,
   createTask,
   loadLinked,
   moveMilestone,
@@ -51,6 +51,7 @@ export function ProjectPage({ clock = systemClock }: ProjectPageProps) {
   const [newTask, setNewTask] = useState('');
   const [editing, setEditing] = useState<Task | null>(null);
   const [showDone, setShowDone] = useState(false);
+  const [completing, setCompleting] = useState<Task | null>(null);
 
   const project = data?.projects.find((p) => p.id === id);
   if (!data) return null;
@@ -327,7 +328,7 @@ export function ProjectPage({ clock = systemClock }: ProjectPageProps) {
                       aria-label={`Complete ${t.title}`}
                       checked={t.status === 'done'}
                       onCheckedChange={(v) =>
-                        void (v === true ? completeTask(repo, t, null, clock) : reopenTask(repo, t))
+                        v === true ? setCompleting(t) : void reopenTask(repo, t)
                       }
                     />
                   }
@@ -450,6 +451,7 @@ export function ProjectPage({ clock = systemClock }: ProjectPageProps) {
         projects={data.projects}
         onClose={() => setEditing(null)}
       />
+      <CompleteTaskDialog task={completing} onClose={() => setCompleting(null)} clock={clock} />
     </div>
   );
 }

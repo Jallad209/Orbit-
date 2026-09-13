@@ -1,10 +1,12 @@
 name: Data safety
 
-# User data must never be lost silently. Three checks, every PR and every night:
+# User data must never be lost silently. Four checks, every PR and every night:
 #   1. a 50,000-task export → import → export round trip is byte-identical
-#   2. every stored IndexedDB schema version upgrades to today's without losing rows
+#   2. every stored IndexedDB and SQLite schema version upgrades to today's
+#      without losing rows, and a SQLite backup restores identically
 #   3. in a real browser, records survive a reload and a denied-persistence
 #      browser still offers a working export
+#   4. the real desktop build runs the core loop over SQLite on Windows
 
 on:
   pull_request:
@@ -37,8 +39,11 @@ jobs:
         env:
           ROUNDTRIP_SIZE: '50000'
 
-      - name: Schema migration matrix
+      - name: Schema migration matrix (IndexedDB and SQLite fixtures)
         run: pnpm run test:migrations
+
+      - name: SQLite backup → restore → compare
+        run: pnpm run verify:backup
 
       - name: Fixtures are current
         # A schema bump without regenerated fixtures fails here.
@@ -84,3 +89,51 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  desktop:
+    name: Core loop on the desktop build (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Rust toolchain (from rust-toolchain.toml)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/orbit/src-tauri
+          cache-targets: true
+
+      - name: tauri-driver cache
+        id: tauri-driver
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/tauri-driver.exe
+          key: tauri-driver-2.0.6-${{ runner.os }}
+
+      - name: Install tauri-driver
+        if: steps.tauri-driver.outputs.cache-hit != 'true'
+        run: cargo install tauri-driver --version 2.0.6 --locked
+
+      # The Evergreen WebView2 runtime ships on the runner image; the driver has to match it.
+      - name: Edge WebDriver matching the WebView2 runtime
+        shell: pwsh
+        run: pnpm run edge:driver
+
+      - name: Build the app (binary only; installers are the release workflow's job)
+        run: pnpm run tauri:build:bin
+
+      - name: Core loop on desktop
+        run: pnpm run e2e:desktop
+        env:
+          CI: true

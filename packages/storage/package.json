@@ -7,7 +7,8 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./test/contract": "./test/contract.ts"
+    "./test/contract": "./test/contract.ts",
+    "./test/betterSqliteDriver": "./test/betterSqliteDriver.ts"
   },
   "scripts": {
     "type-check": "tsc --noEmit -p tsconfig.json"

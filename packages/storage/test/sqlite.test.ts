@@ -2,7 +2,15 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync } from 'no
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it, vi } from 'vitest';
-import { AreaSchema, TaskSchema, createRecord, fixedClock } from '@orbit/core';
+import {
+  AreaSchema,
+  TaskSchema,
+  activeSession,
+  createRecord,
+  fixedClock,
+  sessionMinutes,
+  startSession,
+} from '@orbit/core';
 import { EXPORT_SCHEMA_VERSION, exportJson, importJson, parseExport } from '../src/export';
 import { openRepository } from '../src/factory';
 import {
@@ -175,6 +183,62 @@ describe('integrity', () => {
     const r = await integrityCheck(driver);
     expect(r).toEqual({ ok: true, messages: ['ok'], fts5: true });
     await driver.close();
+  });
+
+  it('reports damage inside a valid file as corruption, not as "not a database"', async () => {
+    // A real database with enough rows to span many pages.
+    const file = join(dir, 'flipped.db');
+    const clock = fixedClock('2026-09-12T09:00:00.000Z');
+    const driver = betterSqliteDriver(file);
+    await driver.exec('PRAGMA journal_mode = DELETE');
+    const repo = await createSqliteRepository({ driver, clock });
+    await repo.transaction(async (tx) => {
+      for (let i = 0; i < 400; i += 1) {
+        await tx.tasks.upsert(
+          createRecord(TaskSchema, clock, { title: `Task ${i}`, notes: 'x'.repeat(200) }),
+        );
+      }
+    });
+    await repo.close();
+
+    // Flip bytes in the middle of the file: the b-tree headers and cell
+    // pointers of a few pages in the middle third, leaving page 1 intact.
+    const bytes = readFileSync(file);
+    const pageSize = bytes.readUInt16BE(16);
+    const pages = Math.floor(bytes.length / pageSize);
+    expect(pages).toBeGreaterThan(6);
+    const first = Math.floor(pages / 3);
+    for (let p = first; p < first + 3; p += 1) {
+      const start = p * pageSize;
+      for (let i = 0; i < 64; i += 1) bytes[start + i] = bytes[start + i]! ^ 0xa5;
+    }
+    writeFileSync(file, bytes);
+
+    const damaged = betterSqliteDriver(file);
+    const r = await integrityCheck(damaged);
+    expect(r.ok).toBe(false);
+    const report = r.messages.join('\n');
+    expect(report).not.toMatch(/not a database/);
+    expect(report).toMatch(/page \d+|malformed|corrupt/i);
+    await damaged.close();
+  });
+
+  it('a running session started before a "restart" is found by the next connection', async () => {
+    const file = join(dir, 'restart.db');
+    const clock = fixedClock('2026-09-14T09:00:00.000Z');
+    const task = createRecord(TaskSchema, clock, { title: 'Write intro' });
+    const before = await createSqliteRepository({ driver: betterSqliteDriver(file), clock });
+    await before.tasks.upsert(task);
+    const { session } = startSession(task.id, [], clock);
+    await before.sessions.upsert(session);
+    await before.close(); // the app quits with the timer running
+
+    clock.advance(25 * 60_000);
+    const after = await createSqliteRepository({ driver: betterSqliteDriver(file), clock });
+    const active = activeSession(await after.sessions.list());
+    expect(active?.id).toBe(session.id);
+    expect(sessionMinutes(active!, clock.now())).toBe(25);
+    await after.close();
   });
 
   it('detects a corrupt file and picks the newest non-empty backup to restore', async () => {

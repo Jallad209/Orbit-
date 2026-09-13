@@ -206,6 +206,58 @@ describe('TodayPage', () => {
     expect(left).toHaveAttribute('data-reason', 'energy');
   });
 
+  it('offers the morning briefing until the plan is accepted', async () => {
+    const user = userEvent.setup();
+    const { repo } = await seed();
+    render(repo);
+    await screen.findByTestId('focus');
+    expect(screen.getByRole('link', { name: 'Start morning briefing' })).toHaveAttribute(
+      'href',
+      `/review/morning?date=${DATE}`,
+    );
+    await user.click(screen.getByRole('button', { name: 'Accept' }));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('link', { name: 'Start morning briefing' }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it('starts a timer on the focus task, shows it counting, and Done completes from the sessions', async () => {
+    const user = userEvent.setup();
+    const { repo, overdue } = await seed();
+    document.title = 'Orbit';
+    render(repo);
+    const focus = await screen.findByTestId('focus');
+    await user.click(within(focus).getByRole('button', { name: 'Start' }));
+    const stop = await within(focus).findByRole('button', { name: 'Stop' });
+    expect(stop).toHaveAttribute('aria-pressed', 'true');
+    expect(within(focus).getByTestId('timer-elapsed')).toHaveTextContent('0:00');
+    expect(document.title).toBe('0:00 · Send the draft');
+    clock.advance(10 * 60_000);
+
+    // Done with a session behind it: no prompt, the actual comes from the timer.
+    await user.click(within(focus).getByRole('button', { name: 'Done' }));
+    await waitFor(async () => expect((await repo.tasks.get(overdue.id))?.status).toBe('done'));
+    expect((await repo.tasks.get(overdue.id))?.actualMin).toBe(10);
+    expect(screen.queryByTestId('complete-dialog')).not.toBeInTheDocument();
+    expect(await repo.sessions.query((s) => s.endAt === null)).toEqual([]);
+    await waitFor(() => expect(document.title).toBe('Orbit'));
+  });
+
+  it('Done without a timer asks how long the task took', async () => {
+    const user = userEvent.setup();
+    const { repo, overdue } = await seed();
+    render(repo);
+    const focus = await screen.findByTestId('focus');
+    await user.click(within(focus).getByRole('button', { name: 'Done' }));
+    const input = await screen.findByRole('textbox', { name: 'Actual time' });
+    expect(input).toHaveValue('1h'); // the 60-minute estimate
+    await user.clear(input);
+    await user.type(input, '45{Enter}');
+    await waitFor(async () => expect((await repo.tasks.get(overdue.id))?.actualMin).toBe(45));
+  });
+
   it('shows at-risk items and the insight strip with evidence', async () => {
     const user = userEvent.setup();
     const { repo } = await seed();

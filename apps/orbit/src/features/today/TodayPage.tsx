@@ -1,4 +1,4 @@
-import type { Clock, Energy, Id, LocalDate, PlanProposal } from '@orbit/core';
+import type { Clock, Id, LocalDate, PlanProposal } from '@orbit/core';
 import { addDays, minuteOfDay, systemClock, toLocalDate } from '@orbit/core';
 import { useCallback, useMemo, useState } from 'react';
 import type { Repository } from '@orbit/storage';
@@ -8,7 +8,9 @@ import { toast } from '@/components/ui/toastStore';
 import { useRepoQuery } from '@/data/useQuery';
 import { useRepository } from '@/platform';
 import { cn } from '@/lib/cn';
+import { ReviewLaunchers } from '@/features/reviews/ReviewLaunchers';
 import { CompactTimeline } from './CompactTimeline';
+import { EnergyPicker } from './EnergyPicker';
 import { FocusHeader } from './FocusHeader';
 import { PlanPanel, type PlanDiff } from './PlanPanel';
 import { settingsFor, usePlanPrefs } from './planSettings';
@@ -20,8 +22,6 @@ import {
   UpcomingCommitments,
 } from './SidePanels';
 import { acceptPlan, defaultPlanDate, loadToday, nextBlock, unplanDay } from './todayService';
-
-const ENERGIES: Energy[] = ['low', 'medium', 'high'];
 
 export function diffProposals(previous: PlanProposal, current: PlanProposal): PlanDiff {
   const before = new Map(
@@ -139,24 +139,7 @@ export function TodayPage({ clock = systemClock, date: dateProp }: Props) {
               ))}
             </div>
           ) : null}
-          <div role="radiogroup" aria-label="Energy" className="flex rounded-md border border-line">
-            {ENERGIES.map((e, i) => (
-              <button
-                key={e}
-                type="button"
-                role="radio"
-                aria-checked={energy === e}
-                onClick={() => prefs.setEnergy(date, e)}
-                className={cn(
-                  'h-8 px-3 text-[13px] capitalize',
-                  i === 0 ? 'rounded-l-md' : i === ENERGIES.length - 1 ? 'rounded-r-md' : '',
-                  energy === e ? 'bg-lime text-lime-ink' : 'text-ink-muted hover:bg-surface-2',
-                )}
-              >
-                {e}
-              </button>
-            ))}
-          </div>
+          <EnergyPicker value={energy} onChange={(e) => prefs.setEnergy(date, e)} />
           {mode === 'committed' ? (
             <Button
               size="sm"
@@ -186,6 +169,12 @@ export function TodayPage({ clock = systemClock, date: dateProp }: Props) {
           <InsightsStrip data={data} />
           <div className="grid gap-5 min-[900px]:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.9fr)]">
             <div className="flex flex-col gap-5">
+              <ReviewLaunchers
+                date={date}
+                now={data.now}
+                hasCommitment={data.commitment !== null}
+                workingWindow={prefs.workingWindow}
+              />
               <PlanPanel
                 proposal={data.proposal}
                 mode={mode}

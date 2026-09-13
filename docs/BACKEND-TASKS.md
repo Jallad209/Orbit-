@@ -3,7 +3,7 @@
 **Tech Stack:** TypeScript (strict) + Zod + Vitest + Dexie (IndexedDB) + SQLite (Tauri SQL plugin, from week 7) + MiniSearch / FTS5 + Tauri 2 Rust commands (from week 7)
 **Repository:** `C:\Orbit`
 **Packages Owned:** `packages/core`, `packages/storage`, `apps/orbit/src-tauri` (from week 7)
-**Current Status:** Weeks 1-7 ✅ COMPLETE
+**Current Status:** Weeks 1-8 ✅ COMPLETE
 
 > In Orbit there is no server. "Backend" means the pure domain engine (`packages/core`), the storage layer (`packages/storage`), and, from week 7, the Rust shell commands. Weeks 1–6 run entirely in the browser against IndexedDB. Everything here must run with the network cable unplugged.
 
@@ -453,7 +453,7 @@ pnpm run tauri dev
 
 ---
 
-## Week 8: Actuals, Sessions & Review Data Services
+## Week 8: Actuals, Sessions & Review Data Services ✅ COMPLETE
 
 **Description:** This week you will add the primitive the insights depend on: what actually happened. Sessions record start/stop per task. Completing a task without a session prompts for actual minutes. You will build the data services behind the morning briefing (energy, proposal, at-risk items) and the evening shutdown (compare commitment vs actuals, roll over unfinished work).
 
@@ -481,15 +481,34 @@ pnpm run tauri dev
 - Rollover rule moves P3 tasks to next Monday, P1 to tomorrow
 - Time-by-area sums sessions correctly across midnight
 
+**What was done:**
+
+- `services/sessions.ts`: `startSession` (returns the new session plus every running one it closed, so one timer runs at a time), `stopSession`, `manualSession`, `activeSession` (the one with `endAt === null`; newest start wins if the invariant is ever broken), `sessionMinutes` (a running session counts to `now`), `taskSessionMinutes`, `hasSession`. Sessions store wall-clock instants, never a monotonic counter, so a restart resumes at `now − startAt`
+- `services/completion.ts`: `completeTask(task, actualMin | null, sessions, clock)` fills the actual from the task's sessions when null is passed and leaves it null with no sessions so the evening review can ask; `needsActual` lists exactly those; `estimateAccuracy(input, windowDays, clock)` is the "ratio store": actual ÷ estimate per area over a rolling window, computed rather than stored, with sessions standing in for a missing actual
+- `services/timeByArea.ts`: `sessionDayParts` splits a session at local midnight (`toLocalDate` / `addDays`, never UTC arithmetic), so 23:30–00:30 gives 30 minutes to each day; `timeByArea(input, range)` sums per area over inclusive local dates, resolving the area through the project when the task has none; `trailingRange` and `areaOfTask` shared with the Today screen, which now uses this instead of its own loop
+- `services/atRisk.ts`: the one rule for the Today screen and the briefing — overdue open tasks, tasks due within three days with no block on the day, and active projects with a deadline within seven days **and under 50 % progress** (the doc's tightening; the Today screen picks it up too)
+- `services/morning.ts`: `buildMorning(snapshot, date, settings, clock)` → energy default, the `planDay` proposal, the at-risk list (blocks in the proposal and stored on the day count as planned), and `billsDueWithin` (unpaid, due on or before `date + 3`, overdue first)
+- `services/evening.ts`: `buildEvening(snapshot, date, clock)` → the commitment, its tasks split into done and unfinished (archived tasks left the day; deleted and unknown ids are dropped), tasks completed on the date with no actual and no session, the day's time by area, and a rollover suggestion per unfinished task
+- `services/rollover.ts`: `rolloverPolicy` reads the enabled `rollover` rule (default P1 and P2 → tomorrow, P3 → next Monday), `suggestRollover`, `nextMonday` via `startOfWeek` + 7 (never the same day), `rolloverDate`, and `applyRollover(choices, tasks, clock)`: tomorrow and next week move `dueAt` keeping the task's own time of day (23:59 local when it had none, matching capture), inbox sets the status back and clears the due date; only changed tasks come back
+- `RolloverTarget` and `RolloverConfig` types exported from the schema
+- 33 tests in `test/services/reviews.test.ts`: the five required ones (active session survives a simulated restart through a JSON round trip and keeps counting; completing with an actual changes the ratio; the evening's unfinished list is exactly the committed-and-not-done tasks; P1 → tomorrow and P3 → next Monday, with the due time preserved; a 23:30–00:30 session counts 30 minutes on each side of midnight) plus one per public function, including the Sunday and Monday edges of `nextMonday`, the loosened at-risk thresholds, and the empty-day evening. Core services sit at 98 % line coverage
+- The app's `completeTask` now stops a running timer on the task inside the same transaction and delegates to the core function; the storage suite gained a SQLite "restart" test (a session started on one connection is found running by the next)
+
+**Files created:**
+
+- `packages/core/src/services/{sessions,completion,timeByArea,atRisk,morning,evening,rollover}.ts` ✅
+- `packages/core/test/services/reviews.test.ts` ✅
+
 **Deliverables:**
 
-- [ ] `packages/core/src/services/{sessions,completion,morning,evening,rollover}.ts`
-- [ ] Unit tests written and passing
+- [x] `packages/core/src/services/{sessions,completion,morning,evening,rollover}.ts` (plus `timeByArea.ts`, `atRisk.ts`)
+- [x] Unit tests written and passing
 
 **Verification:**
 
 ```bash
-pnpm run test --filter @orbit/core -- sessions morning evening rollover
+pnpm exec vitest run --project core services
+pnpm test:coverage
 ```
 
 ---
@@ -720,11 +739,11 @@ pnpm run test
 | **Week 5**  | Planning Engine v1                                     | ✅ COMPLETE | 100%     |
 | **Week 6**  | Recurrence, Blocks & Recalculation                     | ✅ COMPLETE | 100%     |
 | **Week 7**  | Desktop Shell — Tauri, SQLite Adapter & Data File      | ✅ COMPLETE | 100%     |
-| **Week 8**  | Actuals, Sessions & Review Data Services               | ⏳ PENDING  | 0%       |
+| **Week 8**  | Actuals, Sessions & Review Data Services               | ✅ COMPLETE | 100%     |
 | **Week 9**  | Rules Engine & Reminder Scheduler                      | ⏳ PENDING  | 0%       |
 | **Week 10** | Search Index & Command Registry                        | ⏳ PENDING  | 0%       |
 | **Week 11** | Insights Engine                                        | ⏳ PENDING  | 0%       |
 | **Week 12** | Weekly Review, People, Bills & Tray                    | ⏳ PENDING  | 0%       |
 | **Week 13** | Hardening, Performance & Data Safety                   | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 7/13 weeks complete (54%)
+**Total Progress:** 8/13 weeks complete (62%)

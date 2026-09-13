@@ -3,7 +3,7 @@
 **Tech Stack:** pnpm + GitHub Actions + Vitest + Playwright + Vite PWA + Lighthouse + Rust toolchain & Tauri CLI (from week 7) + tauri-driver/WebdriverIO + NSIS/MSI + Tauri Updater (manual check)
 **Repository:** `C:\Orbit`
 **Owned:** `.github/`, `scripts/`, `apps/orbit/src-tauri/tauri.conf.json` (build/security sections, from week 7), release process
-**Current Status:** Weeks 1-7 ✅ COMPLETE (branch protection pending: needs `gh auth login` or the GitHub UI)
+**Current Status:** Weeks 1-8 ✅ COMPLETE (branch protection pending: needs `gh auth login` or the GitHub UI)
 
 > There are no servers to run. DevOps for Orbit means: reproducible builds, CI that guards the engine, a static PWA build, data-safety verification, signed desktop installers, and a release process. Weeks 1–6 need no Rust. Nothing here may introduce a network dependency into the app itself.
 
@@ -371,7 +371,7 @@ git tag v0.1.0-alpha.1 && git push --tags
 
 ---
 
-## Week 8: Desktop E2E & SQLite Data Safety
+## Week 8: Desktop E2E & SQLite Data Safety ✅ COMPLETE
 
 **Description:** This week you will extend the test and data-safety suites to the desktop runtime. You will add a `tauri-driver` + WebdriverIO harness running the same core-loop scenario against the real desktop app, a SQLite migration matrix from fixture databases, backup/restore verification, corruption-recovery tests, and a check that a web export imports into SQLite with zero diff.
 
@@ -391,19 +391,38 @@ git tag v0.1.0-alpha.1 && git push --tags
 5. **Corruption Tests** — Damaged file detected on startup; restore path exercised
 6. **Web → Desktop Import Job** — Week 5 export fixtures import into SQLite with zero diff
 
+**What was done:**
+
+- `scripts/make-fixture.ts` now also loads the versioned SQL dump into a real `tests/fixtures/db/v<N>.db` through `better-sqlite3` (rollback journal, not WAL, so the file stands alone); the bytes are reproducible run to run, so the "fixtures are current" diff in CI covers it. `.gitignore` keeps `*.db` out except this folder
+- `packages/storage/test/data-safety/sqlite-migrations.test.ts`: the desktop twin of the IndexedDB matrix — for every `.db` fixture, copy it aside, check `user_version`, run the integrity check, migrate to today's schema, check again, and compare each table's row count with the INSERTs in the dump of that version; a store added after that version is usable straight away. Runs under `pnpm run test:migrations` alongside the IndexedDB matrix
+- `scripts/verify-backup.ts` (`pnpm run verify:backup`, or `-- --db path` for a real file): seeds a database, copies it with SQLite's online backup API (`db.backup()`), restores the copy into a fresh path the way the desktop recovery does, and compares schema version, integrity, every table's row count, and a SHA-256 over each table's rows in id order plus the op log by seq; exits 1 on the first difference (checked against a byte-flipped file) and prints a one-line summary otherwise. Added to the round-trip job in `data-safety.yml`
+- Corruption: a byte-flip test in `sqlite.test.ts` writes a 400-task database, flips the b-tree headers of three pages in the middle of the file, and asserts the integrity check reports the damage (`malformed` / `Page N …`) rather than "not a database" — the second branch of the startup recovery path. Plus a restart test: a session started on one connection is found running by the next
+- Desktop e2e harness in `tests/e2e/tauri/`: `wdio.conf.ts` spawns `tauri-driver --native-driver <msedgedriver>` (waiting on its `/status` before opening the session), points the `tauri:options` capability at the release binary, switches to the main window (the session may start on the hidden quick-capture window), and gives every session a throwaway `ORBIT_DATA_DIR` and `WEBVIEW2_USER_DATA_FOLDER`. `commands/data_dir.rs` honours `ORBIT_DATA_DIR` (no settings read or written), so a run never touches the user's database. `specs/core-loop.spec.ts` ports the first core-loop scenario: first run → capture three items → file one into a project → everything still there after a reload, on SQLite this time
+- `scripts/edge-driver.ts` (`pnpm run edge:driver`) reads the WebView2 runtime version from the registry and fetches the matching Edge WebDriver into the git-ignored `tests/e2e/tauri/.driver`; `pnpm run tauri:build:bin` builds the binary without installers; `pnpm run e2e:desktop` runs WebdriverIO. Run locally on WebView2 152.0.4191.66 with `tauri-driver` 2.0.6: both desktop tests pass, repeatedly
+- `data-safety.yml` gained the `verify:backup` step and a `desktop` job on `windows-latest`: Rust toolchain and cargo cache, `tauri-driver` cached in `~/.cargo/bin`, the Edge Driver download step, `tauri:build:bin`, `e2e:desktop`
+- `SETUP.md` §7 documents the desktop e2e prerequisites
+- Seen on the way, left for the release work in week 9: the MSI bundler rejects the `-alpha.1` pre-release identifier (NSIS and the binary build fine), which is why the e2e builds with `--no-bundle`
+
+**Files created:**
+
+- `tests/fixtures/db/v1.db`, `packages/storage/test/data-safety/sqlite-migrations.test.ts` ✅
+- `scripts/verify-backup.ts`, `scripts/edge-driver.ts` ✅
+- `tests/e2e/tauri/{wdio.conf.ts,tsconfig.json,specs/core-loop.spec.ts}` ✅
+- `.github/workflows/data-safety.yml` (verify:backup step, `desktop` job), `SETUP.md` §7 ✅
+
 **Deliverables:**
 
-- [ ] `tests/e2e/tauri/*`
-- [ ] `scripts/verify-backup.ts`
-- [ ] `tests/fixtures/db/v*.db`
-- [ ] `data-safety.yml` extended with SQLite jobs
+- [x] `tests/e2e/tauri/*`
+- [x] `scripts/verify-backup.ts`
+- [x] `tests/fixtures/db/v*.db`
+- [x] `data-safety.yml` extended with SQLite jobs
 
 **Verification:**
 
 ```bash
-pnpm run e2e:desktop
-pnpm run verify:backup
 pnpm run test:migrations
+pnpm run verify:backup
+pnpm run edge:driver && pnpm run tauri:build:bin && pnpm run e2e:desktop   # PowerShell
 ```
 
 ---
@@ -591,11 +610,11 @@ git tag v1.0.0 && git push --tags
 | **Week 5**  | Data Safety Verification (Web)                    | ✅ COMPLETE | 100%     |
 | **Week 6**  | Performance Benchmarks                            | ✅ COMPLETE | 100%     |
 | **Week 7**  | Rust Toolchain, Tauri Build Pipeline & Installers | ✅ COMPLETE | 100%     |
-| **Week 8**  | Desktop E2E & SQLite Data Safety                  | ⏳ PENDING  | 0%       |
+| **Week 8**  | Desktop E2E & SQLite Data Safety                  | ✅ COMPLETE | 100%     |
 | **Week 9**  | Code Signing & Release Process                    | ⏳ PENDING  | 0%       |
 | **Week 10** | Local Diagnostics & Logging (No Telemetry)        | ⏳ PENDING  | 0%       |
 | **Week 11** | Tray, Autostart & Notification Packaging          | ⏳ PENDING  | 0%       |
 | **Week 12** | Optional Updater (Manual Check)                   | ⏳ PENDING  | 0%       |
 | **Week 13** | Security Review & 1.0 Release                     | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 7/13 weeks complete (54%)
+**Total Progress:** 8/13 weeks complete (62%)

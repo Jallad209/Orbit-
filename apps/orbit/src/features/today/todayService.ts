@@ -1,18 +1,21 @@
 import {
-  SessionSchema,
+  activeSession,
   addDays,
+  computeAtRisk,
   computeGoalAttention,
   computeProjectHealth,
-  createRecord,
   localRange,
   materializePlan,
   minuteOfDay,
   planDay,
   systemClock,
+  timeByArea as computeTimeByArea,
   toLocalDate,
+  trailingRange,
 } from '@orbit/core';
 import type {
   Area,
+  AtRisk,
   Block,
   Clock,
   Commitment,
@@ -55,11 +58,8 @@ export interface TodayData {
   projectById: Map<Id, Project>;
   areaById: Map<Id, Area>;
   goalById: Map<Id, Goal>;
-  atRisk: {
-    overdue: Task[];
-    dueSoon: Task[];
-    projects: Array<{ project: Project; health: ProjectHealth }>;
-  };
+  atRisk: AtRisk;
+  /** Sessions over the last seven local days, split at midnight, by area. */
   timeByArea: Array<{ area: Area | null; minutes: number }>;
   upcomingCommitments: Array<{ commitment: Commitment; person: Person | undefined }>;
   activeProjects: Array<{ project: Project; health: ProjectHealth }>;
@@ -176,51 +176,29 @@ export async function loadToday(repo: Repository, options: LoadTodayOptions): Pr
   }
   timeline.sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
 
-  // At risk: overdue, due within three days without a block today, projects near a deadline.
+  // At risk: the shared rule, with anything blocked on the day counting as planned.
   const plannedToday = new Set(
     [...proposal.blocks, ...timeline].map((b) => b.taskId).filter((id): id is Id => !!id),
   );
-  const open = tasks.filter((t) => t.status === 'open');
-  const soonLimit = addDays(date, 3);
-  const overdue = open
-    .filter((t) => t.dueAt && toLocalDate(new Date(t.dueAt)) < date)
-    .sort((a, b) => (a.dueAt! < b.dueAt! ? -1 : 1));
-  const dueSoon = open
-    .filter((t) => {
-      if (!t.dueAt) return false;
-      const d = toLocalDate(new Date(t.dueAt));
-      return d >= date && d <= soonLimit && !plannedToday.has(t.id);
-    })
-    .sort((a, b) => (a.dueAt! < b.dueAt! ? -1 : 1));
+  const atRisk = computeAtRisk(
+    { tasks, projects, milestones, sessions, plannedTaskIds: plannedToday, now },
+    date,
+  );
   const health = new Map(
     projects.map((p) => [p.id, computeProjectHealth(p, { milestones, tasks, sessions, now })]),
   );
   const active = projects
     .filter((p) => p.status === 'active')
     .map((project) => ({ project, health: health.get(project.id)! }));
-  const nearDeadline = active
-    .filter((x) => x.health.daysToDeadline !== null && x.health.daysToDeadline <= 7)
-    .sort((a, b) => a.health.daysToDeadline! - b.health.daysToDeadline!);
 
-  // Where time went: sessions in the last 7 days by area.
-  const since = now.getTime() - 7 * DAY_MS;
-  const minutesByArea = new Map<Id | null, number>();
-  for (const s of sessions) {
-    const end = s.endAt ? new Date(s.endAt) : now;
-    if (end.getTime() < since) continue;
-    const minutes = Math.max(0, (end.getTime() - new Date(s.startAt).getTime()) / 60_000);
-    const task = taskById.get(s.taskId);
-    const areaId =
-      task?.areaId ?? (task?.projectId ? (projectById.get(task.projectId)?.areaId ?? null) : null);
-    minutesByArea.set(areaId, (minutesByArea.get(areaId) ?? 0) + minutes);
-  }
-  const timeByArea = [...minutesByArea.entries()]
-    .map(([areaId, minutes]) => ({
-      area: areaId ? (areaById.get(areaId) ?? null) : null,
-      minutes: Math.round(minutes),
-    }))
-    .filter((x) => x.minutes > 0)
-    .sort((a, b) => b.minutes - a.minutes);
+  // Where time went: the last seven local days by area, sessions split at midnight.
+  const timeByArea = computeTimeByArea(
+    { sessions, tasks, projects, now },
+    trailingRange(toLocalDate(now), 7),
+  ).map(({ areaId, minutes }) => ({
+    area: areaId ? (areaById.get(areaId) ?? null) : null,
+    minutes,
+  }));
 
   const personById = new Map(people.map((p) => [p.id, p]));
   const weekOut = new Date(now.getTime() + 7 * DAY_MS).toISOString();
@@ -232,7 +210,7 @@ export async function loadToday(repo: Repository, options: LoadTodayOptions): Pr
 
   const insights = computeInsightsStub({ goals, areas, projects, tasks, sessions, now, health });
 
-  const runningSession = sessions.find((s) => s.endAt === null) ?? null;
+  const runningSession = activeSession(sessions);
 
   return {
     date,
@@ -245,7 +223,7 @@ export async function loadToday(repo: Repository, options: LoadTodayOptions): Pr
     projectById,
     areaById,
     goalById,
-    atRisk: { overdue, dueSoon, projects: nearDeadline },
+    atRisk,
     timeByArea,
     upcomingCommitments,
     activeProjects: active.sort((a, b) => a.project.title.localeCompare(b.project.title)),
@@ -351,32 +329,6 @@ export async function unplanDay(repo: Repository, date: LocalDate): Promise<void
     for (const b of blocks) await tx.blocks.softDelete(b.id);
   });
   bumpData();
-}
-
-export async function startSession(
-  repo: Repository,
-  taskId: Id,
-  clock: Clock = systemClock,
-): Promise<Session> {
-  const running = await repo.sessions.query((s) => s.endAt === null);
-  const at = clock.now().toISOString();
-  const session = createRecord(SessionSchema, clock, { taskId, startAt: at, endAt: null });
-  await repo.transaction(async (tx) => {
-    for (const s of running) await tx.sessions.upsert({ ...s, endAt: at });
-    await tx.sessions.upsert(session);
-  });
-  bumpData();
-  return session;
-}
-
-export async function stopSession(
-  repo: Repository,
-  session: Session,
-  clock: Clock = systemClock,
-): Promise<Session> {
-  const next = await repo.sessions.upsert({ ...session, endAt: clock.now().toISOString() });
-  bumpData();
-  return next;
 }
 
 /** A block referencing the task that is next to do: the first still ahead of now, else the last. */

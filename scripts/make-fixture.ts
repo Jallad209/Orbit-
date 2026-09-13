@@ -9,8 +9,9 @@
  *   tests/fixtures/export/v<EXPORT_SCHEMA_VERSION>.json   — an export envelope
  *   tests/fixtures/idb/v<INDEXEDDB_SCHEMA_VERSION>.json   — raw Dexie rows per store
  *   tests/fixtures/sqlite/v<SQLITE_SCHEMA_VERSION>.sql      — a SQL dump at that schema version
+ *   tests/fixtures/db/v<SQLITE_SCHEMA_VERSION>.db           — that dump loaded into a real SQLite file
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { fixedClock, seedWorld } from '@orbit/core';
 import type { BaseRecord } from '@orbit/core';
 import {
@@ -24,6 +25,7 @@ import {
   serializeExport,
 } from '@orbit/storage';
 import type { EntityStore } from '@orbit/storage';
+import { betterSqliteDriver } from '@orbit/storage/test/betterSqliteDriver';
 
 const clock = fixedClock('2026-09-12T09:00:00.000Z');
 const world = seedWorld({
@@ -70,7 +72,18 @@ for (const name of STORE_ORDER) {
   }
 }
 const sqlPath = `tests/fixtures/sqlite/v${SQLITE_SCHEMA_VERSION}.sql`;
-writeFileSync(sqlPath, sqlLines.join('\n') + '\n');
+const sql = sqlLines.join('\n') + '\n';
+writeFileSync(sqlPath, sql);
+
+// The same dump as a real database file, exactly as that version of Orbit would have
+// written it. Rollback journal mode (the default), not WAL, so the file stands alone and
+// the bytes are reproducible: the desktop matrix opens and migrates these.
+mkdirSync('tests/fixtures/db', { recursive: true });
+const dbPath = `tests/fixtures/db/v${SQLITE_SCHEMA_VERSION}.db`;
+rmSync(dbPath, { force: true });
+const driver = betterSqliteDriver(dbPath);
+await driver.exec(sql);
+await driver.close();
 
 const total = STORE_ORDER.reduce((n, name) => n + envelope.data[name].length, 0);
-console.log(`wrote ${exportPath}, ${idbPath}, and ${sqlPath} (${total} records)`);
+console.log(`wrote ${exportPath}, ${idbPath}, ${sqlPath}, and ${dbPath} (${total} records)`);

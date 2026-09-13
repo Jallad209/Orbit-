@@ -50,15 +50,35 @@ fn write_settings(app: &AppHandle, settings: &Settings) -> Result<(), String> {
     Ok(())
 }
 
+/// `ORBIT_DATA_DIR` pins the data folder for a run — the desktop e2e harness
+/// uses it so a test never opens the user's real database or settings.
+fn env_data_dir() -> Option<PathBuf> {
+    std::env::var_os("ORBIT_DATA_DIR")
+        .filter(|v| !v.is_empty())
+        .map(PathBuf::from)
+}
+
+fn ensure_dir(dir: &Path) -> Result<String, String> {
+    fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
+    fs::create_dir_all(dir.join("backups")).map_err(|e| e.to_string())?;
+    Ok(dir.to_string_lossy().into_owned())
+}
+
 /// The folder the user chose, or `None` on first run.
 #[tauri::command]
 pub fn data_dir_get(app: AppHandle) -> Result<Option<String>, String> {
+    if let Some(dir) = env_data_dir() {
+        return ensure_dir(&dir).map(Some);
+    }
     Ok(read_settings(&app)?.data_dir)
 }
 
 /// `%APPDATA%\app.orbit.desktop\data` — used until the user picks a folder.
 #[tauri::command]
 pub fn data_dir_default(app: AppHandle) -> Result<String, String> {
+    if let Some(dir) = env_data_dir() {
+        return Ok(dir.to_string_lossy().into_owned());
+    }
     let dir = app
         .path()
         .app_data_dir()
@@ -70,9 +90,12 @@ pub fn data_dir_default(app: AppHandle) -> Result<String, String> {
 /// Remember a folder and make sure it exists. The caller reopens the database.
 #[tauri::command]
 pub fn data_dir_set(app: AppHandle, path: String) -> Result<String, String> {
+    if let Some(dir) = env_data_dir() {
+        // Pinned for this run: nothing to remember.
+        return ensure_dir(&dir);
+    }
     let dir = PathBuf::from(&path);
-    fs::create_dir_all(&dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
-    fs::create_dir_all(dir.join("backups")).map_err(|e| e.to_string())?;
+    ensure_dir(&dir)?;
     let mut settings = read_settings(&app)?;
     settings.data_dir = Some(dir.to_string_lossy().into_owned());
     write_settings(&app, &settings)?;
