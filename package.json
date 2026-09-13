@@ -1,6 +1,6 @@
 {
   "name": "orbit",
-  "version": "0.0.1",
+  "version": "0.1.0-alpha.1",
   "private": true,
   "description": "Orbit — offline-first personal operating system",
   "type": "module",

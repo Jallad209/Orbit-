@@ -10,7 +10,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const arg = process.argv[2];
+const arg = process.argv.slice(2).find((a) => a !== '--');
 if (!arg) {
   console.error('usage: pnpm run bump -- <version | patch | minor | major>');
   process.exit(1);
