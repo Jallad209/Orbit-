@@ -40,11 +40,16 @@ export function FirstRunPage() {
 
   const chooseFolder = async () => {
     if (!desktop) return;
-    const dir = await desktop.pickDataFolder();
-    if (!dir) return;
     setBusy(true);
     try {
-      await desktop.relocateData(dir);
+      const dir = await desktop.pickDataFolder();
+      if (dir) await desktop.relocateData(dir);
+    } catch (e) {
+      toast({
+        title: 'Could not change data folder',
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'danger',
+      });
     } finally {
       setBusy(false);
     }

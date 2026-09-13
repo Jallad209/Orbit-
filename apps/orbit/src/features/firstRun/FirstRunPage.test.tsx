@@ -7,14 +7,16 @@ import { createMemoryRepository, exportJson, serializeExport } from '@orbit/stor
 import { usePlanPrefs } from '@/features/today/planSettings';
 import { webPlatform, type Platform } from '@/platform';
 import { renderWithProviders } from '@/test/render';
+import { AppRoutes } from '@/routes';
+import { useToastStore } from '@/components/ui/toastStore';
 import { FirstRunPage } from './FirstRunPage';
-import { isFirstRunDone, resetFirstRun } from './firstRun';
+import { isFirstRunDone, markFirstRunDone, resetFirstRun } from './firstRun';
 
 function desktopMock(overrides: Partial<NonNullable<Platform['desktop']>> = {}): Platform {
   return {
     ...webPlatform,
     name: 'desktop',
-    capabilities: { backgroundReminders: true, dataFolder: true, globalHotkey: true, tray: false },
+    capabilities: { backgroundReminders: false, dataFolder: true, globalHotkey: true, tray: false },
     desktop: {
       dataFileStatus: () => ({
         dir: 'C:\\Users\\me\\Orbit',
@@ -47,7 +49,62 @@ function render(platform: Platform, repository = createMemoryRepository()) {
 describe('FirstRunPage', () => {
   beforeEach(() => {
     resetFirstRun();
+    useToastStore.getState().clear();
     usePlanPrefs.setState({ workingWindow: { startMin: 540, endMin: 1080 } });
+  });
+
+  it.each(['/', '/today', '/settings'])('opens setup on a fresh desktop at %s', async (route) => {
+    renderWithProviders(<AppRoutes />, { platform: desktopMock(), route });
+    expect(await screen.findByRole('heading', { name: 'Welcome to Orbit' })).toBeInTheDocument();
+  });
+
+  it('finishes setup through the real routes without redirecting back', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<AppRoutes />, { platform: desktopMock(), route: '/today' });
+    await user.click(await screen.findByRole('button', { name: 'Start planning' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Today' })).toBeInTheDocument();
+    expect(screen.queryByTestId('first-run')).not.toBeInTheDocument();
+  });
+
+  it('does not gate returning users or the quick-capture window', async () => {
+    markFirstRunDone();
+    const returning = renderWithProviders(<AppRoutes />, { platform: desktopMock(), route: '/' });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Today' })).toBeInTheDocument();
+    returning.unmount();
+    resetFirstRun();
+    renderWithProviders(<AppRoutes />, { platform: desktopMock(), route: '/capture' });
+    expect(await screen.findByTestId('quick-capture-window')).toBeInTheDocument();
+    expect(screen.queryByTestId('first-run')).not.toBeInTheDocument();
+  });
+
+  it('opens the web app without desktop setup', async () => {
+    renderWithProviders(<AppRoutes />, { platform: webPlatform, route: '/' });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Today' })).toBeInTheDocument();
+    expect(screen.queryByTestId('first-run')).not.toBeInTheDocument();
+  });
+
+  it('shows a relocation error and keeps setup available', async () => {
+    const user = userEvent.setup();
+    render(
+      desktopMock({
+        relocateData: vi.fn(async () => {
+          throw new Error('Choose another folder');
+        }),
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Choose folder…' }));
+    await waitFor(() =>
+      expect(useToastStore.getState().toasts).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            title: 'Could not change data folder',
+            description: 'Choose another folder',
+          }),
+        ]),
+      ),
+    );
+    expect(screen.getByRole('button', { name: 'Choose folder…' })).toBeEnabled();
+    expect(isFirstRunDone()).toBe(false);
   });
 
   it('persists the folder choice and the working window, then lands on Today', async () => {

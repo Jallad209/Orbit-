@@ -100,7 +100,7 @@ export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Pla
     },
     async relocateData(dir) {
       const d = await ready();
-      await d.invoke<string>('data_dir_set', { path: dir });
+      await d.invoke<string>('data_dir_relocate', { path: dir });
       d.reload();
     },
     async revealDataFolder() {
@@ -133,7 +133,7 @@ export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Pla
   return {
     name: 'desktop',
     capabilities: {
-      backgroundReminders: true,
+      backgroundReminders: false, // enabled when the reminder scheduler ships
       dataFolder: true,
       globalHotkey: true,
       tray: false, // week 12

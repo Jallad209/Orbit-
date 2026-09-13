@@ -1,7 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import { AreaSchema, TaskSchema, createRecord, fixedClock } from '@orbit/core';
 import { EXPORT_SCHEMA_VERSION, exportJson, importJson, parseExport } from '../src/export';
 import { openRepository } from '../src/factory';
@@ -25,6 +25,30 @@ repositoryContract('sqlite', {
 });
 
 describe('SQLite adapter', () => {
+  it('recovers after BEGIN fails and still rolls back subsequent failed writes', async () => {
+    const driver = betterSqliteDriver();
+    const repo = await createSqliteRepository({ driver });
+    const task = createRecord(TaskSchema, fixedClock('2026-09-14T08:00:00Z'), { title: 'Atomic' });
+    const exec = vi.spyOn(driver, 'exec');
+    exec.mockRejectedValueOnce(new Error('database busy'));
+    await expect(repo.tasks.upsert(task)).rejects.toThrow('database busy');
+    expect(await repo.tasks.count()).toBe(0);
+    expect(exec.mock.calls).toEqual([['BEGIN IMMEDIATE']]);
+
+    await expect(
+      repo.transaction(async (tx) => {
+        await tx.tasks.upsert(task);
+        throw new Error('cancel the write');
+      }),
+    ).rejects.toThrow('cancel the write');
+    expect(await repo.tasks.count()).toBe(0);
+    expect(await repo.opLog.latestSeq()).toBe(0);
+    await repo.tasks.upsert(task);
+    expect(await repo.tasks.get(task.id)).toMatchObject({ title: 'Atomic' });
+    expect(await repo.opLog.latestSeq()).toBe(1);
+    await repo.close();
+  });
+
   it('opens through the factory, in WAL mode, and persists across reopen', async () => {
     const file = join(dir, 'orbit.db');
     const clock = fixedClock('2026-09-12T09:00:00.000Z');

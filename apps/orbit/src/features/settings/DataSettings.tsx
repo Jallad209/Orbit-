@@ -43,8 +43,19 @@ export function DataSettings() {
 
   const changeFolder = async () => {
     if (!desktop) return;
-    const dir = await desktop.pickDataFolder();
-    if (dir) await desktop.relocateData(dir);
+    setBusy(true);
+    try {
+      const dir = await desktop.pickDataFolder();
+      if (dir) await desktop.relocateData(dir);
+    } catch (e) {
+      toast({
+        title: 'Could not change data folder',
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'danger',
+      });
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -58,7 +69,7 @@ export function DataSettings() {
               {status?.dir ?? '—'}
             </p>
             <div className="mt-2 flex gap-2">
-              <Button size="sm" variant="secondary" onClick={changeFolder}>
+              <Button size="sm" variant="secondary" onClick={changeFolder} disabled={busy}>
                 <FolderOpen className="size-3.5" aria-hidden="true" /> Change…
               </Button>
               <Button size="sm" variant="ghost" onClick={() => void desktop.revealDataFolder()}>
@@ -66,7 +77,8 @@ export function DataSettings() {
               </Button>
             </div>
             <p className="mt-1 text-[12px] text-ink-faint">
-              Changing the folder restarts Orbit on the new location.
+              Orbit copies and verifies your data before switching folders. The original file stays
+              in the old folder. Choose a folder without an existing Orbit database.
             </p>
           </div>
           <div className="flex items-center gap-2" data-testid="integrity">
@@ -95,8 +107,13 @@ export function DataSettings() {
           <div className="w-64">
             <Toggle
               label="Close to tray"
-              description="Keep Orbit running for reminders when the window closes (tray arrives in week 12)."
-              checked={closeToTray}
+              description={
+                platform.capabilities.tray
+                  ? 'Keep Orbit running when the window closes.'
+                  : 'Not available in this version.'
+              }
+              disabled={!platform.capabilities.tray}
+              checked={platform.capabilities.tray && closeToTray}
               onCheckedChange={setCloseToTray}
             />
           </div>

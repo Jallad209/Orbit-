@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router';
+import { Navigate, Route, Routes, useLocation } from 'react-router';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Placeholder } from '@/pages/Placeholder';
 import { InboxPage } from '@/features/inbox/InboxPage';
@@ -27,7 +27,11 @@ const ComponentsGallery = import.meta.env.DEV
  */
 export function AppRoutes() {
   const platform = usePlatform();
+  const { pathname } = useLocation();
   const welcome = platform.capabilities.dataFolder && !isFirstRunDone();
+  if (welcome && pathname !== '/welcome' && pathname !== '/capture') {
+    return <Navigate to="/welcome" replace />;
+  }
   return (
     <Routes>
       {/* The quick-capture window has no shell around it. */}

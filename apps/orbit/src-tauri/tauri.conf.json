@@ -15,7 +15,7 @@
       {
         "label": "main",
         "title": "Orbit",
-        "url": "/today",
+        "url": "/",
         "width": 1280,
         "height": 820,
         "minWidth": 900,

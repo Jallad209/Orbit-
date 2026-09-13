@@ -50,13 +50,15 @@ interface Ctx {
 async function withTx<T>(ctx: Ctx, fn: () => Promise<T>): Promise<T> {
   if (ctx.depth > 0) return fn();
   ctx.depth += 1;
-  await ctx.driver.exec('BEGIN IMMEDIATE');
+  let began = false;
   try {
+    await ctx.driver.exec('BEGIN IMMEDIATE');
+    began = true;
     const out = await fn();
     await ctx.driver.exec('COMMIT');
     return out;
   } catch (e) {
-    await ctx.driver.exec('ROLLBACK');
+    if (began) await ctx.driver.exec('ROLLBACK');
     throw e;
   } finally {
     ctx.depth -= 1;

@@ -53,6 +53,7 @@ pub fn run() {
             commands::db::db_exec,
             commands::data_dir::data_dir_get,
             commands::data_dir::data_dir_set,
+            commands::data_dir::data_dir_relocate,
             commands::data_dir::data_dir_default,
             commands::data_dir::data_dir_reveal,
             commands::data_dir::data_backups,

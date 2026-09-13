@@ -1,9 +1,6 @@
 import {
-  applyRecurringRules,
-  instanceWindow,
   lockBlock,
   localRange,
-  materializeInstances,
   moveBlock,
   obstaclesFor,
   overlaps,
@@ -30,6 +27,7 @@ import type {
 } from '@orbit/core';
 import type { Repository } from '@orbit/storage';
 import { bumpData } from '@/data/useQuery';
+import { ensureRoutineInstances } from '@/data/routineInstances';
 
 export interface DayData {
   date: LocalDate;
@@ -44,37 +42,6 @@ export interface DayData {
   /** Open, ready tasks without a block on this date. */
   unscheduled: Task[];
   titles: Map<Id, string>;
-}
-
-/**
- * Keep routine instances materialized for the rolling window and let
- * recurring rules add theirs. Writes only when something is missing.
- */
-export async function ensureRoutineInstances(
-  repo: Repository,
-  clock: Clock = systemClock,
-): Promise<number> {
-  const [routines, instances, rules] = await Promise.all([
-    repo.routines.list(),
-    repo.routineInstances.list({ includeDeleted: true }),
-    repo.rules.list(),
-  ]);
-  const window = instanceWindow(clock.now());
-  const fresh = materializeInstances(routines, instances, window, clock);
-  const fromRules = applyRecurringRules(
-    rules,
-    routines,
-    [...instances, ...fresh],
-    toLocalDate(clock.now()),
-    clock,
-  );
-  const all = [...fresh, ...fromRules];
-  if (all.length) {
-    await repo.transaction(async (tx) => {
-      for (const i of all) await tx.routineInstances.upsert(i);
-    });
-  }
-  return all.length;
 }
 
 export async function loadDay(
@@ -135,6 +102,7 @@ export async function recalculate(
   settings: Partial<PlanSettings>,
   clock: Clock = systemClock,
 ): Promise<string> {
+  await ensureRoutineInstances(repo, clock);
   const [
     areas,
     goals,

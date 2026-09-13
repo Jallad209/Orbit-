@@ -36,7 +36,7 @@ export interface DesktopApi {
   dataFileStatus(): DataFileStatus | null;
   /** Native folder picker; returns the chosen folder or null when cancelled. */
   pickDataFolder(): Promise<string | null>;
-  /** Remember a data folder and restart the app on it. */
+  /** Copy and verify the live database, preserve the original, then switch folders and reload. */
   relocateData(dir: string): Promise<void>;
   revealDataFolder(): Promise<void>;
   /** Native file picker for an Orbit export; returns its text or null when cancelled. */

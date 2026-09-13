@@ -32,6 +32,7 @@ import type {
 } from '@orbit/core';
 import type { Repository } from '@orbit/storage';
 import { bumpData } from '@/data/useQuery';
+import { ensureRoutineInstances } from '@/data/routineInstances';
 
 export interface Insight {
   key: string;
@@ -82,6 +83,7 @@ export function defaultPlanDate(now: Date, window: TimeWindow): LocalDate {
 
 export async function loadToday(repo: Repository, options: LoadTodayOptions): Promise<TodayData> {
   const clock = options.clock ?? systemClock;
+  await ensureRoutineInstances(repo, clock);
   const now = clock.now();
   const { date } = options;
   const [

@@ -58,17 +58,24 @@ export async function exportMarkdown(repo: Repository): Promise<MarkdownFile[]> 
   const areaById = new Map(areas.map((a) => [a.id, a]));
   const goalById = new Map(goals.map((g) => [g.id, g]));
   const projectPath = new Map<string, string>();
+  const sortedNotes = [...notes].sort(byTitle);
+  const notePath = new Map(
+    sortedNotes.map((n) => [n.id, uniquePath(`notes/${slugify(n.title)}`, '.md', used)]),
+  );
 
   // Projects
   for (const p of [...projects].sort(byTitle)) {
     const path = uniquePath(`projects/${slugify(p.title)}`, '.md', used);
     projectPath.set(p.id, path);
-    files.push({ path, content: renderProject(p, areaById, goalById, milestones, tasks, notes) });
+    files.push({
+      path,
+      content: renderProject(p, areaById, goalById, milestones, tasks, notes, notePath),
+    });
   }
 
   // Notes
-  for (const n of [...notes].sort(byTitle)) {
-    const path = uniquePath(`notes/${slugify(n.title)}`, '.md', used);
+  for (const n of sortedNotes) {
+    const path = notePath.get(n.id)!;
     const lines = [`# ${n.title}`, ''];
     const meta: string[] = [];
     if (n.projectId && projectPath.has(n.projectId)) {
@@ -164,6 +171,7 @@ function renderProject(
   milestones: Milestone[],
   tasks: Task[],
   notes: Note[],
+  notePath: Map<string, string>,
 ): string {
   const lines = [`# ${p.title}`, ''];
   const meta: string[] = [`Status: ${p.status}`];
@@ -200,7 +208,7 @@ function renderProject(
   const ns = notes.filter((n) => n.projectId === p.id).sort(byTitle);
   if (ns.length) {
     lines.push('## Notes', '');
-    for (const n of ns) lines.push(`- [${n.title}](../notes/${slugify(n.title)}.md)`);
+    for (const n of ns) lines.push(`- [${n.title}](../${notePath.get(n.id)})`);
     lines.push('');
   }
 

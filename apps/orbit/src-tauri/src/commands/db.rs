@@ -51,15 +51,30 @@ fn with_conn<T>(
     f(conn).map_err(|e| e.to_string())
 }
 
-/// Open (or create) the data file. Replaces any connection already open.
+/// Both webviews open the same file. Never replace an active connection on reopen.
 #[tauri::command]
 pub fn db_open(state: State<'_, Db>, path: String) -> Result<(), String> {
-    let conn = Connection::open(&path).map_err(|e| e.to_string())?;
     let mut guard = state
         .0
         .lock()
         .map_err(|_| "database lock poisoned".to_string())?;
-    *guard = Some(conn);
+    open_connection(&mut guard, &path)
+}
+
+fn open_connection(active: &mut Option<Connection>, path: &str) -> Result<(), String> {
+    if let Some(conn) = active {
+        let requested = std::fs::canonicalize(path).map_err(|e| e.to_string())?;
+        let current = std::fs::canonicalize(conn.path().ok_or("database has no file path")?)
+            .map_err(|e| e.to_string())?;
+        if requested == current {
+            return Ok(());
+        }
+        return Err(
+            "A different database is already open. Reload Orbit to use the current data folder."
+                .into(),
+        );
+    }
+    *active = Some(Connection::open(path).map_err(|e| e.to_string())?);
     Ok(())
 }
 
@@ -104,4 +119,52 @@ pub fn db_select(state: State<'_, Db>, sql: String, params: Vec<Json>) -> Result
 #[tauri::command]
 pub fn db_exec(state: State<'_, Db>, sql: String) -> Result<(), String> {
     with_conn(&state, |conn| conn.execute_batch(&sql))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn another_window_opening_the_same_file_preserves_the_active_transaction() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("orbit.db");
+        let mut active = None;
+        open_connection(&mut active, path.to_str().unwrap()).unwrap();
+        active
+            .as_ref()
+            .unwrap()
+            .execute_batch("CREATE TABLE tasks(id); BEGIN IMMEDIATE; INSERT INTO tasks VALUES (1);")
+            .unwrap();
+        open_connection(&mut active, path.to_str().unwrap()).unwrap();
+        let conn = active.as_ref().unwrap();
+        assert!(!conn.is_autocommit());
+        conn.execute_batch("COMMIT").unwrap();
+        assert_eq!(
+            conn.query_row("SELECT count(*) FROM tasks", [], |r| r.get::<_, i64>(0))
+                .unwrap(),
+            1
+        );
+    }
+
+    #[test]
+    fn a_stale_window_cannot_switch_back_to_a_different_file() {
+        let temp = tempfile::tempdir().unwrap();
+        let current = temp.path().join("current.db");
+        let stale = temp.path().join("stale.db");
+        Connection::open(&stale).unwrap();
+        let mut active = None;
+        open_connection(&mut active, current.to_str().unwrap()).unwrap();
+        assert!(open_connection(&mut active, stale.to_str().unwrap())
+            .unwrap_err()
+            .contains("different database"));
+        assert_eq!(
+            fs_path(active.as_ref().unwrap()),
+            std::fs::canonicalize(current).unwrap()
+        );
+    }
+
+    fn fs_path(conn: &Connection) -> std::path::PathBuf {
+        std::fs::canonicalize(conn.path().unwrap()).unwrap()
+    }
 }

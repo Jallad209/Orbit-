@@ -20,7 +20,7 @@ export function CapabilityNotes() {
           <span data-testid="reminders-note">
             {capabilities.backgroundReminders
               ? 'Reminders can fire while the window is closed.'
-              : 'Reminders fire only while Orbit is open in a tab. The desktop app can remind you in the background.'}
+              : 'Scheduled reminders are not available in this version of Orbit.'}
           </span>
         </li>
         <li className="flex items-start gap-2">

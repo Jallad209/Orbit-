@@ -1,14 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useAppStore } from '@/app/store';
 import { webPlatform, type Platform } from '@/platform';
 import { renderWithProviders } from '@/test/render';
 import { SettingsPage } from './SettingsPage';
+import { useToastStore } from '@/components/ui/toastStore';
 
 const desktop: Platform = {
   ...webPlatform,
   name: 'desktop',
-  capabilities: { backgroundReminders: true, dataFolder: true, globalHotkey: true, tray: false },
+  capabilities: { backgroundReminders: false, dataFolder: true, globalHotkey: true, tray: false },
   desktop: {
     dataFileStatus: () => ({
       dir: 'D:\\Orbit',
@@ -28,28 +30,57 @@ const desktop: Platform = {
 
 describe('SettingsPage capability messaging', () => {
   beforeEach(() => {
+    useToastStore.getState().clear();
     useAppStore.setState({
       storageStatus: { persisted: false, usageBytes: 1024, quotaBytes: null },
     });
   });
 
-  it('on the web says reminders only fire while open and shows the storage status', () => {
+  it('on the web says scheduled reminders are unavailable and shows the storage status', () => {
     renderWithProviders(<SettingsPage />, { platform: webPlatform, route: '/settings' });
-    expect(screen.getByTestId('reminders-note')).toHaveTextContent('only while Orbit is open');
+    expect(screen.getByTestId('reminders-note')).toHaveTextContent('not available in this version');
     expect(screen.getByTestId('hotkey-note')).toHaveTextContent('while Orbit is focused');
     expect(screen.getByTestId('web-storage')).toHaveTextContent('not guaranteed');
     expect(screen.queryByTestId('integrity')).not.toBeInTheDocument();
   });
 
-  it('on desktop shows the data folder, integrity, recovery, and background reminders', () => {
+  it('on desktop shows data safety status and does not promise reminders or a tray', () => {
     renderWithProviders(<SettingsPage />, { platform: desktop, route: '/settings' });
-    expect(screen.getByTestId('reminders-note')).toHaveTextContent('while the window is closed');
+    expect(screen.getByTestId('reminders-note')).toHaveTextContent('not available in this version');
     expect(screen.getByTestId('hotkey-note')).toHaveTextContent('from any app');
     expect(screen.getByTestId('data-dir')).toHaveTextContent('D:\\Orbit');
     expect(screen.getByTestId('integrity')).toHaveTextContent('ok');
     expect(screen.getByTestId('integrity')).toHaveTextContent('FTS5');
     expect(screen.getByTestId('recovery')).toHaveTextContent('no backup was available');
     expect(screen.queryByTestId('web-storage')).not.toBeInTheDocument();
-    expect(screen.getByRole('switch', { name: /Close to tray/ })).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: /Close to tray/ })).toBeDisabled();
+  });
+
+  it('reports a failed folder change and lets the user try again', async () => {
+    const user = userEvent.setup();
+    const platform = {
+      ...desktop,
+      desktop: {
+        ...desktop.desktop!,
+        pickDataFolder: async () => 'D:\\Existing',
+        relocateData: async () => {
+          throw new Error('That folder already contains an Orbit database');
+        },
+      },
+    };
+    renderWithProviders(<SettingsPage />, { platform, route: '/settings' });
+    await user.click(screen.getByRole('button', { name: 'Change…' }));
+    await waitFor(() =>
+      expect(useToastStore.getState().toasts).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            title: 'Could not change data folder',
+            description: expect.stringContaining('already contains'),
+          }),
+        ]),
+      ),
+    );
+    expect(screen.getByTestId('data-dir')).toHaveTextContent('D:\\Orbit');
+    expect(screen.getByRole('button', { name: 'Change…' })).toBeEnabled();
   });
 });

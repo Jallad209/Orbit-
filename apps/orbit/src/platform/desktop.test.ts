@@ -124,6 +124,30 @@ describe('openDesktopRepository', () => {
 });
 
 describe('desktop platform', () => {
+  it('reloads only after a verified relocation succeeds', async () => {
+    const invoke = vi.fn(async () => undefined);
+    const reload = vi.fn();
+    const platform = createDesktopPlatform(async () => ({
+      invoke: invoke as never,
+      join: async (...parts) => parts.join('\\'),
+      openDialog: async () => null,
+      saveDialog: async () => null,
+      notification: {
+        isPermissionGranted: async () => false,
+        requestPermission: async () => 'denied',
+        send: vi.fn(),
+      },
+      window: { startDragging: async () => {} },
+      reload,
+    }));
+    invoke.mockRejectedValueOnce(new Error('destination already contains a database'));
+    await expect(platform.desktop!.relocateData('D:\\Orbit')).rejects.toThrow('already contains');
+    expect(reload).not.toHaveBeenCalled();
+    await platform.desktop!.relocateData('D:\\Empty');
+    expect(invoke).toHaveBeenLastCalledWith('data_dir_relocate', { path: 'D:\\Empty' });
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
   it('exposes desktop capabilities and routes exports through a save dialog', async () => {
     const invoke = vi.fn(async () => undefined);
     const saveDialog = vi.fn(async () => 'D:\\out.json');
@@ -142,7 +166,7 @@ describe('desktop platform', () => {
     }));
     expect(platform.name).toBe('desktop');
     expect(platform.capabilities).toEqual({
-      backgroundReminders: true,
+      backgroundReminders: false,
       dataFolder: true,
       globalHotkey: true,
       tray: false,

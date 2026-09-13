@@ -211,6 +211,28 @@ describe('JSON export / import', () => {
 });
 
 describe('Markdown export', () => {
+  it('links each note to its actual file when titles are duplicated or slug-collide', async () => {
+    const clock = fixedClock('2026-09-12T09:00:00.000Z');
+    const repo = await seed(clock);
+    const project = (await repo.projects.list())[0]!;
+    for (const title of ['Sources', 'Sources!']) {
+      await repo.notes.upsert(
+        createRecord(NoteSchema, clock, {
+          title,
+          body: `Another note: ${title}`,
+          projectId: project.id,
+        }),
+      );
+    }
+    const files = await exportMarkdown(repo);
+    const content = files.find((f) => f.path === 'projects/thesis.md')!.content;
+    const links = [...content.matchAll(/\]\(\.\.\/(notes\/[^)]+)\)/g)].map((m) => m[1]);
+    expect(links).toHaveLength(3);
+    expect(new Set(links).size).toBe(3);
+    for (const path of links)
+      expect(files.find((f) => f.path === path)?.content).toContain('# Sources');
+  });
+
   it('writes an index, a file per project with milestones and tasks, notes, people, and bills', async () => {
     const clock = fixedClock('2026-09-12T09:00:00.000Z');
     const files = await exportMarkdown(await seed(clock));
