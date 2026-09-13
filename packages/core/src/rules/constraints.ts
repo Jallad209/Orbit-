@@ -85,7 +85,7 @@ export function applyConstraints(
         } else {
           out = splitAt(splitAt(out, piece.startMin), piece.endMin).map((i) =>
             i.startMin >= piece.startMin && i.endMin <= piece.endMin
-              ? { ...i, areaId: c.areaId }
+              ? { ...i, areaId: c.areaId, reservedBy: rule.id }
               : i,
           );
         }

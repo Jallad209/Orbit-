@@ -163,17 +163,26 @@ export const regeneratePlan: CommandDefinition = {
   },
 };
 
+/** Goal neglect stays a goals-page signal; the insights page has no goal detector (week 11). */
 export const showNeglectedGoals: CommandDefinition = {
   id: 'show-neglected-goals',
   title: 'Show neglected goals',
-  keywords: ['goals', 'attention', 'ignored', 'insights'],
+  keywords: ['goals', 'attention', 'ignored'],
   group: 'Review',
   async run(ctx) {
-    if (ctx.capabilities.insights) {
-      ctx.navigate('/insights?focus=neglected-goals');
-      return {};
-    }
     ctx.navigate('/goals?filter=neglected');
+    return {};
+  },
+};
+
+export const openInsights: CommandDefinition = {
+  id: 'open-insights',
+  title: 'Open insights',
+  keywords: ['insights', 'observations', 'stale', 'overloaded', 'estimates', 'attention'],
+  group: 'Review',
+  available: (ctx) => ctx.capabilities.insights,
+  async run(ctx) {
+    ctx.navigate('/insights');
     return {};
   },
 };
@@ -311,6 +320,7 @@ export function coreCommands(): CommandDefinition[] {
     regeneratePlan,
     rescheduleUnfinished,
     showNeglectedGoals,
+    openInsights,
     reviewThisWeek,
     openProject,
     undoLast,

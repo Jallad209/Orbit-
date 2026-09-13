@@ -37,6 +37,7 @@ import type {
   UpsertOptions,
 } from '../repository';
 import { STORE_ENTITY } from '../repository';
+import { normalizerFor } from '../normalize';
 import type { SqlDriver, SqlParam } from './driver';
 import { migrate } from './migrations';
 import { transactionalDriver } from './transactions';
@@ -59,18 +60,28 @@ async function withTx<T>(ctx: Ctx, fn: (tx: Ctx) => Promise<T>): Promise<T> {
 }
 
 class SqliteStore<T extends BaseRecord> implements EntityStore<T> {
+  /** Week-11 read normalization for the stores whose shape grew; identity elsewhere. */
+  private readonly normalize: ((raw: T) => T) | null;
+
   constructor(
     protected readonly name: StoreName,
     protected readonly schema: z.ZodType<T, z.ZodTypeDef, unknown>,
     protected readonly ctx: Ctx,
-  ) {}
+  ) {
+    this.normalize = normalizerFor<T>(name);
+  }
 
   protected get entity(): EntityType {
     return STORE_ENTITY[this.name];
   }
 
+  /** Rows are stored as the JSON this or an older build wrote; old shapes are normalized here. */
   protected parse(rows: Array<{ data: string }>): T[] {
-    return rows.map((r) => JSON.parse(r.data) as T);
+    const normalize = this.normalize;
+    return rows.map((r) => {
+      const raw = JSON.parse(r.data) as T;
+      return normalize ? normalize(raw) : raw;
+    });
   }
 
   protected async log(op: Op, entityId: Id, patch: Record<string, unknown>): Promise<void> {

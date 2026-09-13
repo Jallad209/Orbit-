@@ -78,6 +78,8 @@ export interface FreeInterval {
   endMin: MinuteOfDay;
   /** Set by a `reserve` rule: only this area's work may go here. */
   areaId: Id | null;
+  /** The reserve rule that tagged the interval, when `areaId` is set. */
+  reservedBy?: Id;
   /** Cleared by a `noHighEnergyAfter` rule. */
   highEnergyAllowed: boolean;
 }

@@ -1,0 +1,36 @@
+{
+  "description": "Rows exactly as week 9 wrote them into the unchanged IndexedDB v3 / SQLite v2 structures: a settings document without the insights group, and insight states without snoozeMode, suppressedFingerprint, or lastSummary. The adapters must normalize these on read (packages/storage/test/insights/state.test.ts).",
+  "appSettings": [
+    {
+      "id": "00000000-0000-7000-8000-000000000001",
+      "createdAt": "2026-09-01T00:00:00.000Z",
+      "updatedAt": "2026-09-01T00:00:00.000Z",
+      "deletedAt": null,
+      "workingWindow": { "startMin": 480, "endMin": 960 },
+      "restBoundaries": [],
+      "bufferMin": 5,
+      "defaultEstimateMin": 45,
+      "eveningStartMin": 1000
+    }
+  ],
+  "insightStates": [
+    {
+      "id": "019372a0-0000-7000-8000-00000000a001",
+      "createdAt": "2026-09-01T00:00:00.000Z",
+      "updatedAt": "2026-09-01T00:00:00.000Z",
+      "deletedAt": null,
+      "insightKey": "neglected-goal:demo",
+      "snoozedUntil": "2099-01-01T00:00:00.000Z",
+      "dismissedAt": null
+    },
+    {
+      "id": "019372a0-0000-7000-8000-00000000a002",
+      "createdAt": "2026-08-01T00:00:00.000Z",
+      "updatedAt": "2026-08-01T00:00:00.000Z",
+      "deletedAt": null,
+      "insightKey": "neglected-goal:demo",
+      "snoozedUntil": null,
+      "dismissedAt": "2026-08-01T00:00:00.000Z"
+    }
+  ]
+}

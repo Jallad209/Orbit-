@@ -37,6 +37,7 @@ import type {
   UpsertOptions,
 } from '../repository';
 import { STORE_ENTITY } from '../repository';
+import { normalizerFor } from '../normalize';
 import { isolateMemoryRepository } from './isolation';
 
 export interface MemoryRepositoryOptions {
@@ -56,11 +57,20 @@ function cloneState(state: State): State {
 }
 
 class MemoryStore<T extends BaseRecord> implements EntityStore<T> {
+  /** Week-11 read normalization for the stores whose shape grew; identity elsewhere. */
+  private readonly normalize: ((raw: T) => T) | null;
+
   constructor(
     protected readonly name: StoreName,
     protected readonly schema: z.ZodType<T, z.ZodTypeDef, unknown>,
     protected readonly ctx: { state: State; clock: Clock },
-  ) {}
+  ) {
+    this.normalize = normalizerFor<T>(name);
+  }
+
+  protected read(row: T | undefined): T | undefined {
+    return row && this.normalize ? this.normalize(row) : row;
+  }
 
   protected get table(): Map<Id, T> {
     let table = this.ctx.state.tables.get(this.name);
@@ -88,20 +98,20 @@ class MemoryStore<T extends BaseRecord> implements EntityStore<T> {
   }
 
   async get(id: Id): Promise<T | undefined> {
-    return this.table.get(id);
+    return this.read(this.table.get(id));
   }
 
   async getMany(ids: readonly Id[]): Promise<T[]> {
     const out: T[] = [];
     for (const id of ids) {
-      const r = this.table.get(id);
+      const r = this.read(this.table.get(id));
       if (r) out.push(r);
     }
     return out;
   }
 
   async list(options?: ListOptions): Promise<T[]> {
-    const rows = [...this.table.values()];
+    const rows = [...this.table.values()].map((r) => this.read(r)!);
     return options?.includeDeleted ? rows : rows.filter((r) => r.deletedAt === null);
   }
 

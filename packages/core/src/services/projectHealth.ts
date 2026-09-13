@@ -1,5 +1,6 @@
 import { toLocalDate } from '../dates';
 import type { Id, Instant, Milestone, Project, Session, Task } from '../schema';
+import { buildProjectActivity, elapsedDays, type ProjectActivity } from './activity';
 import { isReady } from './dependencies';
 
 export interface ProjectHealth {
@@ -15,37 +16,47 @@ export interface ProjectHealth {
   noNextAction: boolean;
   /** Every open task waits on something. */
   blocked: boolean;
-  /** Days since the project, a task, a milestone, or a session last changed. */
+  /** Complete elapsed days since the project, a task, a milestone, or a session last changed. */
   staleDays: number;
   stale: boolean;
+  /** The threshold `stale` was judged against. */
+  staleAfterDays: number;
   lastActivityAt: Instant | null;
+  /** What that last activity was; shared with the stale-project insight. */
+  lastActivity: ProjectActivity | null;
   /** Negative when the deadline has passed; null without a deadline. */
   daysToDeadline: number | null;
   overdue: boolean;
 }
 
 export interface ProjectHealthInput {
+  /** May include tombstones: they count as activity, never as work. */
   milestones: readonly Milestone[];
+  /** May include tombstones, as above. */
   tasks: readonly Task[];
   sessions?: readonly Session[];
   now: Date;
   /** Days without activity before a project counts as stale. Default 10. */
   staleAfterDays?: number;
+  /**
+   * A precomputed activity map from `buildProjectActivity`, so a long list
+   * is not scanned once per project. Built for the one project otherwise.
+   */
+  activity?: ReadonlyMap<Id, ProjectActivity>;
 }
+
+export const DEFAULT_STALE_AFTER_DAYS = 10;
 
 const DAY_MS = 86_400_000;
-
-function daysBetween(fromIso: string, to: Date): number {
-  return Math.floor((to.getTime() - new Date(fromIso).getTime()) / DAY_MS);
-}
 
 /**
  * Progress from milestones when the project has any; otherwise from task
  * completion; 0 when there is nothing to measure. Also flags the three
- * neglect signals the weekly review and the Today screen surface.
+ * neglect signals the weekly review and the Today screen surface. The
+ * staleness part is the one shared definition (`services/activity.ts`).
  */
 export function computeProjectHealth(project: Project, input: ProjectHealthInput): ProjectHealth {
-  const staleAfter = input.staleAfterDays ?? 10;
+  const staleAfter = input.staleAfterDays ?? DEFAULT_STALE_AFTER_DAYS;
   const ms = input.milestones.filter((m) => m.deletedAt === null && m.projectId === project.id);
   const tasks = input.tasks.filter((t) => t.deletedAt === null && t.projectId === project.id);
   const open = tasks.filter((t) => t.status === 'open' || t.status === 'inbox');
@@ -69,20 +80,17 @@ export function computeProjectHealth(project: Project, input: ProjectHealthInput
   const noNextAction = project.status === 'active' && !next;
   const blocked = open.length > 0 && open.every((t) => !isReady(t, input.tasks));
 
-  const taskIds = new Set(tasks.map((t) => t.id));
-  const stamps: string[] = [
-    project.updatedAt,
-    ...tasks.map((t) => t.updatedAt),
-    ...ms.map((m) => m.updatedAt),
-  ];
-  for (const s of input.sessions ?? []) {
-    if (s.deletedAt === null && taskIds.has(s.taskId)) stamps.push(s.endAt ?? s.startAt);
-  }
-  const lastActivityAt = stamps.reduce<string | null>(
-    (max, s) => (max === null || s > max ? s : max),
-    null,
-  );
-  const staleDays = lastActivityAt ? Math.max(0, daysBetween(lastActivityAt, input.now)) : 0;
+  const lastActivity =
+    (
+      input.activity ??
+      buildProjectActivity({
+        projects: [project],
+        tasks: input.tasks,
+        milestones: input.milestones,
+        sessions: input.sessions,
+      })
+    ).get(project.id) ?? null;
+  const staleDays = lastActivity ? elapsedDays(lastActivity.at, input.now) : 0;
 
   let daysToDeadline: number | null = null;
   if (project.deadline) {
@@ -102,7 +110,9 @@ export function computeProjectHealth(project: Project, input: ProjectHealthInput
     blocked,
     staleDays,
     stale: project.status === 'active' && staleDays >= staleAfter,
-    lastActivityAt,
+    staleAfterDays: staleAfter,
+    lastActivityAt: lastActivity?.at ?? null,
+    lastActivity,
     daysToDeadline,
     overdue: project.status === 'active' && daysToDeadline !== null && daysToDeadline < 0,
   };

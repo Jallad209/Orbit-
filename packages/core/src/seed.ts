@@ -377,8 +377,55 @@ export function seedWorld(options: SeedOptions = {}): SeedWorld {
       config: { kind: 'billDueWithin', days: 5 },
     }),
   ] as Rule[];
+  // One row per suppression mode (week 11), so exports and restores carry all of them.
   const insightStates = [
     make(InsightStateSchema, ago(2), { insightKey: 'neglected-goal:demo', snoozedUntil: null }),
+    make(InsightStateSchema, ago(1), {
+      insightKey: `stale-project:${projects[0]!.id}`,
+      snoozedUntil: new Date(nowDate.getTime() + 6 * 86_400_000).toISOString(),
+      dismissedAt: null,
+      snoozeMode: 'time',
+      lastSummary: {
+        version: 1,
+        kind: 'stale-project',
+        severity: 'attention',
+        title: `${projects[0]!.title} has had no recorded activity for 12 days.`,
+        detail: '',
+        subject: { type: 'project', id: projects[0]!.id },
+        metrics: { staleDays: 12, thresholdDays: 10 },
+      },
+    }),
+    make(InsightStateSchema, ago(1), {
+      insightKey: `estimate-bias:area:${areas[0]!.id}`,
+      snoozedUntil: null,
+      dismissedAt: null,
+      snoozeMode: 'change',
+      suppressedFingerprint: '0123456789abcdef',
+      lastSummary: {
+        version: 1,
+        kind: 'estimate-bias',
+        severity: 'attention',
+        title: `Work recorded in ${areas[0]!.name} took 1.40× the estimated time across 8 completed tasks.`,
+        detail: '',
+        subject: { type: 'area', id: areas[0]!.id },
+        metrics: { ratio: 1.4, samples: 8 },
+      },
+    }),
+    make(InsightStateSchema, ago(3), {
+      insightKey: `overloaded-day:${addDays(today, 2)}`,
+      snoozedUntil: null,
+      dismissedAt: ago(3).now().toISOString(),
+      lastSummary: {
+        version: 1,
+        kind: 'overloaded-day',
+        severity: 'risk',
+        title:
+          'Wednesday has 555 minutes of committed work and 495 minutes of available work time.',
+        detail: '',
+        subject: { type: 'date', date: addDays(today, 2) },
+        metrics: { demandMin: 555, availableMin: 495 },
+      },
+    }),
   ];
   const captures = Array.from({ length: Math.min(10, Math.ceil(sizes.tasks / 20)) }, (_, i) =>
     make(CaptureSchema, ago(0), {
@@ -427,6 +474,8 @@ export function seedWorld(options: SeedOptions = {}): SeedWorld {
         id: APP_SETTINGS_ID,
         workingWindow: { startMin: 540, endMin: 1080 },
         restBoundaries: [{ startMin: 750, endMin: 795 }],
+        // A custom threshold so a round trip proves the group survives.
+        insights: { staleProjectDays: 14 },
       }),
     ],
     links,

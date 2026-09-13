@@ -38,6 +38,7 @@ import type {
   UpsertOptions,
 } from '../repository';
 import { STORE_ENTITY } from '../repository';
+import { normalizerFor } from '../normalize';
 
 export const INDEXEDDB_SCHEMA_VERSION = 3;
 export const DEFAULT_DB_NAME = 'orbit';
@@ -111,11 +112,16 @@ interface Ctx {
 }
 
 class IdbStore<T extends BaseRecord> implements EntityStore<T> {
+  /** Week-11 read normalization for the stores whose shape grew; identity elsewhere. */
+  private readonly normalize: ((raw: T) => T) | null;
+
   constructor(
     protected readonly name: StoreName,
     protected readonly schema: z.ZodType<T, z.ZodTypeDef, unknown>,
     protected readonly ctx: Ctx,
-  ) {}
+  ) {
+    this.normalize = normalizerFor<T>(name);
+  }
 
   protected get table(): Table<T, Id> {
     return this.ctx.db.table(this.name) as Table<T, Id>;
@@ -135,21 +141,38 @@ class IdbStore<T extends BaseRecord> implements EntityStore<T> {
     });
   }
 
-  async get(id: Id): Promise<T | undefined> {
-    return this.table.get(id);
+  /**
+   * Reads stay Dexie promise chains rather than nested async functions: a
+   * second native `await` hop inside a transaction loses Dexie's zone and the
+   * transaction commits under the caller's feet.
+   */
+  protected readAll(rows: T[]): T[] {
+    const normalize = this.normalize;
+    return normalize ? rows.map((r) => normalize(r)) : rows;
   }
 
-  async getMany(ids: readonly Id[]): Promise<T[]> {
-    const rows = await this.table.bulkGet([...ids]);
-    return rows.filter((r): r is T => r !== undefined);
+  get(id: Id): Promise<T | undefined> {
+    const normalize = this.normalize;
+    const row = this.table.get(id);
+    return normalize ? row.then((r) => (r ? normalize(r) : r)) : row;
   }
 
-  async list(options?: ListOptions): Promise<T[]> {
-    if (options?.includeDeleted) return this.table.toArray();
-    return this.table.filter((r) => r.deletedAt === null).toArray();
+  getMany(ids: readonly Id[]): Promise<T[]> {
+    return this.table
+      .bulkGet([...ids])
+      .then((rows) => this.readAll(rows.filter((r): r is T => r !== undefined)));
   }
 
-  async query(predicate: (record: T) => boolean, options?: ListOptions): Promise<T[]> {
+  list(options?: ListOptions): Promise<T[]> {
+    const rows = options?.includeDeleted
+      ? this.table.toArray()
+      : this.table.filter((r) => r.deletedAt === null).toArray();
+    return this.normalize ? rows.then((all) => this.readAll(all)) : rows;
+  }
+
+  query(predicate: (record: T) => boolean, options?: ListOptions): Promise<T[]> {
+    // Normalized stores filter after normalization so a predicate sees the current shape.
+    if (this.normalize) return this.list(options).then((rows) => rows.filter(predicate));
     if (options?.includeDeleted) return this.table.filter(predicate).toArray();
     return this.table.filter((r) => r.deletedAt === null && predicate(r)).toArray();
   }

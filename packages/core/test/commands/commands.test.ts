@@ -53,6 +53,7 @@ describe('command registry', () => {
       'regenerate-plan',
       'reschedule-unfinished',
       'show-neglected-goals',
+      'open-insights',
       'review-this-week',
       'open-project',
       'undo',
@@ -191,11 +192,15 @@ describe('navigation commands', () => {
       expect.objectContaining({ title: 'The weekly review is not available yet' }),
     ]);
 
+    // "Open insights" exists only once the capability is on; neglected goals stay on /goals.
+    expect(registry.list(ctx).map((c) => c.id)).not.toContain('open-insights');
     const later = context({ capabilities: { insights: true, weeklyReview: true } });
     await later.registry.run('show-neglected-goals', later.ctx);
+    await later.registry.run('open-insights', later.ctx);
     await later.registry.run('review-this-week', later.ctx);
     expect(later.navigate.mock.calls.map((c) => c[0])).toEqual([
-      '/insights?focus=neglected-goals',
+      '/goals?filter=neglected',
+      '/insights',
       '/review/weekly',
     ]);
     expect(later.notices).toEqual([]);

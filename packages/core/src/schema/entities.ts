@@ -292,10 +292,62 @@ export const LinkSchema = BaseRecordSchema.extend({
 });
 export type Link = z.infer<typeof LinkSchema>;
 
+export const InsightKindSchema = z.enum([
+  'estimate-bias',
+  'stale-project',
+  'overloaded-day',
+  'weekly-target-deficit',
+  'person-commitments',
+]);
+export type InsightKind = z.infer<typeof InsightKindSchema>;
+
+export const InsightSeveritySchema = z.enum(['risk', 'attention', 'info']);
+export type InsightSeverity = z.infer<typeof InsightSeveritySchema>;
+
+/** What an insight is about. Dated subjects carry the date; entity subjects the id. */
+export const InsightSubjectSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('area'), id: IdSchema }),
+  z.object({ type: z.literal('unassigned') }),
+  z.object({ type: z.literal('project'), id: IdSchema }),
+  z.object({ type: z.literal('date'), date: LocalDateSchema }),
+  z.object({ type: z.literal('week'), weekStart: LocalDateSchema }),
+  z.object({ type: z.literal('person'), id: IdSchema }),
+]);
+export type InsightSubject = z.infer<typeof InsightSubjectSchema>;
+
+/**
+ * What the history view shows for a suppressed insight after its source
+ * data moved on: the kind, wording, subject, and the numbers behind the
+ * title. Never the evidence rows. Versioned so a later shape can be told apart.
+ */
+export const InsightSummarySchema = z.object({
+  version: z.literal(1),
+  kind: InsightKindSchema,
+  severity: InsightSeveritySchema,
+  title: z.string(),
+  detail: z.string().default(''),
+  subject: InsightSubjectSchema,
+  metrics: z.record(z.number()).default({}),
+});
+export type InsightSummary = z.infer<typeof InsightSummarySchema>;
+
+/** `time`: until `snoozedUntil`; `change`: until the fingerprint differs; null: not snoozed. */
+export const InsightSnoozeModeSchema = z.enum(['time', 'change']);
+export type InsightSnoozeMode = z.infer<typeof InsightSnoozeModeSchema>;
+
+/**
+ * Suppression state for one insight key (week 11). The key is a lookup, the
+ * id stays a UUID. `dismissedAt` is permanent until restored; a snooze is
+ * either timed or "until data changes", in which case `suppressedFingerprint`
+ * remembers what the data looked like when it was snoozed.
+ */
 export const InsightStateSchema = BaseRecordSchema.extend({
   insightKey: z.string().min(1),
   snoozedUntil: nullableInstant,
   dismissedAt: nullableInstant,
+  snoozeMode: InsightSnoozeModeSchema.nullable().default(null),
+  suppressedFingerprint: z.string().nullable().default(null),
+  lastSummary: InsightSummarySchema.nullable().default(null),
 });
 export type InsightState = z.infer<typeof InsightStateSchema>;
 
@@ -379,6 +431,27 @@ export const APP_SETTINGS_ID = '00000000-0000-7000-8000-000000000001';
  * Planning preferences, persisted through the repository so they travel
  * with the data (export, desktop import). One document, `APP_SETTINGS_ID`.
  */
+/**
+ * Thresholds the insight detectors use (week 11). Bounds are the accepted
+ * range for a newly entered value; an old record missing the group gets
+ * these defaults through `normalizeAppSettings`.
+ */
+export const InsightSettingsSchema = z.object({
+  /** Complete elapsed 24-hour periods without activity before a project is stale. */
+  staleProjectDays: z.number().int().min(1).max(90).default(10),
+  /** How many elapsed days of completed tasks the estimate comparison looks at. */
+  estimateWindowDays: z.number().int().min(7).max(180).default(30),
+  /** Completed tasks with both an estimate and an actual needed before comparing. */
+  estimateMinSamples: z.number().int().min(5).max(100).default(5),
+  /** actual ÷ estimate above which recorded work is reported. */
+  estimateRatioThreshold: z.number().finite().min(1.05).max(3).default(1.3),
+  /** Committed work ÷ full-day capacity above which a day is overloaded. */
+  dayOverloadRatio: z.number().finite().min(1).max(2).default(1.1),
+  /** Open commitments with one person from which they are listed. */
+  personCommitmentCount: z.number().int().min(1).max(20).default(3),
+});
+export type InsightSettings = z.infer<typeof InsightSettingsSchema>;
+
 export const AppSettingsSchema = BaseRecordSchema.extend({
   workingWindow: TimeWindowSchema.default({ startMin: 540, endMin: 1080 }),
   /** Never planned into; a lunch break by default. */
@@ -389,5 +462,7 @@ export const AppSettingsSchema = BaseRecordSchema.extend({
   defaultEstimateMin: z.number().int().min(5).max(480).default(30),
   /** When the "Evening shutdown" launcher appears. */
   eveningStartMin: MinuteOfDaySchema.default(17 * 60),
+  /** Insight thresholds; restoring their defaults leaves the planning fields alone. */
+  insights: InsightSettingsSchema.default({}),
 });
 export type AppSettings = z.infer<typeof AppSettingsSchema>;

@@ -22,6 +22,8 @@ import {
   RuleSchema,
   SessionSchema,
   TaskSchema,
+  normalizeAppSettings,
+  normalizeInsightState,
   nowIso,
   systemClock,
 } from '@orbit/core';
@@ -29,8 +31,14 @@ import type { BaseRecord, Clock } from '@orbit/core';
 import type { EntityStore, Repository, StoreName } from '../repository';
 
 export const EXPORT_FORMAT = 'orbit-export';
-/** Bump when the export envelope or any entity shape changes incompatibly. */
-export const EXPORT_SCHEMA_VERSION = 3;
+/**
+ * Bump when the export envelope or any entity shape changes incompatibly.
+ * 4 (week 11): insight settings on the settings document; snooze mode,
+ * fingerprint, and summary on insight states. Older readers refuse a v4
+ * file rather than silently dropping those fields; this reader defaults
+ * them for v1–3 files.
+ */
+export const EXPORT_SCHEMA_VERSION = 4;
 
 /** Parents before children so a future FK-checking importer can stream in order. */
 export const STORE_ORDER: StoreName[] = [
@@ -168,7 +176,7 @@ export function parseExport(input: string | unknown): ExportEnvelope {
       `This export was made by a newer Orbit (schema ${head.data.schemaVersion}, this app reads ${EXPORT_SCHEMA_VERSION}). Update Orbit first.`,
     );
   }
-  const result = ExportEnvelopeSchema.safeParse(raw);
+  const result = ExportEnvelopeSchema.safeParse(normalizeOldStores(raw));
   if (!result.success) {
     throw new ExportError(
       'invalid-format',
@@ -177,6 +185,40 @@ export function parseExport(input: string | unknown): ExportEnvelope {
     );
   }
   return result.data as ExportEnvelope;
+}
+
+/**
+ * Files from before v4 carry settings without `insights` and insight states
+ * without a snooze mode. The compatibility policy runs on the raw rows before
+ * validation so a legacy timed snooze is recognised as one; a row it cannot
+ * repair is left for validation to report.
+ */
+function normalizeOldStores(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null) return raw;
+  const data = (raw as { data?: Record<string, unknown> }).data;
+  if (typeof data !== 'object' || data === null) return raw;
+  const fix = (rows: unknown, normalize: (row: unknown) => BaseRecord) =>
+    Array.isArray(rows)
+      ? rows.map((row) => {
+          try {
+            return normalize(row);
+          } catch {
+            return row;
+          }
+        })
+      : rows;
+  return {
+    ...raw,
+    data: {
+      ...data,
+      ...(data.appSettings !== undefined
+        ? { appSettings: fix(data.appSettings, (r) => normalizeAppSettings(r).record) }
+        : {}),
+      ...(data.insightStates !== undefined
+        ? { insightStates: fix(data.insightStates, (r) => normalizeInsightState(r).record) }
+        : {}),
+    },
+  };
 }
 
 export type ImportMode = 'merge' | 'replace';

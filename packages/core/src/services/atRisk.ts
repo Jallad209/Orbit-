@@ -1,5 +1,6 @@
 import { addDays, toLocalDate } from '../dates';
 import type { Id, LocalDate, Milestone, Project, Session, Task } from '../schema';
+import type { ProjectActivity } from './activity';
 import { computeProjectHealth, type ProjectHealth } from './projectHealth';
 
 /**
@@ -16,6 +17,9 @@ export interface AtRiskInput {
   /** Tasks that already have a block on the day; a due-soon task with one is not at risk. */
   plannedTaskIds?: ReadonlySet<Id>;
   now: Date;
+  /** Shared staleness threshold and activity map, so the health here matches every other surface. */
+  staleAfterDays?: number;
+  activity?: ReadonlyMap<Id, ProjectActivity>;
 }
 
 export interface AtRiskOptions {
@@ -75,6 +79,8 @@ export function computeAtRisk(
         tasks: input.tasks,
         sessions: input.sessions,
         now: input.now,
+        staleAfterDays: input.staleAfterDays,
+        activity: input.activity,
       }),
     }))
     .filter(

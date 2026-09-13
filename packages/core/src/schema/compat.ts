@@ -1,0 +1,96 @@
+import { z } from 'zod';
+import { BaseRecordSchema } from './common';
+import {
+  AppSettingsSchema,
+  InsightSettingsSchema,
+  InsightStateSchema,
+  type AppSettings,
+  type InsightState,
+} from './entities';
+
+/**
+ * Old records at the read boundary (week 11). Stored rows are JSON written
+ * by whichever version of Orbit last saved them: an install upgraded from
+ * week 9 has a settings document without `insights` and insight states
+ * without `snoozeMode`. Zod defaults cover the missing-field case only when
+ * a record is parsed, and adapters return stored rows without parsing, so
+ * every adapter, import, and restore path runs these first.
+ *
+ * Policy:
+ * - a missing field takes its documented default;
+ * - a present but malformed value is repaired to the default and reported
+ *   in `repairs`, so a caller can log or show it; the record is never
+ *   thrown away for one bad threshold;
+ * - a record whose base fields (id, timestamps) are invalid is corrupt and
+ *   throws: nothing sensible can be built from it.
+ */
+
+export interface Normalized<T> {
+  record: T;
+  /** Field paths that held malformed values and were reset to defaults. */
+  repairs: string[];
+}
+
+function isObject(raw: unknown): raw is Record<string, unknown> {
+  return typeof raw === 'object' && raw !== null && !Array.isArray(raw);
+}
+
+/** Repair one object's fields individually against `shape`, collecting what was reset. */
+function repairShape(
+  raw: Record<string, unknown>,
+  shape: z.ZodRawShape,
+  path: string,
+  repairs: string[],
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, field] of Object.entries(shape)) {
+    const value = raw[key];
+    if (value === undefined) continue; // Zod fills the default
+    const parsed = field.safeParse(value);
+    if (parsed.success) out[key] = parsed.data;
+    else repairs.push(path ? `${path}.${key}` : key);
+  }
+  return out;
+}
+
+/** The settings document as this build understands it, whatever version wrote it. */
+export function normalizeAppSettings(raw: unknown): Normalized<AppSettings> {
+  const direct = AppSettingsSchema.safeParse(raw);
+  if (direct.success) return { record: direct.data, repairs: [] };
+  if (!isObject(raw)) throw new Error('The settings record is not an object.');
+  const base = BaseRecordSchema.parse(raw);
+  const repairs: string[] = [];
+  const { insights, ...rest } = AppSettingsSchema.shape;
+  const top = repairShape(raw, rest, '', repairs);
+  // The insight group is repaired field by field rather than reset as a whole.
+  if (isObject(raw.insights)) {
+    top.insights = repairShape(raw.insights, InsightSettingsSchema.shape, 'insights', repairs);
+  } else if (raw.insights !== undefined && !insights.safeParse(raw.insights).success) {
+    repairs.push('insights');
+  }
+  return { record: AppSettingsSchema.parse({ ...top, ...base }), repairs };
+}
+
+/**
+ * An insight state row from any version. A week-9 row knew only
+ * `snoozedUntil` and `dismissedAt`: a non-null snooze becomes a timed one,
+ * a dismissal stays permanent, and the history summary is absent (the UI
+ * shows a generic "previously dismissed observation" for it).
+ */
+export function normalizeInsightState(raw: unknown): Normalized<InsightState> {
+  if (!isObject(raw)) throw new Error('The insight state record is not an object.');
+  const repairs: string[] = [];
+  const draft: Record<string, unknown> = { ...raw };
+  if (
+    (draft.snoozeMode === undefined || draft.snoozeMode === null) &&
+    typeof draft.snoozedUntil === 'string'
+  ) {
+    draft.snoozeMode = 'time';
+  }
+  const direct = InsightStateSchema.safeParse(draft);
+  if (direct.success) return { record: direct.data, repairs };
+  const base = BaseRecordSchema.parse(raw);
+  const top = repairShape(draft, InsightStateSchema.shape, '', repairs);
+  if (typeof top.insightKey !== 'string') throw new Error('The insight state has no key.');
+  return { record: InsightStateSchema.parse({ ...top, ...base }), repairs };
+}

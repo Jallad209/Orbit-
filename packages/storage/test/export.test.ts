@@ -208,6 +208,73 @@ describe('JSON export / import', () => {
     expect(await target.areas.count()).toBe(0);
     expect(await target.opLog.latestSeq()).toBe(0);
   });
+
+  it('reads a v3 file with week-9 settings and insight states under the v4 contract', async () => {
+    const clock = fixedClock('2026-09-12T09:00:00.000Z');
+    const envelope = await exportJson(await seed(clock), clock);
+    const base = {
+      createdAt: '2026-09-01T00:00:00.000Z',
+      updatedAt: '2026-09-01T00:00:00.000Z',
+      deletedAt: null,
+    };
+    const v3 = {
+      ...envelope,
+      schemaVersion: 3,
+      data: {
+        ...envelope.data,
+        appSettings: [
+          {
+            ...base,
+            id: '00000000-0000-7000-8000-000000000001',
+            workingWindow: { startMin: 480, endMin: 960 },
+            restBoundaries: [],
+            bufferMin: 5,
+            defaultEstimateMin: 45,
+            eveningStartMin: 1000,
+          },
+        ],
+        insightStates: [
+          {
+            ...base,
+            id: '019372a0-0000-7000-8000-00000000a001',
+            insightKey: 'neglected-goal:demo',
+            snoozedUntil: '2099-01-01T00:00:00.000Z',
+            dismissedAt: null,
+          },
+          {
+            ...base,
+            id: '019372a0-0000-7000-8000-00000000a002',
+            insightKey: 'x',
+            snoozedUntil: null,
+            dismissedAt: '2026-09-01T00:00:00.000Z',
+          },
+        ],
+      },
+    };
+    const parsed = parseExport(JSON.stringify(v3));
+    expect(parsed.schemaVersion).toBe(3);
+    expect(parsed.data.appSettings[0]).toMatchObject({
+      defaultEstimateMin: 45,
+      insights: { staleProjectDays: 10, estimateRatioThreshold: 1.3 },
+    });
+    expect(parsed.data.insightStates).toMatchObject([
+      { snoozeMode: 'time', suppressedFingerprint: null, lastSummary: null },
+      { snoozeMode: null, dismissedAt: '2026-09-01T00:00:00.000Z', lastSummary: null },
+    ]);
+    // Imported, then exported again: the file is now v4 and carries the same effective state.
+    const target = createMemoryRepository({ clock });
+    await importJson(target, parsed, { mode: 'replace' });
+    const again = await exportJson(target, clock);
+    expect(again.schemaVersion).toBe(EXPORT_SCHEMA_VERSION);
+    expect(again.data.insightStates).toEqual(parsed.data.insightStates);
+    expect(again.data.appSettings).toEqual(parsed.data.appSettings);
+    // A malformed legacy row is still refused as invalid rather than silently dropped.
+    const broken = {
+      ...v3,
+      data: { ...v3.data, insightStates: [{ ...base, id: 'nope', insightKey: 'k' }] },
+    };
+    expect(() => parseExport(JSON.stringify(broken))).toThrow(ExportError);
+  });
 });
 
 describe('Markdown export', () => {
