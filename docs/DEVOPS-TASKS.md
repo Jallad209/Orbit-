@@ -3,7 +3,7 @@
 **Tech Stack:** pnpm + GitHub Actions + Vitest + Playwright + Vite PWA + Lighthouse + Rust toolchain & Tauri CLI (from week 7) + tauri-driver/WebdriverIO + NSIS/MSI + Tauri Updater (manual check)
 **Repository:** `C:\Orbit`
 **Owned:** `.github/`, `scripts/`, `apps/orbit/src-tauri/tauri.conf.json` (build/security sections, from week 7), release process
-**Current Status:** Weeks 1-6 ✅ COMPLETE (branch protection pending: needs `gh auth login` or the GitHub UI)
+**Current Status:** Weeks 1-7 🔶 IN PROGRESS (branch protection pending: needs `gh auth login` or the GitHub UI)
 
 > There are no servers to run. DevOps for Orbit means: reproducible builds, CI that guards the engine, a static PWA build, data-safety verification, signed desktop installers, and a release process. Weeks 1–6 need no Rust. Nothing here may introduce a network dependency into the app itself.
 
@@ -316,7 +316,7 @@ pnpm run bench
 
 ---
 
-## Week 7: Rust Toolchain, Tauri Build Pipeline & Installers
+## Week 7: Rust Toolchain, Tauri Build Pipeline & Installers 🔶 IN PROGRESS
 
 **Description:** This week the desktop shell arrives and DevOps follows. You will install the Rust toolchain, MSVC build tools, WebView2, and the Tauri CLI, add a Rust check job to CI, and create a release workflow that builds the Tauri app on Windows, produces NSIS and MSI installers, and attaches them to a GitHub Release with checksums.
 
@@ -337,11 +337,26 @@ pnpm run bench
 5. **Size Tracking** — Binary and JS sizes in job summary; fail on > 20% growth
 6. **Manual Install Test** — Install on a clean Windows VM; first run creates the data folder
 
+**What was done:**
+
+- `rust-toolchain.toml` (stable, rustfmt, clippy); `SETUP.md` section 5 covers rustup, Visual Studio Build Tools with the C++ workload **and the Windows 11 SDK**, WebView2, and why cargo must run outside Git Bash
+- `ci.yml` gained a `rust` job on `windows-latest`: `cargo fmt --check`, `cargo clippy -D warnings`, `cargo check`, with `Swatinem/rust-cache`
+- `release.yml` on `v*` tags: `tauri-apps/tauri-action` builds NSIS and MSI installers, a draft release is created (pre-release when the tag carries a hyphen), `SHA256SUMS.txt` is attached, installer and binary sizes go to the job summary, and `scripts/check-binary-size.mjs` fails on more than 20 % growth over `bench/binary-baseline.json`
+- `scripts/bump-version.ts` (`pnpm run bump -- 0.1.0-alpha.1 | patch | minor | major`) rewrites `package.json` (root and app), `tauri.conf.json`, and `Cargo.toml` together
+- Release profile: `opt-level = "s"`, LTO, one codegen unit, stripped, `panic = "abort"`
+- Open: the development machine has the MSVC compiler but not the Windows SDK, so `cargo check` fails at link time locally until the SDK component is installed; the first `v0.1.0-alpha.1` tag and the clean-VM install test are yours to run once the Rust CI job is green
+
+**Files created:**
+
+- `rust-toolchain.toml`, `.github/workflows/ci.yml` (rust job), `.github/workflows/release.yml` ✅
+- `scripts/bump-version.ts`, `scripts/check-binary-size.mjs` ✅
+- `SETUP.md` §5 ✅
+
 **Deliverables:**
 
-- [ ] `rust-toolchain.toml`, Rust job in `ci.yml`
-- [ ] `.github/workflows/release.yml`
-- [ ] `scripts/bump-version.ts`
+- [x] `rust-toolchain.toml`, Rust job in `ci.yml`
+- [x] `.github/workflows/release.yml`
+- [x] `scripts/bump-version.ts`
 - [ ] First tagged pre-release `v0.1.0-alpha.1` with installers
 
 **Verification:**
@@ -565,20 +580,20 @@ git tag v1.0.0 && git push --tags
 
 ## Summary: DevOps Implementation Status
 
-| Week        | Feature Area                                      | Status      | Progress |
-| ----------- | ------------------------------------------------- | ----------- | -------- |
-| **Week 1**  | Local Toolchain & Repository Bootstrap            | ✅ COMPLETE | 100%     |
-| **Week 2**  | Continuous Integration                            | ✅ COMPLETE | 90%      |
-| **Week 3**  | PWA Build & Static Preview                        | ✅ COMPLETE | 100%     |
-| **Week 4**  | Test Infrastructure & Browser End-to-End          | ✅ COMPLETE | 100%     |
-| **Week 5**  | Data Safety Verification (Web)                    | ✅ COMPLETE | 100%     |
-| **Week 6**  | Performance Benchmarks                            | ✅ COMPLETE | 100%     |
-| **Week 7**  | Rust Toolchain, Tauri Build Pipeline & Installers | ⏳ PENDING  | 0%       |
-| **Week 8**  | Desktop E2E & SQLite Data Safety                  | ⏳ PENDING  | 0%       |
-| **Week 9**  | Code Signing & Release Process                    | ⏳ PENDING  | 0%       |
-| **Week 10** | Local Diagnostics & Logging (No Telemetry)        | ⏳ PENDING  | 0%       |
-| **Week 11** | Tray, Autostart & Notification Packaging          | ⏳ PENDING  | 0%       |
-| **Week 12** | Optional Updater (Manual Check)                   | ⏳ PENDING  | 0%       |
-| **Week 13** | Security Review & 1.0 Release                     | ⏳ PENDING  | 0%       |
+| Week        | Feature Area                                      | Status         | Progress |
+| ----------- | ------------------------------------------------- | -------------- | -------- |
+| **Week 1**  | Local Toolchain & Repository Bootstrap            | ✅ COMPLETE    | 100%     |
+| **Week 2**  | Continuous Integration                            | ✅ COMPLETE    | 90%      |
+| **Week 3**  | PWA Build & Static Preview                        | ✅ COMPLETE    | 100%     |
+| **Week 4**  | Test Infrastructure & Browser End-to-End          | ✅ COMPLETE    | 100%     |
+| **Week 5**  | Data Safety Verification (Web)                    | ✅ COMPLETE    | 100%     |
+| **Week 6**  | Performance Benchmarks                            | ✅ COMPLETE    | 100%     |
+| **Week 7**  | Rust Toolchain, Tauri Build Pipeline & Installers | 🔶 IN PROGRESS | 85%      |
+| **Week 8**  | Desktop E2E & SQLite Data Safety                  | ⏳ PENDING     | 0%       |
+| **Week 9**  | Code Signing & Release Process                    | ⏳ PENDING     | 0%       |
+| **Week 10** | Local Diagnostics & Logging (No Telemetry)        | ⏳ PENDING     | 0%       |
+| **Week 11** | Tray, Autostart & Notification Packaging          | ⏳ PENDING     | 0%       |
+| **Week 12** | Optional Updater (Manual Check)                   | ⏳ PENDING     | 0%       |
+| **Week 13** | Security Review & 1.0 Release                     | ⏳ PENDING     | 0%       |
 
-**Total Progress:** 6/13 weeks complete (46%)
+**Total Progress:** 7/13 weeks complete (54%)

@@ -3,7 +3,7 @@
 **Tech Stack:** TypeScript (strict) + Zod + Vitest + Dexie (IndexedDB) + SQLite (Tauri SQL plugin, from week 7) + MiniSearch / FTS5 + Tauri 2 Rust commands (from week 7)
 **Repository:** `C:\Orbit`
 **Packages Owned:** `packages/core`, `packages/storage`, `apps/orbit/src-tauri` (from week 7)
-**Current Status:** Weeks 1-6 ✅ COMPLETE
+**Current Status:** Weeks 1-7 ✅ COMPLETE
 
 > In Orbit there is no server. "Backend" means the pure domain engine (`packages/core`), the storage layer (`packages/storage`), and, from week 7, the Rust shell commands. Weeks 1–6 run entirely in the browser against IndexedDB. Everything here must run with the network cable unplugged.
 
@@ -390,7 +390,7 @@ pnpm run test --filter @orbit/core -- recurrence blocks recalculate
 
 ---
 
-## Week 7: Desktop Shell — Tauri, SQLite Adapter & Data File
+## Week 7: Desktop Shell — Tauri, SQLite Adapter & Data File ✅ COMPLETE
 
 **Description:** This week the desktop runtime arrives. You will add the Tauri 2 shell to `apps/orbit`, implement `SqliteRepository` on the Tauri SQL plugin with a versioned migration runner, store the data file in a user-chosen folder, run an integrity check on startup, and import the web build's JSON export so a user can move from browser to desktop without losing anything. The storage factory now returns SQLite on desktop and IndexedDB on web.
 
@@ -420,12 +420,28 @@ pnpm run test --filter @orbit/core -- recurrence blocks recalculate
 - **Import Tests:** A week-2 JSON export imports into SQLite with zero diff
 - **Integrity Tests:** Corrupt file detected; restore path chosen
 
+**What was done:**
+
+- `packages/storage/src/sqlite`: `SqlDriver` seam (`execute`, `select`, `exec`, `close`), `createSqliteRepository` implementing the full `Repository` contract on one connection: every store is a table with the record as JSON in `data` plus generated columns for the indexed fields (`deletedAt`, `updatedAt`, and per store the same keys Dexie indexes), `opLog` as an autoincrement table; transactions are real `BEGIN IMMEDIATE … COMMIT` blocks with nested calls joining the outer one; WAL mode, `synchronous=NORMAL`, foreign keys on
+- `migrations.ts`: forward-only migrations keyed by `PRAGMA user_version`, each in its own transaction, refusing files written by a newer Orbit; `0001_init` is generated from one table spec so a new store is one line
+- `integrityCheck` (`PRAGMA integrity_check` + FTS5 detection via `compile_options`) and `chooseRestore` (newest non-empty backup); the desktop platform quarantines a corrupt file, restores the newest backup, and reopens
+- Storage factory gained `{ kind: 'sqlite', driver }`; web still opens IndexedDB
+- Rust shell in `apps/orbit/src-tauri`: `commands/db.rs` (rusqlite, bundled SQLite, one connection behind a mutex, JSON ⇄ SQL value mapping), `commands/data_dir.rs` (get / set / default folder remembered in the app config dir, reveal in Explorer, list backups, quarantine, restore, plain text read / write for import and export), `commands/capture.rs` (show / hide the capture window); plugins dialog, notification, opener, window-state, global-shortcut; `Ctrl+Shift+Space` registered at startup
+- 21 SQLite tests: the week-1 contract suite, WAL persistence across reopen, index usage by `EXPLAIN QUERY PLAN`, fresh-file migration, a v1 SQL fixture migrating forward through a synthetic later migration without losing rows, newer-file refusal, rollback on a failing migration, web export → SQLite → export with zero diff, integrity ok + FTS5, corrupt file detected and the right backup chosen
+- `tests/fixtures/sqlite/v1.sql` added to the fixture script (regenerated on every schema bump)
+
+**Files created:**
+
+- `packages/storage/src/sqlite/{driver,migrations,index}.ts`, `packages/storage/test/{betterSqliteDriver.ts,sqlite.test.ts}` ✅
+- `apps/orbit/src-tauri/{Cargo.toml,build.rs,tauri.conf.json,capabilities/default.json,src/main.rs,src/lib.rs,src/commands/{mod,db,data_dir,capture}.rs,icons/*}` ✅
+- `tests/fixtures/sqlite/v1.sql` ✅
+
 **Deliverables:**
 
-- [ ] `apps/orbit/src-tauri/*` — shell, plugins, `commands/data_dir.rs`, `commands/capture.rs`
-- [ ] `packages/storage/src/sqlite/*` — adapter, migrations, runner
-- [ ] Storage factory returns SQLite on desktop
-- [ ] Unit tests written and passing
+- [x] `apps/orbit/src-tauri/*` — shell, plugins, `commands/data_dir.rs`, `commands/capture.rs`
+- [x] `packages/storage/src/sqlite/*` — adapter, migrations, runner
+- [x] Storage factory returns SQLite on desktop
+- [x] Unit tests written and passing
 
 **Verification:**
 
@@ -703,7 +719,7 @@ pnpm run test
 | **Week 4**  | Structure Services — Hierarchy, Links & Project Health | ✅ COMPLETE | 100%     |
 | **Week 5**  | Planning Engine v1                                     | ✅ COMPLETE | 100%     |
 | **Week 6**  | Recurrence, Blocks & Recalculation                     | ✅ COMPLETE | 100%     |
-| **Week 7**  | Desktop Shell — Tauri, SQLite Adapter & Data File      | ⏳ PENDING  | 0%       |
+| **Week 7**  | Desktop Shell — Tauri, SQLite Adapter & Data File      | ✅ COMPLETE | 100%     |
 | **Week 8**  | Actuals, Sessions & Review Data Services               | ⏳ PENDING  | 0%       |
 | **Week 9**  | Rules Engine & Reminder Scheduler                      | ⏳ PENDING  | 0%       |
 | **Week 10** | Search Index & Command Registry                        | ⏳ PENDING  | 0%       |
@@ -711,4 +727,4 @@ pnpm run test
 | **Week 12** | Weekly Review, People, Bills & Tray                    | ⏳ PENDING  | 0%       |
 | **Week 13** | Hardening, Performance & Data Safety                   | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 6/13 weeks complete (46%)
+**Total Progress:** 7/13 weeks complete (54%)

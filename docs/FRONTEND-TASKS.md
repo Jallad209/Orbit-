@@ -3,7 +3,7 @@
 **Tech Stack:** React 18 + Vite + TypeScript + Tailwind CSS + Radix UI Primitives + Framer Motion + Zustand + Vite PWA + Tauri 2 API (from week 7) + Vitest + Testing Library
 **Repository:** `C:\Orbit`
 **Packages Owned:** `apps/orbit/src`
-**Current Status:** Weeks 1-6 ✅ COMPLETE
+**Current Status:** Weeks 1-7 ✅ COMPLETE
 
 > The frontend talks only to `@orbit/core` services, the `Repository` interface, and a `Platform` interface. It never issues SQL, never imports Tauri APIs outside `src/platform/`, and never calls the network. All fonts and assets are bundled. Weeks 1–6 run in a plain browser; the desktop shell is integrated in week 7.
 
@@ -401,7 +401,7 @@ pnpm run dev
 
 ---
 
-## Week 7: Desktop Shell Integration
+## Week 7: Desktop Shell Integration ✅ COMPLETE
 
 **Description:** This week the desktop runtime arrives and the UI learns the difference. You will add the `Platform.desktop` implementation over the Tauri APIs, wire the storage factory to SQLite on desktop, build the first-run flow (choose data folder, optionally import the browser export), the system-wide quick-capture window, native file dialogs for data settings, and capability-aware UI so web users see honest messaging about reminders and storage.
 
@@ -428,12 +428,28 @@ pnpm run dev
 - Capture window submits through the same CaptureBar component
 - Capability messaging renders only on web platform (mocked)
 
+**What was done:**
+
+- `platform/desktop.ts`: `Platform` over Tauri with the packages imported lazily (the web bundle never carries them); `openDesktopRepository` reads or creates the data folder, opens `orbit.db` through `tauriSqlDriver`, runs the integrity check, and on a corrupt file quarantines it, restores the newest backup, and reopens; notifications through the plugin, export through a native save dialog, `desktop` extras (pick / relocate / reveal the data folder, pick an export file, list backups, hide the capture window, drag the frameless window)
+- `platform/select.ts`: `isTauri()` is the only runtime sniff; `repositoryKindFor(platform)` picks SQLite when `capabilities.dataFolder` is true; `PlatformProvider` defaults to `detectPlatform()`
+- `features/firstRun`: welcome flow on desktop until `orbit-first-run-done` is set — choose the data folder (relocates and restarts), import a browser export (merge, newer copies win), set the working window; lands on Today
+- `QuickCaptureWindow` at `/capture`, outside the shell: the same `CaptureBar`, Enter saves and hides, Escape hides, refocuses on every show, draggable title strip
+- Settings page (data and capability sections now, the rest in week 9): `DataSettings` shows the data folder with Change and Show in Explorer, the startup integrity result with an FTS5 badge, what recovery did, a close-to-tray preference (tray lands in week 12), and one-click JSON export; on the web it shows the honest storage status instead; `CapabilityNotes` says whether reminders fire in the background and which shortcut opens capture, by capability rather than user agent
+- 12 tests: factory picks SQLite for a data-folder platform, the driver maps onto `db_*` commands, default folder on first run, corrupt file → quarantine → restore newest backup → reopen, fresh start without a backup, desktop export through the save dialog, first run persists folder and working window and lands on Today, inverted window refused, browser export imported, capture window submits through the shared bar and hides, capability messaging on web vs desktop
+
+**Files created:**
+
+- `apps/orbit/src/platform/{desktop.ts,select.ts,tauriSqlDriver.ts,desktop.test.ts}`, `types.ts` extended ✅
+- `apps/orbit/src/features/firstRun/{FirstRunPage.tsx,firstRun.ts,FirstRunPage.test.tsx}` ✅
+- `apps/orbit/src/features/inbox/{QuickCaptureWindow.tsx,QuickCaptureWindow.test.tsx}` ✅
+- `apps/orbit/src/features/settings/{SettingsPage.tsx,DataSettings.tsx,SettingsPage.test.tsx}` ✅
+
 **Deliverables:**
 
-- [ ] `apps/orbit/src/platform/desktop.ts`
-- [ ] `apps/orbit/src/features/firstRun/*`
-- [ ] `apps/orbit/src/features/inbox/QuickCaptureWindow.tsx`, window config in `tauri.conf.json`
-- [ ] Unit tests written and passing
+- [x] `apps/orbit/src/platform/desktop.ts`
+- [x] `apps/orbit/src/features/firstRun/*`
+- [x] `apps/orbit/src/features/inbox/QuickCaptureWindow.tsx`, window config in `tauri.conf.json`
+- [x] Unit tests written and passing
 
 **Verification:**
 
@@ -713,7 +729,7 @@ pnpm run build && pnpm run preview
 | **Week 4**  | Areas, Goals, Projects & Tasks                | ✅ COMPLETE | 100%     |
 | **Week 5**  | Today Screen & Plan Proposal                  | ✅ COMPLETE | 100%     |
 | **Week 6**  | Time-Block Timeline                           | ✅ COMPLETE | 100%     |
-| **Week 7**  | Desktop Shell Integration                     | ⏳ PENDING  | 0%       |
+| **Week 7**  | Desktop Shell Integration                     | ✅ COMPLETE | 100%     |
 | **Week 8**  | Morning Briefing, Evening Shutdown & Timer    | ⏳ PENDING  | 0%       |
 | **Week 9**  | Rules & Settings                              | ⏳ PENDING  | 0%       |
 | **Week 10** | Command Palette & Global Search               | ⏳ PENDING  | 0%       |
@@ -721,4 +737,4 @@ pnpm run build && pnpm run preview
 | **Week 12** | Weekly Review, People, Bills & Notes          | ⏳ PENDING  | 0%       |
 | **Week 13** | Mobile PWA Layouts, Accessibility & Polish    | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 6/13 weeks complete (46%)
+**Total Progress:** 7/13 weeks complete (54%)

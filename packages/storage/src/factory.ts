@@ -2,14 +2,17 @@ import type { Clock } from '@orbit/core';
 import { createIndexedDbRepository, type IndexedDbRepositoryOptions } from './indexeddb';
 import { createMemoryRepository } from './memory';
 import type { Repository } from './repository';
+import { createSqliteRepository, type SqliteRepositoryOptions } from './sqlite';
 
 export type RepositoryConfig =
-  { kind: 'memory'; clock?: Clock } | ({ kind: 'indexeddb' } & IndexedDbRepositoryOptions);
+  | { kind: 'memory'; clock?: Clock }
+  | ({ kind: 'indexeddb' } & IndexedDbRepositoryOptions)
+  | ({ kind: 'sqlite' } & SqliteRepositoryOptions);
 
 /**
  * The one place a runtime chooses its storage. The app's `Platform`
  * implementations call this; nothing else constructs an adapter directly.
- * SQLite joins here in week 7.
+ * Web opens IndexedDB, desktop opens SQLite through a Tauri-backed driver.
  */
 export async function openRepository(config: RepositoryConfig): Promise<Repository> {
   switch (config.kind) {
@@ -21,6 +24,12 @@ export async function openRepository(config: RepositoryConfig): Promise<Reposito
         clock: config.clock,
         indexedDB: config.indexedDB,
         IDBKeyRange: config.IDBKeyRange,
+      });
+    case 'sqlite':
+      return createSqliteRepository({
+        driver: config.driver,
+        clock: config.clock,
+        skipMigrations: config.skipMigrations,
       });
   }
 }

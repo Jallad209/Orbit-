@@ -1,0 +1,78 @@
+name: Release
+
+# Tag a version to ship the desktop app:
+#   pnpm run bump -- 0.1.0-alpha.1 && git commit -am "chore: release v0.1.0-alpha.1"
+#   git tag v0.1.0-alpha.1 && git push --tags
+# Builds the Tauri app on Windows, produces NSIS and MSI installers, writes
+# SHA-256 checksums, and attaches everything to a draft GitHub Release.
+# Pre-release tags (anything with a hyphen) are marked as pre-releases.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows installers
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Rust toolchain (from rust-toolchain.toml)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/orbit/src-tauri
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and attach installers
+        id: tauri
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: apps/orbit
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Orbit ${{ github.ref_name }}'
+          releaseBody: 'Installers for Windows. Verify with the SHA-256 list below.'
+          releaseDraft: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          args: --bundles nsis,msi
+
+      - name: Checksums and sizes
+        shell: pwsh
+        run: |
+          $bundles = Get-ChildItem apps/orbit/src-tauri/target/release/bundle -Recurse -Include *.exe,*.msi
+          $lines = foreach ($f in $bundles) {
+            $h = (Get-FileHash $f.FullName -Algorithm SHA256).Hash.ToLower()
+            "$h  $($f.Name)"
+          }
+          $lines | Set-Content SHA256SUMS.txt
+          "## Installers" | Add-Content $env:GITHUB_STEP_SUMMARY
+          "| File | Size |" | Add-Content $env:GITHUB_STEP_SUMMARY
+          "|---|---:|" | Add-Content $env:GITHUB_STEP_SUMMARY
+          foreach ($f in $bundles) { "| $($f.Name) | $([math]::Round($f.Length/1MB,1)) MB |" | Add-Content $env:GITHUB_STEP_SUMMARY }
+          $exe = Get-Item apps/orbit/src-tauri/target/release/orbit.exe
+          "| orbit.exe (binary) | $([math]::Round($exe.Length/1MB,1)) MB |" | Add-Content $env:GITHUB_STEP_SUMMARY
+          node scripts/check-binary-size.mjs $exe.FullName
+
+      - name: Attach checksums to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload ${{ github.ref_name }} SHA256SUMS.txt --clobber

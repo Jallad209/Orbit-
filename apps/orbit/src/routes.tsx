@@ -9,6 +9,11 @@ import { ProjectsPage } from '@/features/structure/ProjectsPage';
 import { ProjectPage } from '@/features/structure/ProjectPage';
 import { TodayPage } from '@/features/today/TodayPage';
 import { TimelinePage } from '@/features/timeline/TimelinePage';
+import { FirstRunPage } from '@/features/firstRun/FirstRunPage';
+import { isFirstRunDone } from '@/features/firstRun/firstRun';
+import { QuickCaptureWindow } from '@/features/inbox/QuickCaptureWindow';
+import { SettingsPage } from '@/features/settings/SettingsPage';
+import { usePlatform } from '@/platform';
 
 const ComponentsGallery = import.meta.env.DEV
   ? lazy(() =>
@@ -21,10 +26,15 @@ const ComponentsGallery = import.meta.env.DEV
  * `Placeholder` exists so navigation, hotkeys, and layout can be tested now.
  */
 export function AppRoutes() {
+  const platform = usePlatform();
+  const welcome = platform.capabilities.dataFolder && !isFirstRunDone();
   return (
     <Routes>
+      {/* The quick-capture window has no shell around it. */}
+      <Route path="/capture" element={<QuickCaptureWindow />} />
       <Route element={<AppLayout />}>
-        <Route index element={<Navigate to="/today" replace />} />
+        <Route index element={<Navigate to={welcome ? '/welcome' : '/today'} replace />} />
+        <Route path="/welcome" element={<FirstRunPage />} />
         <Route path="/today" element={<TodayPage />} />
         <Route path="/inbox" element={<InboxPage />} />
         <Route path="/timeline" element={<TimelinePage />} />
@@ -61,10 +71,7 @@ export function AppRoutes() {
           path="/search"
           element={<Placeholder title="Search" description="Arrives in week 10." />}
         />
-        <Route
-          path="/settings"
-          element={<Placeholder title="Settings" description="Arrives in week 9." />}
-        />
+        <Route path="/settings" element={<SettingsPage />} />
         {ComponentsGallery ? (
           <Route
             path="/dev/components"

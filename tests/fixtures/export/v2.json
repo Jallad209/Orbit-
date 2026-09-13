@@ -1859,6 +1859,7 @@
           "count": null,
           "until": null
         },
+        "startDate": null,
         "durationMin": 45,
         "energy": "high",
         "preferredWindow": {
@@ -1881,6 +1882,7 @@
           "count": null,
           "until": null
         },
+        "startDate": null,
         "durationMin": 15,
         "energy": "low",
         "preferredWindow": null,

@@ -31,7 +31,11 @@
     "make:fixture": "tsx scripts/make-fixture.ts",
     "seed": "tsx scripts/seed.ts",
     "bench": "tsx scripts/bench.ts",
-    "e2e:startup": "playwright test tests/e2e/playwright/startup.spec.ts"
+    "e2e:startup": "playwright test tests/e2e/playwright/startup.spec.ts",
+    "tauri": "pnpm --filter orbit exec tauri",
+    "tauri:dev": "pnpm --filter orbit exec tauri dev",
+    "bump": "tsx scripts/bump-version.ts",
+    "tauri:build": "pnpm --filter orbit exec tauri build"
   },
   "lint-staged": {
     "*.{ts,tsx,js}": [
@@ -49,6 +53,7 @@
     "@orbit/core": "workspace:^",
     "@orbit/storage": "workspace:^",
     "@playwright/test": "^1.63.0",
+    "@tauri-apps/cli": "^2",
     "@types/node": "^22",
     "@vitest/coverage-v8": "^5.0.0",
     "eslint": "^10.10.0",

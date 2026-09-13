@@ -1,0 +1,33 @@
+[package]
+name = "orbit"
+version = "0.0.1"
+description = "Orbit — an offline-first personal operating system"
+authors = ["Orbit"]
+edition = "2021"
+rust-version = "1.85"
+
+[lib]
+name = "orbit_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-window-state = "2"
+rusqlite = { version = "0.40", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Small, fast release binaries (DEVOPS-TASKS week 7).
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

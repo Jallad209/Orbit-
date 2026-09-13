@@ -58,3 +58,34 @@ jobs:
           du -sh apps/orbit/dist >> "$GITHUB_STEP_SUMMARY"
           ls -la apps/orbit/dist/assets | awk '{print $5, $9}' | sort -rn | head -10 >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+  rust:
+    name: Rust shell (fmt, clippy, check)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust toolchain (from rust-toolchain.toml)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/orbit/src-tauri
+
+      # tauri-build reads tauri.conf.json and needs the frontendDist folder to exist.
+      - name: Placeholder frontend
+        shell: pwsh
+        run: New-Item -ItemType Directory -Force apps/orbit/dist | Out-Null
+
+      - name: Format
+        run: cargo fmt --manifest-path apps/orbit/src-tauri/Cargo.toml --check
+
+      - name: Clippy
+        run: cargo clippy --manifest-path apps/orbit/src-tauri/Cargo.toml -- -D warnings
+
+      - name: Check
+        run: cargo check --manifest-path apps/orbit/src-tauri/Cargo.toml

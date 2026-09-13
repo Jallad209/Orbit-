@@ -1,6 +1,6 @@
 # Orbit — Development Setup (Windows)
 
-Orbit is built as a web app and shipped as a desktop app. **Weeks 1–6 need only Node.** The Rust toolchain is added in week 7 when the Tauri shell arrives.
+Orbit is built as a web app and shipped as a desktop app. **The web app needs only Node.** The desktop shell (week 7 onwards) also needs Rust and the Windows C++ toolchain; see section 5.
 
 ## 1. Install the toolchain
 
@@ -59,3 +59,27 @@ docs/              Spec and the three task tracks
 - Microsoft C++ Build Tools (Desktop development with C++)
 - WebView2 runtime (preinstalled on Windows 11)
 - `pnpm add -Dw @tauri-apps/cli`
+
+## 5. Desktop shell (Tauri) — Windows
+
+Needed only to run or build the desktop app (`pnpm run tauri:dev`, `pnpm run tauri:build`). CI builds the installers on GitHub's Windows runners, so the web app and every test run without any of this.
+
+| Tool                      | How to get it                                                                                                                                                                                            | Check                                                                                                         |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Rust (stable, MSVC)       | https://rustup.rs — the version comes from `rust-toolchain.toml`                                                                                                                                         | `rustc -V && cargo -V`                                                                                        |
+| Visual Studio Build Tools | https://visualstudio.microsoft.com/visual-cpp-build-tools/ → workload **Desktop development with C++**. Make sure the individual component **Windows 11 SDK** is ticked; the compiler alone cannot link. | `vswhere -products * -requires Microsoft.VisualStudio.Component.Windows11SDK.26100` prints a path             |
+| WebView2 runtime          | Included in Windows 11 and recent Windows 10; otherwise the Evergreen installer from Microsoft                                                                                                           | `Get-ItemProperty 'HKLM:SOFTWAREWOW6432NodeMicrosoftEdgeUpdateClients{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'` |
+| Tauri CLI                 | already a dev dependency (`@tauri-apps/cli`)                                                                                                                                                             | `pnpm exec tauri --version`                                                                                   |
+
+Then:
+
+```bash
+pnpm run tauri:dev      # Vite + the Rust shell with hot reload
+pnpm run tauri:build    # NSIS and MSI installers under apps/orbit/src-tauri/target/release/bundle
+```
+
+Run cargo from PowerShell or cmd, not Git Bash: Git's `usr/bin` carries a GNU `link.exe` that shadows the MSVC linker.
+
+Where the data goes: first run uses `%APPDATA%app.orbit.desktopdataorbit.db` (WAL mode, so `orbit.db-wal` and `orbit.db-shm` sit next to it). Change the folder from Settings → Data; Orbit restarts on the new location. The chosen folder is remembered in `%APPDATA%app.orbit.desktopsettings.json`.
+
+Release: `pnpm run bump -- 0.1.0-alpha.1`, commit, `git tag v0.1.0-alpha.1 && git push --tags`. The Release workflow builds the installers, attaches them with a SHA-256 list, and creates a draft release to publish.

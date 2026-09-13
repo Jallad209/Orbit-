@@ -1,10 +1,23 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Repository } from '@orbit/storage';
+import { desktopPlatform } from './desktop';
+import { isTauri, repositoryKindFor } from './select';
 import type { Platform } from './types';
 import { webPlatform } from './web';
 
-export type { Platform, PlatformCapabilities, StorageStatus } from './types';
-export { webPlatform };
+export type {
+  DataFileStatus,
+  DesktopApi,
+  Platform,
+  PlatformCapabilities,
+  StorageStatus,
+} from './types';
+export { webPlatform, desktopPlatform, isTauri, repositoryKindFor };
+
+/** The runtime Orbit is running in: Tauri's WebView or a browser. */
+export function detectPlatform(): Platform {
+  return isTauri() ? desktopPlatform : webPlatform;
+}
 
 interface PlatformContextValue {
   platform: Platform;
@@ -26,7 +39,7 @@ interface PlatformProviderProps {
  * `usePlatform()` and `useRepository()`; nothing imports Tauri or Dexie directly.
  */
 export function PlatformProvider({
-  platform = webPlatform,
+  platform = detectPlatform(),
   repository,
   fallback = null,
   children,

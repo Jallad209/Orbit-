@@ -1,4 +1,4 @@
-import type { Repository } from '@orbit/storage';
+import type { BackupCandidate, IntegrityResult, Repository } from '@orbit/storage';
 
 /**
  * What the current runtime can do. The UI renders by these flags and never
@@ -22,6 +22,31 @@ export interface StorageStatus {
   quotaBytes: number | null;
 }
 
+/** What happened to the data file at startup (desktop only). */
+export interface DataFileStatus {
+  dir: string;
+  path: string;
+  integrity: IntegrityResult;
+  /** When the file was corrupt: what was done about it. */
+  recovery: null | { quarantinedTo: string; restoredFrom: string | null };
+}
+
+/** Desktop-only operations. Present when `capabilities.dataFolder` is true. */
+export interface DesktopApi {
+  dataFileStatus(): DataFileStatus | null;
+  /** Native folder picker; returns the chosen folder or null when cancelled. */
+  pickDataFolder(): Promise<string | null>;
+  /** Remember a data folder and restart the app on it. */
+  relocateData(dir: string): Promise<void>;
+  revealDataFolder(): Promise<void>;
+  /** Native file picker for an Orbit export; returns its text or null when cancelled. */
+  pickExportFile(): Promise<string | null>;
+  listBackups(): Promise<BackupCandidate[]>;
+  hideCaptureWindow(): Promise<void>;
+  /** Start dragging the frameless capture window. */
+  startDraggingWindow(): Promise<void>;
+}
+
 export interface Platform {
   readonly name: 'web' | 'desktop';
   readonly capabilities: PlatformCapabilities;
@@ -33,4 +58,6 @@ export interface Platform {
   exportFile(fileName: string, contents: string | Blob, mimeType?: string): Promise<void>;
   /** Ask the runtime to keep data durable and report status. */
   requestPersistentStorage(): Promise<StorageStatus>;
+  /** Desktop extras; undefined on the web. */
+  readonly desktop?: DesktopApi;
 }
