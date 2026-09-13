@@ -53,16 +53,31 @@ function legacyPrefs(): SettingsPatch {
 export async function loadSettings(
   repo: Repository,
   clock: Clock = systemClock,
+  options: { migrateLegacy?: boolean } = {},
 ): Promise<AppSettings> {
   const existing = await repo.appSettings.get(APP_SETTINGS_ID);
   if (existing && existing.deletedAt === null) {
     usePlanPrefs.getState().hydrate(existing);
     return existing;
   }
-  const fresh = AppSettingsSchema.parse({ ...defaultAppSettings(clock), ...legacyPrefs() });
+  const fresh = AppSettingsSchema.parse({
+    ...defaultAppSettings(clock),
+    ...(options.migrateLegacy === false ? {} : legacyPrefs()),
+  });
   const stored = await repo.appSettings.upsert(fresh);
   usePlanPrefs.getState().hydrate(stored);
   return stored;
+}
+
+/** Task creation reads the persisted default without creating settings as a side effect. */
+export async function defaultTaskEstimate(
+  repo: Repository,
+  clock: Clock = systemClock,
+): Promise<number> {
+  const settings = await repo.appSettings.get(APP_SETTINGS_ID);
+  return settings && settings.deletedAt === null
+    ? settings.defaultEstimateMin
+    : defaultAppSettings(clock).defaultEstimateMin;
 }
 
 /** Validate through the shared schema, store, and mirror into the planner prefs. */

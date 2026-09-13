@@ -13,4 +13,6 @@ export interface SqlDriver {
   /** Run a script of several statements (migrations). No parameters. */
   exec(sql: string): Promise<void>;
   close(): Promise<void>;
+  /** Execute with an exclusively owned, callback-scoped connection. */
+  transaction?<T>(fn: (tx: SqlDriver) => Promise<T>): Promise<T>;
 }

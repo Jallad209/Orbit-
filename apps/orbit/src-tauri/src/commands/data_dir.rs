@@ -7,7 +7,10 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 
-use rusqlite::{Connection, MAIN_DB};
+use rusqlite::{
+    backup::{Backup, StepResult},
+    Connection, OpenFlags, MAIN_DB,
+};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
 
@@ -114,7 +117,8 @@ pub fn data_dir_relocate(
         .0
         .lock()
         .map_err(|_| "database lock poisoned".to_string())?;
-    let dir = relocate_connection(&mut guard, Path::new(&path), |dir| {
+    guard.authorize(None)?;
+    let dir = relocate_connection(&mut guard.connection, Path::new(&path), |dir| {
         let mut settings = read_settings(&app)?;
         settings.data_dir = Some(dir.to_string_lossy().into_owned());
         write_settings(&app, &settings)
@@ -325,6 +329,122 @@ pub fn data_restore(from: String, to: String) -> Result<(), String> {
     fs::copy(&from, &to).map(|_| ()).map_err(|e| e.to_string())
 }
 
+/// Restore into the open connection through SQLite's atomic backup transaction.
+/// The mutex excludes both webviews and the scheduler for the entire switch.
+#[tauri::command]
+pub fn data_restore_backup(
+    app: AppHandle,
+    window: tauri::WebviewWindow,
+    state: State<'_, Db>,
+    from: String,
+    generation: Option<u64>,
+) -> Result<String, String> {
+    let mut guard = state
+        .0
+        .lock()
+        .map_err(|_| "database lock poisoned".to_string())?;
+    guard.check_generation(generation)?;
+    guard.authorize(None)?;
+    let preserved = restore_connection(&mut guard.connection, Path::new(&from), |source, dest| {
+        copy_into(source, dest)
+    })?;
+    guard.generation += 1; // Already-queued work from an old webview must not overwrite restored data.
+                           // Reload the other webview as well so cached settings and records are discarded.
+    for (label, other) in app.webview_windows() {
+        if label != window.label() {
+            let _ = other.eval("window.location.reload()");
+        }
+    }
+    Ok(preserved.to_string_lossy().into_owned())
+}
+
+fn copy_into(source: &Connection, destination: &mut Connection) -> Result<(), String> {
+    let backup = Backup::new(source, destination).map_err(|e| e.to_string())?;
+    match backup.step(-1).map_err(|e| e.to_string())? {
+        StepResult::Done => Ok(()),
+        _ => Err("The database is busy. Restore was not applied; try again.".into()),
+    }
+    // Dropping an incomplete Backup rolls its destination transaction back.
+}
+
+fn restore_connection(
+    active: &mut Option<Connection>,
+    from: &Path,
+    apply: impl FnOnce(&Connection, &mut Connection) -> Result<(), String>,
+) -> Result<PathBuf, String> {
+    let current = active.as_mut().ok_or("The database is not open yet")?;
+    if !current.is_autocommit() {
+        return Err("Orbit is saving data. Try restoring again in a moment.".into());
+    }
+    let live_path = fs::canonicalize(current.path().ok_or("The database has no file path")?)
+        .map_err(|e| e.to_string())?;
+    let from = fs::canonicalize(from).map_err(|e| e.to_string())?;
+    if from == live_path {
+        return Err("Choose a backup, not the active data file.".into());
+    }
+    let source = Connection::open_with_flags(&from, OpenFlags::SQLITE_OPEN_READ_ONLY)
+        .map_err(|e| e.to_string())?;
+    // Check integrity and materialize every table before changing anything live.
+    verify_copy(&source, &source)?;
+    let version = |conn: &Connection| {
+        conn.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
+            .map_err(|e| e.to_string())
+    };
+    let source_version = version(&source)?;
+    if source_version < 1 || source_version > version(current)? {
+        return Err("This backup has an unsupported schema version. Update Orbit before restoring a newer backup.".into());
+    }
+    let tables = current
+        .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+        .map_err(|e| e.to_string())?
+        .query_map([], |row| row.get::<_, String>(0))
+        .map_err(|e| e.to_string())?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(|e| e.to_string())?;
+    for table in tables {
+        if source_version == 1 && matches!(table.as_str(), "reminders" | "appSettings") {
+            continue;
+        }
+        source
+            .prepare(&format!(
+                "SELECT * FROM \"{}\" LIMIT 0",
+                table.replace('"', "\"\"")
+            ))
+            .map_err(|_| "This is not an Orbit backup.".to_string())?;
+    }
+    let backups = live_path.parent().unwrap().join("backups");
+    fs::create_dir_all(&backups).map_err(|e| e.to_string())?;
+    let preserved = tempfile::Builder::new()
+        .prefix("before-restore-")
+        .suffix(".db")
+        .tempfile_in(&backups)
+        .map_err(|e| e.to_string())?
+        .into_temp_path();
+    current
+        .backup(MAIN_DB, &preserved, None)
+        .map_err(|e| e.to_string())?;
+    let original = Connection::open(&preserved).map_err(|e| e.to_string())?;
+    verify_copy(current, &original)?;
+    original
+        .pragma_update(None, "journal_mode", "DELETE")
+        .map_err(|e| e.to_string())?;
+    fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(&preserved)
+        .and_then(|file| file.sync_all())
+        .map_err(|e| e.to_string())?;
+    let preserved = preserved.keep().map_err(|e| e.to_string())?;
+    let restore = apply(&source, current).and_then(|()| verify_copy(&source, current));
+    if let Err(error) = restore {
+        copy_into(&original, current).map_err(|recovery| format!("{error}. Automatic recovery failed ({recovery}); your original data is preserved at {}", preserved.display()))?;
+        return Err(format!(
+            "{error}. The original database is still open and unchanged."
+        ));
+    }
+    Ok(preserved)
+}
+
 /// Plain file reads and writes for import / export. Paths come from native
 /// dialogs, so no scope table is needed on the JS side.
 #[tauri::command]
@@ -340,6 +460,92 @@ pub fn file_write_text(path: String, contents: String) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn restore_verifies_first_preserves_original_and_keeps_connection_open() {
+        let temp = tempfile::tempdir().unwrap();
+        let live = temp.path().join("live");
+        let backup_dir = temp.path().join("backup");
+        let mut active = Some(seed(&live));
+        active
+            .as_ref()
+            .unwrap()
+            .execute_batch("INSERT INTO tasks VALUES ('task-2', '{}')")
+            .unwrap();
+        seed(&backup_dir).close().unwrap();
+        let preserved =
+            restore_connection(&mut active, &backup_dir.join(DATA_FILE), copy_into).unwrap();
+        assert_eq!(count(active.as_ref().unwrap()), 1);
+        assert_eq!(count(&Connection::open(preserved).unwrap()), 2);
+        active
+            .as_ref()
+            .unwrap()
+            .execute_batch("INSERT INTO tasks VALUES ('new', '{}')")
+            .unwrap();
+        assert_eq!(count(active.as_ref().unwrap()), 2);
+    }
+
+    #[test]
+    fn missing_corrupt_newer_and_failed_restores_leave_original_usable() {
+        let temp = tempfile::tempdir().unwrap();
+        let live = temp.path().join("live");
+        let backup_dir = temp.path().join("backup");
+        let mut active = Some(seed(&live));
+        let backup = seed(&backup_dir);
+        let from = backup_dir.join(DATA_FILE);
+        let corrupt = temp.path().join("corrupt.db");
+        fs::write(&corrupt, "not sqlite").unwrap();
+        for invalid in [temp.path().join("missing.db"), corrupt] {
+            assert!(restore_connection(&mut active, &invalid, copy_into).is_err());
+            assert_eq!(count(active.as_ref().unwrap()), 1);
+        }
+        backup.pragma_update(None, "user_version", 99).unwrap();
+        assert!(restore_connection(&mut active, &from, copy_into).is_err());
+        backup.pragma_update(None, "user_version", 1).unwrap();
+        active
+            .as_ref()
+            .unwrap()
+            .execute_batch("CREATE TABLE projects(id, data)")
+            .unwrap();
+        assert!(restore_connection(&mut active, &from, copy_into)
+            .unwrap_err()
+            .contains("not an Orbit backup"));
+        backup
+            .execute_batch("CREATE TABLE projects(id, data)")
+            .unwrap();
+        backup.close().unwrap();
+        // Simulate a failure even AFTER the destination was modified.
+        assert!(restore_connection(&mut active, &from, |_, current| {
+            current.execute_batch("DELETE FROM tasks").unwrap();
+            Err("injected restore failure".into())
+        })
+        .unwrap_err()
+        .contains("original database is still open"));
+        assert_eq!(count(active.as_ref().unwrap()), 1);
+        active
+            .as_ref()
+            .unwrap()
+            .execute_batch("INSERT INTO tasks VALUES ('still-usable', '{}')")
+            .unwrap();
+    }
+
+    #[test]
+    fn restore_refuses_an_active_ui_transaction() {
+        let temp = tempfile::tempdir().unwrap();
+        let mut active = Some(seed(temp.path()));
+        active
+            .as_ref()
+            .unwrap()
+            .execute_batch("BEGIN IMMEDIATE")
+            .unwrap();
+        assert!(
+            restore_connection(&mut active, &temp.path().join("missing.db"), copy_into)
+                .unwrap_err()
+                .contains("saving data")
+        );
+        assert!(!active.as_ref().unwrap().is_autocommit());
+        active.as_ref().unwrap().execute_batch("ROLLBACK").unwrap();
+    }
 
     fn seed(dir: &Path) -> Connection {
         fs::create_dir_all(dir).unwrap();

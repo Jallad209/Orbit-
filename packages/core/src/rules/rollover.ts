@@ -3,6 +3,7 @@ import { addDays, minuteOfDay, toInstant, toLocalDate } from '../dates';
 import { startOfWeek } from '../recurrence/expand';
 import type { Id, LocalDate, RolloverConfig, RolloverTarget, Rule, Task } from '../schema';
 import { TaskSchema } from '../schema';
+import { rulesInOrder } from './order';
 
 /**
  * What happens to unfinished committed work at the end of the day. The
@@ -17,7 +18,7 @@ const END_OF_DAY = 23 * 60 + 59;
 
 /** The enabled rollover rule's config, or the default when none is set. */
 export function rolloverPolicy(rules: readonly Rule[] = []): RolloverConfig {
-  for (const r of rules) {
+  for (const r of rulesInOrder(rules)) {
     if (r.deletedAt === null && r.enabled && r.type === 'rollover') return r.config;
   }
   return DEFAULT_ROLLOVER;

@@ -38,7 +38,7 @@ describe('reminders on desktop', () => {
   it('a bill due tomorrow with a 3-day rule is delivered by the Rust scheduler within a minute', async () => {
     const start = await $('button=Start planning');
     if (await start.isExisting()) await start.click();
-    await expect($('h1=Today')).toBeDisplayed();
+    await expect($('h1')).toHaveText(/^(Today|Tomorrow)$/);
 
     // The rule, through Settings → Rules.
     await goto('/settings');

@@ -43,6 +43,8 @@ export interface Materialized {
 }
 
 export interface MaterializeOptions {
+  /** Used only when the capture did not include an explicit task estimate. */
+  defaultEstimateMin?: number;
   /** Required for goals; optional parent for tasks, notes, routines. */
   areaId?: Id | null;
   /** Optional parent for tasks and notes. */
@@ -92,7 +94,7 @@ export function materializeCapture(
         projectId,
         areaId,
         dueAt: fields.dueDate ? instant(fields.dueDate, fields.dueTime ?? END_OF_DAY) : null,
-        estimateMin: fields.estimateMin ?? 30,
+        estimateMin: fields.estimateMin ?? options.defaultEstimateMin ?? 30,
         priority: fields.priority ?? 2,
       });
       return {

@@ -33,6 +33,53 @@ repositoryContract('sqlite', {
 });
 
 describe('SQLite adapter', () => {
+  it('queues independent writes and reads behind a transaction that rolls back', async () => {
+    const clock = fixedClock('2026-09-14T08:00:00Z');
+    const repo = await createSqliteRepository({ driver: betterSqliteDriver(), clock });
+    const inside = createRecord(TaskSchema, clock, { title: 'Roll back' });
+    const outside = createRecord(TaskSchema, clock, { title: 'Keep' });
+    let entered!: () => void;
+    let release!: () => void;
+    const ready = new Promise<void>((r) => {
+      entered = r;
+    });
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    const transaction = repo
+      .transaction(async (tx) => {
+        await tx.tasks.upsert(inside);
+        entered();
+        await gate;
+        throw new Error('cancel only this transaction');
+      })
+      .catch(() => undefined);
+    await ready;
+    let wrote = false;
+    const write = repo.tasks.upsert(outside).then(() => {
+      wrote = true;
+    });
+    const read = repo.tasks.get(inside.id);
+    await Promise.resolve();
+    expect(wrote).toBe(false);
+    clock.advance(1_000);
+    release();
+    await transaction;
+    await write;
+    expect(await read).toBeUndefined();
+    expect(await repo.tasks.get(outside.id)).toEqual(expect.objectContaining({ title: 'Keep' }));
+    expect((await repo.tasks.get(outside.id))!.updatedAt).toBe(clock.now().toISOString());
+    expect(await repo.opLog.latestSeq()).toBe(1);
+    await repo.close();
+  });
+
+  it('rejects a retained transaction repository after completion', async () => {
+    const repo = await createSqliteRepository({ driver: betterSqliteDriver() });
+    const tx = await repo.transaction(async (scoped) => scoped);
+    await expect(tx.tasks.list()).rejects.toThrow('finished');
+    await repo.close();
+  });
+
   it('recovers after BEGIN fails and still rolls back subsequent failed writes', async () => {
     const driver = betterSqliteDriver();
     const repo = await createSqliteRepository({ driver });

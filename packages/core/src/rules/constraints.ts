@@ -1,6 +1,7 @@
 import { dayOfWeek } from '../dates';
 import type { BusyInterval, FreeInterval } from '../planner/types';
 import type { LocalDate, Rule, Weekday } from '../schema';
+import { rulesInOrder } from './order';
 
 /**
  * Constraint rules shape the day's capacity before scoring sees it:
@@ -34,7 +35,7 @@ export interface ConstrainedCapacity {
 
 /** Enabled, live constraint rules. */
 export function constraintRules(rules: readonly Rule[]) {
-  return rules.filter(
+  return rulesInOrder(rules).filter(
     (r): r is Extract<Rule, { type: 'constraint' }> =>
       r.deletedAt === null && r.enabled && r.type === 'constraint',
   );
@@ -52,22 +53,42 @@ export function applyConstraints(
 ): ConstrainedCapacity {
   const weekday = weekdayOf(date);
   const busy: BusyInterval[] = [];
+  const reserved: Array<{ startMin: number; endMin: number }> = [];
   let out = free;
   for (const rule of constraintRules(rules)) {
     const c = rule.config;
     if (c.kind === 'reserve' && c.dayOfWeek === weekday) {
-      if (c.areaId === null) {
-        busy.push({
-          startMin: c.startMin,
-          endMin: c.endMin,
-          kind: 'reserve',
-          refId: rule.id,
-          label: c.label || rule.name || 'Reserved',
+      // Earlier reservations own their overlap, whether reserved for an area or fully busy.
+      let pieces = [{ startMin: c.startMin, endMin: c.endMin }];
+      for (const earlier of reserved) {
+        pieces = pieces.flatMap((piece) => {
+          if (piece.endMin <= earlier.startMin || piece.startMin >= earlier.endMin) return [piece];
+          return [
+            ...(piece.startMin < earlier.startMin
+              ? [{ startMin: piece.startMin, endMin: earlier.startMin }]
+              : []),
+            ...(piece.endMin > earlier.endMin
+              ? [{ startMin: earlier.endMin, endMin: piece.endMin }]
+              : []),
+          ];
         });
-      } else {
-        out = splitAt(splitAt(out, c.startMin), c.endMin).map((i) =>
-          i.startMin >= c.startMin && i.endMin <= c.endMin ? { ...i, areaId: c.areaId } : i,
-        );
+      }
+      reserved.push({ startMin: c.startMin, endMin: c.endMin });
+      for (const piece of pieces) {
+        if (c.areaId === null) {
+          busy.push({
+            ...piece,
+            kind: 'reserve',
+            refId: rule.id,
+            label: c.label || rule.name || 'Reserved',
+          });
+        } else {
+          out = splitAt(splitAt(out, piece.startMin), piece.endMin).map((i) =>
+            i.startMin >= piece.startMin && i.endMin <= piece.endMin
+              ? { ...i, areaId: c.areaId }
+              : i,
+          );
+        }
       }
     }
     if (c.kind === 'noHighEnergyAfter') {

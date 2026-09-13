@@ -7,6 +7,7 @@ import { Select } from '@/components/ui/Input';
 import { toast } from '@/components/ui/toastStore';
 import { bumpData } from '@/data/useQuery';
 import { usePlatform, useRepository } from '@/platform';
+import { loadSettings } from './settingsService';
 
 /**
  * Import an Orbit export in two steps: a dry run that shows what would
@@ -55,6 +56,7 @@ export function ImportSettings() {
     setBusy(true);
     try {
       const report = await importJson(repo, pending.envelope, { mode });
+      await loadSettings(repo, undefined, { migrateLegacy: false });
       bumpData();
       toast({
         title: 'Import finished',

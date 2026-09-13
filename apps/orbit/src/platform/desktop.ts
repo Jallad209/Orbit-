@@ -59,7 +59,7 @@ async function loadDeps(): Promise<Deps> {
  */
 export async function openDesktopRepository(
   deps: Pick<Deps, 'invoke' | 'join'>,
-): Promise<{ repository: Repository; status: DataFileStatus }> {
+): Promise<{ repository: Repository; status: DataFileStatus; generation: number }> {
   const { invoke, join } = deps;
   let dir = await invoke<string | null>('data_dir_get');
   if (!dir)
@@ -67,12 +67,12 @@ export async function openDesktopRepository(
   const path = await join(dir, DATA_FILE);
 
   const open = async () => {
-    await invoke<void>('db_open', { path });
-    const driver = tauriSqlDriver(invoke);
-    return { driver, integrity: await integrityCheck(driver) };
+    const generation = (await invoke<number>('db_open', { path })) ?? 0;
+    const driver = tauriSqlDriver(invoke, generation);
+    return { driver, integrity: await integrityCheck(driver), generation };
   };
 
-  let { driver, integrity } = await open();
+  let { driver, integrity, generation } = await open();
   let recovery: DataFileStatus['recovery'] = null;
   if (!integrity.ok) {
     await driver.close();
@@ -80,16 +80,17 @@ export async function openDesktopRepository(
     const backup = chooseRestore(await invoke<BackupCandidate[]>('data_backups', { path: dir }));
     if (backup) await invoke<void>('data_restore', { from: backup.path, to: path });
     recovery = { quarantinedTo, restoredFrom: backup?.path ?? null };
-    ({ driver, integrity } = await open());
+    ({ driver, integrity, generation } = await open());
   }
 
   const repository = await openRepository({ kind: 'sqlite', driver });
-  return { repository, status: { dir, path, integrity, recovery } };
+  return { repository, status: { dir, path, integrity, recovery }, generation };
 }
 
 export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Platform {
   let deps: Deps | null = null;
   let status: DataFileStatus | null = null;
+  let generation = 0;
   const ready = async () => (deps ??= await load());
 
   const desktop: DesktopApi = {
@@ -123,9 +124,7 @@ export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Pla
     async restoreBackup(backupPath) {
       const d = await ready();
       if (!status) throw new Error('The data file is not open.');
-      await d.invoke<void>('db_close');
-      await d.invoke<string>('data_quarantine', { path: status.path });
-      await d.invoke<void>('data_restore', { from: backupPath, to: status.path });
+      await d.invoke<string>('data_restore_backup', { from: backupPath, generation });
       d.reload();
     },
     async hideCaptureWindow() {
@@ -153,6 +152,7 @@ export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Pla
       const d = await ready();
       const opened = await openDesktopRepository(d);
       status = opened.status;
+      generation = opened.generation;
       return opened.repository;
     },
 

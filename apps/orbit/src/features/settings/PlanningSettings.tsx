@@ -38,6 +38,19 @@ function windowError(start: string, end: string): string | null {
  * shared `AppSettingsSchema` and stored in the settings document.
  */
 export function PlanningSettings({ clock = systemClock }: Props) {
+  const prefs = usePlanPrefs();
+  const key = JSON.stringify([
+    prefs.workingWindow,
+    prefs.restBoundaries,
+    prefs.bufferMin,
+    prefs.defaultEstimateMin,
+    prefs.eveningStartMin,
+  ]);
+  // Importing/replacing persisted preferences invalidates this form's old draft.
+  return <PlanningSettingsForm key={key} clock={clock} />;
+}
+
+function PlanningSettingsForm({ clock = systemClock }: Props) {
   const repo = useRepository();
   const prefs = usePlanPrefs();
   const id = useId();

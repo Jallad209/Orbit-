@@ -59,7 +59,7 @@ test('captures three items, files one into a project, and keeps everything after
 test('quick capture from any screen with c', async ({ page }) => {
   await page.goto('/today');
   // Wait for the shell (and its hotkeys) to be mounted before pressing anything.
-  await expect(page.getByRole('heading', { level: 1, name: 'Today' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /^(Today|Tomorrow)$/ })).toBeVisible();
   await page.keyboard.press('c');
   const overlay = page.getByTestId('quick-capture');
   await expect(overlay).toBeVisible();
@@ -165,6 +165,8 @@ test('timeline: schedules a task, locks it, moves another around it, and re-plan
 
   await page.goto('/timeline');
   await expect(page.getByRole('heading', { level: 1, name: 'Timeline' })).toBeVisible();
+  // Use a full working day even when this test runs after today's working window.
+  await page.getByRole('button', { name: 'Next day' }).click();
   await page.getByRole('button', { name: 'Schedule Write intro' }).click();
   const intro = page.getByRole('button', { name: /^Write intro \d/ });
   await expect(intro).toBeVisible();

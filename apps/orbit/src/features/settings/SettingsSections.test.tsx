@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event';
 import {
   APP_SETTINGS_ID,
   AreaSchema,
+  CaptureSchema,
+  NoteSchema,
   ProjectSchema,
   TaskSchema,
   createRecord,
@@ -15,6 +17,8 @@ import type { BackupCandidate } from '@orbit/storage';
 import { useToastStore } from '@/components/ui/toastStore';
 import { webPlatform, type Platform } from '@/platform';
 import { usePlanPrefs } from '@/features/today/planSettings';
+import { createTask } from '@/features/structure/structureService';
+import { convertCapture } from '@/features/inbox/inboxService';
 import { renderWithProviders } from '@/test/render';
 import { DataSettings, bundleMarkdown } from './DataSettings';
 import { PlanningSettings } from './PlanningSettings';
@@ -39,6 +43,31 @@ function reset() {
 
 describe('settingsService', () => {
   beforeEach(reset);
+
+  it('applies the saved task estimate to direct creation and capture, preserving explicit estimates', async () => {
+    const repo = createMemoryRepository({ clock });
+    await saveSettings(repo, { defaultEstimateMin: 90 }, clock);
+    const area = createRecord(AreaSchema, clock, { name: 'Work' });
+    await repo.areas.upsert(area);
+    expect((await createTask(repo, { title: 'Default', areaId: area.id }, clock)).estimateMin).toBe(
+      90,
+    );
+    expect(
+      (await createTask(repo, { title: 'Explicit', areaId: area.id, estimateMin: 45 }, clock))
+        .estimateMin,
+    ).toBe(45);
+    for (const estimate of [undefined, 20]) {
+      const capture = createRecord(CaptureSchema, clock, {
+        text: 'Captured task',
+        type: 'task',
+        confidence: 1,
+        fields: { title: 'Captured task', ...(estimate ? { estimateMin: estimate } : {}) },
+      });
+      await repo.captures.upsert(capture);
+      const primary = await convertCapture(repo, capture, { areaId: area.id }, clock);
+      expect((await repo.tasks.get(primary.id))!.estimateMin).toBe(estimate ?? 90);
+    }
+  });
 
   it('creates the document on first read, migrating the localStorage window once', async () => {
     localStorage.setItem(
@@ -138,6 +167,15 @@ describe('DataSettings', () => {
     const project = createRecord(ProjectSchema, clock, { title: 'Thesis', areaId: area.id });
     await repo.areas.upsert(area);
     await repo.projects.upsert(project);
+    for (const title of ['Meeting notes', 'Meeting notes', 'Meeting-notes']) {
+      await repo.notes.upsert(
+        createRecord(NoteSchema, clock, {
+          title,
+          projectId: project.id,
+          body: 'An external link: [Example](https://example.com).',
+        }),
+      );
+    }
     await repo.tasks.upsert(
       createRecord(TaskSchema, clock, {
         title: 'Write intro',
@@ -164,12 +202,51 @@ describe('DataSettings', () => {
     expect(mime).toBe('text/markdown');
     expect(mdBody).toContain('<!-- projects/thesis.md -->');
     expect(mdBody).toContain('Write intro');
+    const anchors = new Set([...mdBody.matchAll(/<a id="([^"]+)"><\/a>/g)].map((m) => m[1]));
+    const links = [...mdBody.matchAll(/\]\(#([^)]+)\)/g)].map((m) => m[1]);
+    expect(links.length).toBeGreaterThanOrEqual(7);
+    expect(links.every((link) => anchors.has(link))).toBe(true);
+    expect(mdBody).not.toMatch(/\]\((?:\.\.\/)?(?:projects|notes)\//);
+    expect(mdBody).toContain('[Example](https://example.com)');
     expect(
       bundleMarkdown([
         { path: 'a.md', content: 'A\n' },
         { path: 'b.md', content: 'B' },
       ]),
-    ).toBe('<!-- a.md -->\nA\n\n---\n\n<!-- b.md -->\nB\n');
+    ).toBe(
+      '<!-- a.md -->\n<a id="orbit-a_2e_md"></a>\n\nA\n\n---\n\n<!-- b.md -->\n<a id="orbit-b_2e_md"></a>\n\nB\n',
+    );
+  });
+
+  it('import immediately updates planner preferences and the mounted planning form', async () => {
+    const user = userEvent.setup();
+    const source = createMemoryRepository({ clock: fixedClock(new Date(2026, 8, 14, 10)) });
+    await saveSettings(source, {
+      workingWindow: { startMin: 720, endMin: 1080 },
+      defaultEstimateMin: 60,
+    });
+    const exported = serializeExport(await exportJson(source, clock));
+    reset();
+    const repo = createMemoryRepository({ clock });
+    await loadSettings(repo, clock);
+    renderWithProviders(
+      <>
+        <PlanningSettings clock={clock} />
+        <DataSettings clock={clock} />
+      </>,
+      { repository: repo, route: '/settings' },
+    );
+    expect(screen.getByLabelText('Working window start')).toHaveValue('09:00');
+    await user.upload(
+      screen.getByLabelText('Orbit export file'),
+      new File([exported], 'import.json', { type: 'application/json' }),
+    );
+    await user.click(await screen.findByRole('button', { name: 'Confirm import' }));
+    await waitFor(() => expect(screen.getByLabelText('Working window start')).toHaveValue('12:00'));
+    expect(usePlanPrefs.getState().workingWindow).toEqual({ startMin: 720, endMin: 1080 });
+    expect(usePlanPrefs.getState().defaultEstimateMin).toBe(60);
+    await user.click(screen.getByRole('button', { name: 'Save planning settings' }));
+    expect((await repo.appSettings.get(APP_SETTINGS_ID))!.workingWindow.startMin).toBe(720);
   });
 
   it('shows the dry-run counts before importing, then imports on confirm', async () => {

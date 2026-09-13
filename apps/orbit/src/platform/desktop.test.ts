@@ -33,7 +33,11 @@ describe('tauriSqlDriver', () => {
       'db_exec',
       'db_close',
     ]);
-    expect(invoke.mock.calls[0]![1]).toEqual({ sql: 'UPDATE t SET x = ?', params: ['y'] });
+    expect(invoke.mock.calls[0]![1]).toEqual({
+      sql: 'UPDATE t SET x = ?',
+      params: ['y'],
+      generation: 0,
+    });
   });
 });
 
@@ -124,6 +128,35 @@ describe('openDesktopRepository', () => {
 });
 
 describe('desktop platform', () => {
+  it('restores with one atomic native command and never closes or quarantines on failure', async () => {
+    const fake = fakeDesktop();
+    const reload = vi.fn();
+    const platform = createDesktopPlatform(async () => ({
+      ...fake,
+      invoke: fake.invoke as never,
+      reload,
+      openDialog: async () => null,
+      saveDialog: async () => null,
+      notification: {
+        isPermissionGranted: async () => false,
+        requestPermission: async () => 'denied',
+        send: vi.fn(),
+      },
+      window: { startDragging: async () => {} },
+    }));
+    await platform.createRepository();
+    fake.invoke.mockClear();
+    fake.invoke.mockRejectedValueOnce(new Error('backup failed verification'));
+    await expect(platform.desktop!.restoreBackup('backup.db')).rejects.toThrow('verification');
+    expect(reload).not.toHaveBeenCalled();
+    expect(fake.invoke).toHaveBeenCalledExactlyOnceWith('data_restore_backup', {
+      from: 'backup.db',
+      generation: 0,
+    });
+    await platform.desktop!.restoreBackup('backup.db');
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
   it('reloads only after a verified relocation succeeds', async () => {
     const invoke = vi.fn(async () => undefined);
     const reload = vi.fn();

@@ -4,10 +4,11 @@ import { createRecord } from '../records';
 import { startOfWeek } from '../recurrence/expand';
 import { RoutineInstanceSchema } from '../schema';
 import type { Id, LocalDate, Routine, RoutineInstance, Rule } from '../schema';
+import { rulesInOrder } from './order';
 
 /** Enabled, live recurring rules. */
 export function recurringRules(rules: readonly Rule[]) {
-  return rules.filter(
+  return rulesInOrder(rules).filter(
     (r): r is Extract<Rule, { type: 'recurring' }> =>
       r.deletedAt === null && r.enabled && r.type === 'recurring',
   );
@@ -32,9 +33,11 @@ export function applyRecurringRules(
   const weekStart = startOfWeek(date);
   const weekEnd = addDays(weekStart, 6);
   const out: RoutineInstance[] = [];
+  const scheduled = new Set<Id>();
   for (const rule of recurringRules(rules)) {
     const routine = byId.get(rule.config.routineId);
-    if (!routine) continue;
+    if (!routine || scheduled.has(routine.id)) continue;
+    scheduled.add(routine.id); // the first enabled count is the policy for this routine
     const thisWeek = existing.filter(
       (i) =>
         i.routineId === routine.id &&

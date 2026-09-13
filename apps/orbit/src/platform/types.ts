@@ -45,8 +45,8 @@ export interface DesktopApi {
   pickExportFile(): Promise<string | null>;
   listBackups(): Promise<BackupCandidate[]>;
   /**
-   * Replace the live data file with a backup: close the database, move the
-   * current file aside (it is kept), copy the backup in, and reload.
+   * Verify the backup, preserve the current data in backups, atomically restore
+   * through SQLite, and reload. Failures leave the original connection usable.
    */
   restoreBackup(backupPath: string): Promise<void>;
   hideCaptureWindow(): Promise<void>;

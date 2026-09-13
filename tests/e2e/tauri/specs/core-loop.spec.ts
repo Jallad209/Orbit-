@@ -25,7 +25,7 @@ describe('core loop on desktop', () => {
     const start = await $('button=Start planning');
     await start.waitForDisplayed({ timeout: 30_000 });
     await start.click();
-    await expect($('h1=Today')).toBeDisplayed();
+    await expect($('h1')).toHaveText(/^(Today|Tomorrow)$/);
   });
 
   it('captures three items, files one into a project, and keeps everything after a reload', async () => {

@@ -1,3 +1,4 @@
+import { defaultTaskEstimate } from '@/features/settings/settingsService';
 import {
   AreaSchema,
   GoalSchema,
@@ -286,7 +287,13 @@ export async function createTask(
     { projectId: fields.projectId ?? null, areaId: fields.areaId ?? null },
     s,
   );
-  const draft = createRecord(TaskSchema, clock, { status: 'open', ...fields, ...resolved });
+  const estimateMin = fields.estimateMin ?? (await defaultTaskEstimate(repo, clock));
+  const draft = createRecord(TaskSchema, clock, {
+    status: 'open',
+    ...fields,
+    ...resolved,
+    estimateMin,
+  });
   if (draft.dependsOn.length) validateDependencies(draft.id, draft.dependsOn, s.tasks);
   const task = await repo.tasks.upsert(draft);
   bumpData();

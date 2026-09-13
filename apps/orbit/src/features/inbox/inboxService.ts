@@ -1,3 +1,4 @@
+import { defaultTaskEstimate } from '@/features/settings/settingsService';
 import {
   CaptureSchema,
   createRecord,
@@ -138,6 +139,7 @@ export async function convertCapture(
   const areaId =
     options.areaId ?? (projectId ? ((await repo.projects.get(projectId))?.areaId ?? null) : null);
   const { records, primary } = materializeCapture(type, fields, clock, {
+    defaultEstimateMin: await defaultTaskEstimate(repo, clock),
     projectId,
     areaId,
     people,

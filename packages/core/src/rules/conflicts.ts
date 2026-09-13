@@ -1,5 +1,6 @@
 import { formatMinute } from '../dates';
 import type { Id, Rule } from '../schema';
+import { rulesInOrder } from './order';
 
 /**
  * Rules that contradict each other. Detection is advisory: the planner
@@ -31,7 +32,7 @@ function overlap(a: { startMin: number; endMin: number }, b: { startMin: number;
 }
 
 export function detectConflicts(rules: readonly Rule[]): RuleConflict[] {
-  const live = rules.filter((r) => r.deletedAt === null && r.enabled);
+  const live = rulesInOrder(rules).filter((r) => r.deletedAt === null && r.enabled);
   const out: RuleConflict[] = [];
 
   const reserves = live.filter(

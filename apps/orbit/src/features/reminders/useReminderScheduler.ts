@@ -5,7 +5,12 @@ import { toast } from '@/components/ui/toastStore';
 import { useAppStore } from '@/app/store';
 import { bumpData } from '@/data/useQuery';
 import { usePlatform, useRepository } from '@/platform';
-import { loadDueReminders, markReminder, reconcileReminderQueue } from './reminderService';
+import {
+  claimReminder,
+  loadDueReminders,
+  markReminder,
+  reconcileReminderQueue,
+} from './reminderService';
 
 /** How often the queue is reconciled and, on the web, fired. */
 export const REMINDER_POLL_MS = 60_000;
@@ -32,9 +37,10 @@ export function useReminderScheduler(clock: Clock = systemClock): void {
         await reconcileReminderQueue(repo, clock);
         if (native) return;
         const due = await loadDueReminders(repo, clock);
-        for (const r of due) {
+        for (const pending of due) {
           // Mark first so a crash mid-toast cannot fire it twice; one bump at the end.
-          await markReminder(repo, r, 'fired', { bump: false });
+          const r = await claimReminder(repo, pending, clock);
+          if (!r) continue;
           void platform.notify(r.title, r.body);
           toast({
             id: `reminder-${r.id}`,

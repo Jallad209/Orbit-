@@ -1,9 +1,10 @@
 import type { StoreName } from '../repository';
 import type { SqlDriver } from './driver';
+import { transactionalDriver } from './transactions';
 
 /**
  * Forward-only migrations keyed by `PRAGMA user_version`. Never edit a
- * shipped migration; add the next one. Each runs inside its own transaction.
+ * shipped migration; add the next one. An upgrade runs in one owned transaction.
  */
 export interface Migration {
   version: number;
@@ -105,26 +106,21 @@ export async function migrate(
   driver: SqlDriver,
   migrations: readonly Migration[] = MIGRATIONS,
 ): Promise<MigrationReport> {
-  const from = await currentVersion(driver);
-  const target = migrations[migrations.length - 1]?.version ?? 0;
-  if (from > target) {
-    throw new Error(
-      `This data file was written by a newer Orbit (schema ${from}, this app reads ${target}). Update Orbit first.`,
-    );
-  }
-  const applied: string[] = [];
-  for (const m of migrations) {
-    if (m.version <= from) continue;
-    await driver.exec('BEGIN IMMEDIATE');
-    try {
-      await driver.exec(m.sql);
-      await driver.exec(`PRAGMA user_version = ${m.version}`);
-      await driver.exec('COMMIT');
-    } catch (e) {
-      await driver.exec('ROLLBACK');
-      throw e;
+  return transactionalDriver(driver).transaction(async (tx) => {
+    const from = await currentVersion(tx);
+    const target = migrations[migrations.length - 1]?.version ?? 0;
+    if (from > target) {
+      throw new Error(
+        `This data file was written by a newer Orbit (schema ${from}, this app reads ${target}). Update Orbit first.`,
+      );
     }
-    applied.push(m.name);
-  }
-  return { from, to: target, applied };
+    const applied: string[] = [];
+    for (const m of migrations) {
+      if (m.version <= from) continue;
+      await tx.exec(m.sql);
+      await tx.exec(`PRAGMA user_version = ${m.version}`);
+      applied.push(m.name);
+    }
+    return { from, to: target, applied };
+  });
 }

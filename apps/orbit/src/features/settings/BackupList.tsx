@@ -54,7 +54,7 @@ export function BackupList() {
       <p className="text-[13px] font-medium text-ink">Backups</p>
       <p className="text-[12px] text-ink-faint">
         Copies in the <code className="font-mono">backups</code> folder next to your data file.
-        Restoring keeps the current file aside and reloads Orbit.
+        Restoring verifies the backup, saves a copy of the current data here, and reloads Orbit.
       </p>
       {rows.length === 0 ? (
         <p className="mt-2 text-[13px] text-ink-muted">No backups yet.</p>
@@ -87,7 +87,7 @@ export function BackupList() {
           <DialogTitle>Restore this backup?</DialogTitle>
           <DialogDescription>
             {restoring ? fileName(restoring.path) : ''} replaces the current data file. The current
-            file is kept beside it, and Orbit reloads.
+            data is saved in the backups folder first, and Orbit reloads.
           </DialogDescription>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setRestoring(null)} disabled={busy}>

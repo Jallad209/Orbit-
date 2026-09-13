@@ -69,14 +69,18 @@ describe('FirstRunPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<AppRoutes />, { platform: desktopMock(), route: '/today' });
     await user.click(await screen.findByRole('button', { name: 'Start planning' }));
-    expect(await screen.findByRole('heading', { level: 1, name: 'Today' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /^(Today|Tomorrow)$/ }),
+    ).toBeInTheDocument();
     expect(screen.queryByTestId('first-run')).not.toBeInTheDocument();
   });
 
   it('does not gate returning users or the quick-capture window', async () => {
     markFirstRunDone();
     const returning = renderWithProviders(<AppRoutes />, { platform: desktopMock(), route: '/' });
-    expect(await screen.findByRole('heading', { level: 1, name: 'Today' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /^(Today|Tomorrow)$/ }),
+    ).toBeInTheDocument();
     returning.unmount();
     resetFirstRun();
     renderWithProviders(<AppRoutes />, { platform: desktopMock(), route: '/capture' });
@@ -86,7 +90,9 @@ describe('FirstRunPage', () => {
 
   it('opens the web app without desktop setup', async () => {
     renderWithProviders(<AppRoutes />, { platform: webPlatform, route: '/' });
-    expect(await screen.findByRole('heading', { level: 1, name: 'Today' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /^(Today|Tomorrow)$/ }),
+    ).toBeInTheDocument();
     expect(screen.queryByTestId('first-run')).not.toBeInTheDocument();
   });
 

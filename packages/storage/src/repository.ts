@@ -93,7 +93,9 @@ export interface Repository {
 
   /**
    * Run `fn` atomically. If it throws, every mutation made inside is rolled
-   * back, including op-log entries. Nested calls join the outer transaction.
+   * back, including op-log entries. Use the callback's `tx` for ALL operations
+   * inside it. Only `tx.transaction` joins the outer transaction; independent
+   * calls on the root repository wait for their own turn. Do not retain `tx`.
    */
   transaction<T>(fn: (tx: Repository) => Promise<T>): Promise<T>;
 

@@ -6,6 +6,7 @@ import { buildCapacity, planDay } from '../../src/planner';
 import { DEFAULT_PLAN_SETTINGS } from '../../src/planner/types';
 import {
   applyConstraints,
+  applyRecurringRules,
   computeReminders,
   conflictsByRule,
   detectConflicts,
@@ -33,6 +34,7 @@ import {
 // Friday 18 Sep 2026, 08:00 local.
 const FRIDAY = '2026-09-18';
 const clock = fixedClock(new Date(2026, 8, 18, 8, 0, 0));
+let ruleSequence = 0;
 
 function rule<T extends Rule['type']>(
   type: T,
@@ -44,6 +46,7 @@ function rule<T extends Rule['type']>(
     config,
     name: extra.name ?? '',
     enabled: extra.enabled ?? true,
+    createdAt: new Date(testClock().now().getTime() + ruleSequence++).toISOString(),
   } as never) as Rule;
 }
 
@@ -249,6 +252,42 @@ describe('reminder rules', () => {
 });
 
 describe('conflicts', () => {
+  it('uses one recurring count and one reservation owner regardless of input order', () => {
+    const routine = aRoutine({}, clock);
+    const first = rule('recurring', { routineId: routine.id, timesPerWeek: 2 });
+    const later = rule('recurring', { routineId: routine.id, timesPerWeek: 3 });
+    const instances = applyRecurringRules([later, first], [routine], [], '2026-09-14', clock);
+    expect(instances).toHaveLength(2);
+    expect(new Set(instances.map((i) => i.date)).size).toBe(2);
+    expect(detectConflicts([later, first])[0]!.ruleIds).toEqual([first.id, later.id]);
+    const area = anArea({}, clock);
+    const reserve = rule('constraint', {
+      kind: 'reserve',
+      dayOfWeek: 'FR',
+      startMin: 540,
+      endMin: 660,
+      areaId: area.id,
+      label: '',
+    });
+    const busy = rule('constraint', {
+      kind: 'reserve',
+      dayOfWeek: 'FR',
+      startMin: 600,
+      endMin: 720,
+      areaId: null,
+      label: '',
+    });
+    const capacity = applyConstraints(
+      [{ startMin: 540, endMin: 780, areaId: null, highEnergyAllowed: true }],
+      [busy, reserve],
+      FRIDAY,
+    );
+    expect(capacity.busy).toEqual([expect.objectContaining({ startMin: 660, endMin: 720 })]);
+    expect(capacity.free.find((i) => i.startMin === 540)).toEqual(
+      expect.objectContaining({ endMin: 660, areaId: area.id }),
+    );
+  });
+
   it('reports two overlapping reservations on the same weekday, and badges both', () => {
     const a = rule(
       'constraint',

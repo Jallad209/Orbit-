@@ -38,7 +38,16 @@ function byTitle<T extends { title: string }>(a: T, b: T): number {
  * Human-readable export: one file per project and note, plus an index and
  * short lists for routines, people, and bills. Soft-deleted rows are omitted.
  */
-export async function exportMarkdown(repo: Repository): Promise<MarkdownFile[]> {
+export function markdownAnchor(path: string): string {
+  return `orbit-${Array.from(path, (c) => (/[a-zA-Z0-9]/.test(c) ? c : `_${c.codePointAt(0)!.toString(16)}_`)).join('')}`;
+}
+
+export async function exportMarkdown(
+  repo: Repository,
+  options: { singleDocument?: boolean } = {},
+): Promise<MarkdownFile[]> {
+  const href = (path: string, fromSubfolder = false) =>
+    options.singleDocument ? `#${markdownAnchor(path)}` : `${fromSubfolder ? '../' : ''}${path}`;
   const [areas, goals, projects, milestones, tasks, notes, routines, people, commitments, bills] =
     await Promise.all([
       repo.areas.list(),
@@ -69,7 +78,9 @@ export async function exportMarkdown(repo: Repository): Promise<MarkdownFile[]> 
     projectPath.set(p.id, path);
     files.push({
       path,
-      content: renderProject(p, areaById, goalById, milestones, tasks, notes, notePath),
+      content: renderProject(p, areaById, goalById, milestones, tasks, notes, notePath, (path) =>
+        href(path, true),
+      ),
     });
   }
 
@@ -80,7 +91,7 @@ export async function exportMarkdown(repo: Repository): Promise<MarkdownFile[]> 
     const meta: string[] = [];
     if (n.projectId && projectPath.has(n.projectId)) {
       const p = projects.find((x) => x.id === n.projectId);
-      if (p) meta.push(`Project: [${p.title}](../${projectPath.get(n.projectId)})`);
+      if (p) meta.push(`Project: [${p.title}](${href(projectPath.get(n.projectId)!, true)})`);
     }
     if (n.areaId && areaById.has(n.areaId)) meta.push(`Area: ${areaById.get(n.areaId)!.name}`);
     if (meta.length) lines.push(meta.join(' · '), '');
@@ -100,17 +111,18 @@ export async function exportMarkdown(repo: Repository): Promise<MarkdownFile[]> 
       for (const g of areaGoals) {
         lines.push(`- **${g.title}** (${g.status}, importance ${g.importance})`);
         for (const p of projects.filter((x) => x.goalId === g.id).sort(byTitle)) {
-          lines.push(`  - [${p.title}](${projectPath.get(p.id)}) — ${p.status}`);
+          lines.push(`  - [${p.title}](${href(projectPath.get(p.id)!)}) — ${p.status}`);
         }
       }
       for (const p of orphanProjects)
-        lines.push(`- [${p.title}](${projectPath.get(p.id)}) — ${p.status}`);
+        lines.push(`- [${p.title}](${href(projectPath.get(p.id)!)}) — ${p.status}`);
       lines.push('');
     }
     const unfiled = projects.filter((p) => !areaById.has(p.areaId));
     if (unfiled.length) {
       lines.push('## Unfiled', '');
-      for (const p of unfiled.sort(byTitle)) lines.push(`- [${p.title}](${projectPath.get(p.id)})`);
+      for (const p of unfiled.sort(byTitle))
+        lines.push(`- [${p.title}](${href(projectPath.get(p.id)!)})`);
       lines.push('');
     }
     files.unshift({ path: 'README.md', content: lines.join('\n') });
@@ -172,6 +184,7 @@ function renderProject(
   tasks: Task[],
   notes: Note[],
   notePath: Map<string, string>,
+  href: (path: string) => string,
 ): string {
   const lines = [`# ${p.title}`, ''];
   const meta: string[] = [`Status: ${p.status}`];
@@ -208,7 +221,7 @@ function renderProject(
   const ns = notes.filter((n) => n.projectId === p.id).sort(byTitle);
   if (ns.length) {
     lines.push('## Notes', '');
-    for (const n of ns) lines.push(`- [${n.title}](../${notePath.get(n.id)})`);
+    for (const n of ns) lines.push(`- [${n.title}](${href(notePath.get(n.id)!)})`);
     lines.push('');
   }
 

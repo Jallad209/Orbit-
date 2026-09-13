@@ -36,6 +36,7 @@ import type {
   UpsertOptions,
 } from '../repository';
 import { STORE_ENTITY } from '../repository';
+import { isolateMemoryRepository } from './isolation';
 
 export interface MemoryRepositoryOptions {
   clock?: Clock;
@@ -216,5 +217,5 @@ export function createMemoryRepository(options: MemoryRepositoryOptions = {}): R
     },
   };
 
-  return repo;
+  return isolateMemoryRepository(repo);
 }

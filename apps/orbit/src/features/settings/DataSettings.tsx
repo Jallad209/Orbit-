@@ -1,4 +1,4 @@
-import { exportJson, exportMarkdown, serializeExport } from '@orbit/storage';
+import { exportJson, exportMarkdown, markdownAnchor, serializeExport } from '@orbit/storage';
 import { systemClock, toLocalDate } from '@orbit/core';
 import type { Clock } from '@orbit/core';
 import { Download, FileText, FolderOpen, HardDrive, ShieldCheck, ShieldAlert } from 'lucide-react';
@@ -37,7 +37,7 @@ export function DataSettings({ clock = systemClock }: { clock?: Clock } = {}) {
       } else {
         await platform.exportFile(
           name,
-          bundleMarkdown(await exportMarkdown(repo)),
+          bundleMarkdown(await exportMarkdown(repo, { singleDocument: true })),
           'text/markdown',
         );
       }
@@ -161,5 +161,10 @@ export function DataSettings({ clock = systemClock }: { clock?: Clock } = {}) {
 
 /** One readable document out of the per-project and per-note files. */
 export function bundleMarkdown(files: ReadonlyArray<{ path: string; content: string }>): string {
-  return files.map((f) => `<!-- ${f.path} -->\n${f.content.trimEnd()}\n`).join('\n---\n\n');
+  return files
+    .map(
+      (f) =>
+        `<!-- ${f.path} -->\n<a id="${markdownAnchor(f.path)}"></a>\n\n${f.content.trimEnd()}\n`,
+    )
+    .join('\n---\n\n');
 }

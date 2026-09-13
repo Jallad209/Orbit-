@@ -45,11 +45,41 @@ test('cold start to interactive stays inside the budget with 5k tasks', async ({
   }, stores);
   expect(inserted).toBe(seedCount(world));
 
+  // Record readiness in the page, not after assertion/trace round trips to Node.
+  // Those can add hundreds of milliseconds after both panels are already visible.
+  await page.addInitScript(() => {
+    let measured = false;
+    let scheduled = false;
+    const observer = new MutationObserver(() => {
+      if (measured || scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        const ready = ['focus', 'plan-panel'].every((id) => {
+          const element = document.querySelector(`[data-testid="${id}"]`);
+          if (!(element instanceof HTMLElement)) return false;
+          const rect = element.getBoundingClientRect();
+          return (
+            getComputedStyle(element).visibility === 'visible' && rect.width > 0 && rect.height > 0
+          );
+        });
+        if (!ready) return;
+        performance.mark('orbit:interactive');
+        measured = true;
+        observer.disconnect();
+      });
+    });
+    observer.observe(document, { childList: true, subtree: true, attributes: true });
+  });
+
   // Cold start: a fresh navigation, measured from navigation start.
   await page.goto('/today');
   await expect(page.getByTestId('focus')).toBeVisible();
   await expect(page.getByTestId('plan-panel')).toBeVisible();
-  const ms = await page.evaluate(() => performance.now());
+  const timing = await page.waitForFunction(
+    () => performance.getEntriesByName('orbit:interactive')[0]?.startTime,
+  );
+  const ms = await timing.jsonValue();
   const rows = await page.evaluate(async () => {
     const db = await new Promise<IDBDatabase>((resolve) => {
       const req = indexedDB.open('orbit');

@@ -1,4 +1,4 @@
-import { conflictsByRule, detectConflicts } from '@orbit/core';
+import { conflictsByRule, detectConflicts, rulesInOrder } from '@orbit/core';
 import type { Area, Id, Routine, Rule, RuleConflict } from '@orbit/core';
 import type { Repository } from '@orbit/storage';
 import { bumpData } from '@/data/useQuery';
@@ -20,7 +20,7 @@ export async function loadRules(repo: Repository): Promise<RulesData> {
   ]);
   const conflicts = detectConflicts(rules);
   return {
-    rules: rules.sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+    rules: rulesInOrder(rules),
     conflicts,
     conflictsByRule: conflictsByRule(conflicts),
     areas: areas.sort((a, b) => a.name.localeCompare(b.name)),

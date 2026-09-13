@@ -38,6 +38,7 @@ import type {
 import { STORE_ENTITY } from '../repository';
 import type { SqlDriver, SqlParam } from './driver';
 import { migrate } from './migrations';
+import { transactionalDriver } from './transactions';
 
 export * from './driver';
 export * from './migrations';
@@ -45,26 +46,15 @@ export * from './migrations';
 interface Ctx {
   driver: SqlDriver;
   clock: Clock;
-  depth: number;
+  inTransaction: boolean;
 }
 
 /** Run `fn` inside the current transaction, or open one for it. */
-async function withTx<T>(ctx: Ctx, fn: () => Promise<T>): Promise<T> {
-  if (ctx.depth > 0) return fn();
-  ctx.depth += 1;
-  let began = false;
-  try {
-    await ctx.driver.exec('BEGIN IMMEDIATE');
-    began = true;
-    const out = await fn();
-    await ctx.driver.exec('COMMIT');
-    return out;
-  } catch (e) {
-    if (began) await ctx.driver.exec('ROLLBACK');
-    throw e;
-  } finally {
-    ctx.depth -= 1;
-  }
+async function withTx<T>(ctx: Ctx, fn: (tx: Ctx) => Promise<T>): Promise<T> {
+  if (ctx.inTransaction) return fn(ctx);
+  return transactionalDriver(ctx.driver).transaction((driver) =>
+    fn({ ...ctx, driver, inTransaction: true }),
+  );
 }
 
 class SqliteStore<T extends BaseRecord> implements EntityStore<T> {
@@ -130,37 +120,39 @@ class SqliteStore<T extends BaseRecord> implements EntityStore<T> {
   }
 
   async upsert(record: T, options?: UpsertOptions): Promise<T> {
-    const updatedAt = options?.preserveUpdatedAt ? record.updatedAt : nowIso(this.ctx.clock);
-    const stamped = this.schema.parse({ ...record, updatedAt });
-    return withTx(this.ctx, async () => {
-      const prev = await this.get(stamped.id);
-      await this.ctx.driver.execute(
+    return withTx(this.ctx, async (ctx) => {
+      const updatedAt = options?.preserveUpdatedAt ? record.updatedAt : nowIso(ctx.clock);
+      const stamped = this.schema.parse({ ...record, updatedAt });
+      const store = new SqliteStore(this.name, this.schema, ctx);
+      const prev = await store.get(stamped.id);
+      await ctx.driver.execute(
         `INSERT INTO ${this.name}(id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data`,
         [stamped.id, JSON.stringify(stamped)],
       );
       if (prev) {
-        await this.log(
+        await store.log(
           'update',
           stamped.id,
           shallowPatch(prev, stamped) as Record<string, unknown>,
         );
       } else {
-        await this.log('create', stamped.id, { ...stamped });
+        await store.log('create', stamped.id, { ...stamped });
       }
       return stamped;
     });
   }
 
   async softDelete(id: Id): Promise<void> {
-    await withTx(this.ctx, async () => {
-      const prev = await this.get(id);
+    await withTx(this.ctx, async (ctx) => {
+      const store = new SqliteStore(this.name, this.schema, ctx);
+      const prev = await store.get(id);
       if (!prev || prev.deletedAt !== null) return;
       const at = nowIso(this.ctx.clock);
-      await this.ctx.driver.execute(`UPDATE ${this.name} SET data = ? WHERE id = ?`, [
+      await ctx.driver.execute(`UPDATE ${this.name} SET data = ? WHERE id = ?`, [
         JSON.stringify({ ...prev, deletedAt: at, updatedAt: at }),
         id,
       ]);
-      await this.log('delete', id, { deletedAt: at });
+      await store.log('delete', id, { deletedAt: at });
     });
   }
 }
@@ -223,12 +215,19 @@ export interface SqliteRepositoryOptions {
 export async function createSqliteRepository(
   options: SqliteRepositoryOptions,
 ): Promise<Repository> {
-  const ctx: Ctx = { driver: options.driver, clock: options.clock ?? systemClock, depth: 0 };
+  const ctx: Ctx = {
+    driver: transactionalDriver(options.driver),
+    clock: options.clock ?? systemClock,
+    inTransaction: false,
+  };
   await ctx.driver.select('PRAGMA journal_mode = WAL');
   await ctx.driver.exec('PRAGMA synchronous = NORMAL');
   await ctx.driver.exec('PRAGMA foreign_keys = ON');
   if (!options.skipMigrations) await migrate(ctx.driver);
+  return repositoryFor(ctx);
+}
 
+function repositoryFor(ctx: Ctx): Repository {
   const repo: Repository = {
     areas: new SqliteStore('areas', AreaSchema, ctx),
     goals: new SqliteStore('goals', GoalSchema, ctx),
@@ -254,7 +253,7 @@ export async function createSqliteRepository(
     opLog: new SqliteOpLog(ctx),
 
     async transaction<T>(fn: (tx: Repository) => Promise<T>): Promise<T> {
-      return withTx(ctx, () => fn(repo));
+      return withTx(ctx, (tx) => fn(repositoryFor(tx)));
     },
 
     async close(): Promise<void> {

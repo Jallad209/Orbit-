@@ -18,6 +18,7 @@ export * from './recurring';
 export * from './rollover';
 export * from './reminders';
 export * from './conflicts';
+export * from './order';
 
 /**
  * The four rule families are structured objects, never parsed sentences:

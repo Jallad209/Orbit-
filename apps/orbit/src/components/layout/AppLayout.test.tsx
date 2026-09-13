@@ -27,7 +27,7 @@ describe('AppLayout', () => {
 
   it('redirects the root to /today', () => {
     renderWithProviders(<AppRoutes />, { route: '/' });
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Today');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/^(Today|Tomorrow)$/);
   });
 
   it('has a skip link that targets main content', () => {
@@ -40,7 +40,7 @@ describe('AppLayout', () => {
   it('navigates with "g" sequences from the keyboard', async () => {
     const user = userEvent.setup();
     renderWithProviders(<AppRoutes />, { route: '/today' });
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Today');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/^(Today|Tomorrow)$/);
 
     await user.keyboard('gi');
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Inbox');
@@ -49,7 +49,7 @@ describe('AppLayout', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Projects');
 
     await user.keyboard('gt');
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Today');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/^(Today|Tomorrow)$/);
   });
 
   it('shows a visible focus ring when tabbing to a link', async () => {

@@ -13,7 +13,7 @@ use std::sync::Mutex;
 use tauri::Manager;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
-use commands::db::Db;
+use commands::db::{Database, Db};
 
 /// `Ctrl+Shift+Space` from anywhere opens the capture window.
 fn capture_shortcut() -> Shortcut {
@@ -36,7 +36,7 @@ pub fn run() {
                 })
                 .build(),
         )
-        .manage(Db(Mutex::new(None)))
+        .manage(Db(Mutex::new(Database::default())))
         .setup(|app| {
             // A failed registration (another app owns the chord) must not stop Orbit.
             if let Err(e) = app.global_shortcut().register(capture_shortcut()) {
@@ -55,6 +55,8 @@ pub fn run() {
             commands::db::db_execute,
             commands::db::db_select,
             commands::db::db_exec,
+            commands::db::db_begin,
+            commands::db::db_finish,
             commands::data_dir::data_dir_get,
             commands::data_dir::data_dir_set,
             commands::data_dir::data_dir_relocate,
@@ -63,6 +65,7 @@ pub fn run() {
             commands::data_dir::data_backups,
             commands::data_dir::data_quarantine,
             commands::data_dir::data_restore,
+            commands::data_dir::data_restore_backup,
             commands::data_dir::file_read_text,
             commands::data_dir::file_write_text,
             commands::capture::capture_show,
