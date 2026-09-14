@@ -43,7 +43,9 @@ import type {
   StructureSnapshot,
   Task,
 } from '@orbit/core';
-import type { Repository } from '@orbit/storage';
+import { STORE_ENTITY } from '@orbit/storage';
+import type { EntityStore, Repository, StoreName } from '@orbit/storage';
+import type { BaseRecord } from '@orbit/core';
 import { bumpData } from '@/data/useQuery';
 import { readSettings } from '@/features/settings/settingsService';
 
@@ -371,6 +373,24 @@ export async function archiveTask(repo: Repository, task: Task): Promise<void> {
 // Links
 // ---------------------------------------------------------------------------
 
+const STORE_FOR_ENTITY = Object.fromEntries(
+  Object.entries(STORE_ENTITY).map(([store, entity]) => [entity, store]),
+) as Record<EntityType, StoreName>;
+
+/** Whether both ends of a link exist and are live, read through the transaction. */
+async function assertLiveEndpoint(tx: Repository, ref: EntityRef): Promise<void> {
+  const store = tx[STORE_FOR_ENTITY[ref.type]] as unknown as EntityStore<BaseRecord>;
+  const record = await store.get(ref.id);
+  if (!record || record.deletedAt !== null)
+    throw new Error(`That ${ref.type} no longer exists, so it cannot be linked.`);
+}
+
+/**
+ * Link two records. Both endpoints are validated and the duplicate check
+ * (either direction, same type) runs inside the same transaction as the
+ * write, so two windows linking the same pair end up with one link, which
+ * is returned as the canonical one.
+ */
 export async function addLink(
   repo: Repository,
   from: EntityRef,
@@ -378,12 +398,15 @@ export async function addLink(
   linkType = 'related',
   clock: Clock = systemClock,
 ): Promise<Link> {
-  const existing = await repo.links.forEntity(from.type, from.id);
-  const { link, created } = makeLink(clock, existing, from, to, linkType);
-  if (created) {
-    await repo.links.upsert(link);
-    bumpData();
-  }
+  const { link, created } = await repo.transaction(async (tx) => {
+    await assertLiveEndpoint(tx, from);
+    await assertLiveEndpoint(tx, to);
+    const existing = await tx.links.forEntity(from.type, from.id);
+    const made = makeLink(clock, existing, from, to, linkType);
+    if (made.created) await tx.links.upsert(made.link);
+    return made;
+  });
+  if (created) bumpData();
   return link;
 }
 
@@ -398,6 +421,7 @@ export interface LinkedEntities {
   events: Array<Event & { linkId: Id }>;
   bills: Array<Bill & { linkId: Id }>;
   tasks: Array<Task & { linkId: Id }>;
+  projects: Array<Project & { linkId: Id }>;
 }
 
 /** Resolve the other ends of a project's links, plus notes that belong to it directly. */
@@ -408,12 +432,13 @@ export async function loadLinked(repo: Repository, entity: EntityRef): Promise<L
   const withLink = <T extends { id: Id }>(type: EntityType, rows: T[]) =>
     rows.map((r) => ({ ...r, linkId: groups[type]!.find((g) => g.id === r.id)!.link.id }));
 
-  const [notes, people, events, bills, tasks] = await Promise.all([
+  const [notes, people, events, bills, tasks, projects] = await Promise.all([
     repo.notes.getMany(ids('note')),
     repo.people.getMany(ids('person')),
     repo.events.getMany(ids('event')),
     repo.bills.getMany(ids('bill')),
     repo.tasks.getMany(ids('task')),
+    repo.projects.getMany(ids('project')),
   ]);
   const ownNotes =
     entity.type === 'project' ? await repo.notes.query((n) => n.projectId === entity.id) : [];
@@ -439,6 +464,10 @@ export async function loadLinked(repo: Repository, entity: EntityRef): Promise<L
     tasks: withLink(
       'task',
       tasks.filter((t) => t.deletedAt === null),
+    ),
+    projects: withLink(
+      'project',
+      projects.filter((p) => p.deletedAt === null),
     ),
   };
 }

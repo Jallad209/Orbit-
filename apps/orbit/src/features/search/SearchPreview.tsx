@@ -12,6 +12,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/Drawer';
 import { useRepoQuery } from '@/data/useQuery';
+import { routeFor } from '@/lib/destinations';
 import type { PreviewRef } from './searchActions';
 
 interface Loaded {
@@ -248,7 +249,13 @@ export function SearchPreview({
                   </ul>
                 )}
               </div>
-              <p className="text-[12px] text-ink-faint">The people screen arrives in week 12.</p>
+              <Link
+                to={routeFor({ type: 'person', id: record.person.id })!}
+                className={buttonVariants({ size: 'sm', variant: 'secondary' })}
+                onClick={onClose}
+              >
+                Open person
+              </Link>
             </div>
           ) : null}
         </DrawerBody>

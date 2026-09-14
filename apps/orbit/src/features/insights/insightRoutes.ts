@@ -1,5 +1,6 @@
 import type { EvidenceRef, Insight, InsightEvidence, InsightSubject, LocalDate } from '@orbit/core';
 import type { PreviewRef } from '@/features/search/searchActions';
+import { routeFor } from '@/lib/destinations';
 
 /**
  * Where evidence goes. Core emits typed references; only the app knows
@@ -29,9 +30,9 @@ export function subjectDestination(subject: InsightSubject): Destination {
       return { kind: 'route', to: timelineRoute(subject.weekStart), label: 'Open that week' };
     case 'person':
       return {
-        kind: 'preview',
-        ref: { type: 'person', id: subject.id },
-        label: 'Preview person',
+        kind: 'route',
+        to: routeFor({ type: 'person', id: subject.id })!,
+        label: 'Open person',
       };
   }
 }
@@ -39,11 +40,11 @@ export function subjectDestination(subject: InsightSubject): Destination {
 function refDestination(ref: EvidenceRef, insight: Insight): Destination | null {
   switch (ref.type) {
     case 'task':
-      return { kind: 'preview', ref: { type: 'task', id: ref.id }, label: 'Preview task' };
+      return { kind: 'route', to: routeFor({ type: 'task', id: ref.id })!, label: 'Open task' };
     case 'project':
       return { kind: 'route', to: `/projects/${ref.id}`, label: 'Open project' };
     case 'person':
-      return { kind: 'preview', ref: { type: 'person', id: ref.id }, label: 'Preview person' };
+      return { kind: 'route', to: routeFor({ type: 'person', id: ref.id })!, label: 'Open person' };
     case 'area':
       return { kind: 'route', to: '/areas', label: 'Open areas' };
     case 'milestone':
@@ -53,11 +54,12 @@ function refDestination(ref: EvidenceRef, insight: Insight): Destination | null 
         ? { kind: 'route', to: `/projects/${insight.subject.id}`, label: 'Open project' }
         : null;
     case 'commitment':
+      // The exact commitment, highlighted on its person's page.
       return insight.subject.type === 'person'
         ? {
-            kind: 'preview',
-            ref: { type: 'person', id: insight.subject.id },
-            label: 'Preview person',
+            kind: 'route',
+            to: routeFor({ type: 'commitment', id: ref.id }, { personId: insight.subject.id })!,
+            label: 'Open commitment',
           }
         : null;
     case 'routine':

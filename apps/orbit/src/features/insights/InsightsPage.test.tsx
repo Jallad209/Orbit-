@@ -123,10 +123,14 @@ describe('InsightsPage', () => {
     );
 
     const people = cards[2]!;
-    await user.click(within(people).getByRole('button', { name: 'Preview person' }));
-    const preview = await screen.findByTestId('search-preview');
-    expect(preview).toHaveTextContent('Sara');
-    expect(preview).toHaveTextContent('Open commitments');
+    // Week 12: people and their commitments have real screens; the link names the exact row.
+    const open = within(people).getAllByRole('link', { name: 'Open person' })[0]!;
+    expect(open.getAttribute('href')).toMatch(/^\/people\/[0-9a-f-]{36}$/);
+    await user.click(within(people).getByRole('button', { name: /Evidence \(3\)/ }));
+    const commitment = within(people).getAllByRole('link', { name: 'Open commitment' })[0]!;
+    expect(commitment.getAttribute('href')).toMatch(
+      /^\/people\/[0-9a-f-]{36}\?commitment=[0-9a-f-]{36}$/,
+    );
   });
 
   it('snoozes a card away, lists it in history, restores it, and dismisses for good until restored', async () => {

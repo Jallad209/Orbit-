@@ -11,6 +11,8 @@ import { ProjectPage } from '@/features/structure/ProjectPage';
 import { TodayPage } from '@/features/today/TodayPage';
 import { TimelinePage } from '@/features/timeline/TimelinePage';
 import { FirstRunPage } from '@/features/firstRun/FirstRunPage';
+import { PeoplePage } from '@/features/people/PeoplePage';
+import { PersonPage } from '@/features/people/PersonPage';
 import { isFirstRunDone } from '@/features/firstRun/firstRun';
 import { QuickCaptureWindow } from '@/features/inbox/QuickCaptureWindow';
 import { EveningFlow } from '@/features/reviews/EveningFlow';
@@ -68,10 +70,8 @@ export function AppRoutes() {
             </Suspense>
           }
         />
-        <Route
-          path="/people"
-          element={<Placeholder title="People" description="Arrives in week 12." />}
-        />
+        <Route path="/people" element={<PeoplePage />} />
+        <Route path="/people/:id" element={<PersonPage />} />
         <Route
           path="/bills"
           element={<Placeholder title="Bills" description="Arrives in week 12." />}
