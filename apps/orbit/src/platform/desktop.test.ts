@@ -143,6 +143,7 @@ describe('desktop platform', () => {
         send: vi.fn(),
       },
       window: { startDragging: async () => {} },
+      listen: async () => () => {},
     }));
     await platform.createRepository();
     fake.invoke.mockClear();
@@ -171,6 +172,7 @@ describe('desktop platform', () => {
         send: vi.fn(),
       },
       window: { startDragging: async () => {} },
+      listen: async () => () => {},
       reload,
     }));
     invoke.mockRejectedValueOnce(new Error('destination already contains a database'));
@@ -195,15 +197,16 @@ describe('desktop platform', () => {
         send: vi.fn(),
       },
       window: { startDragging: async () => {} },
+      listen: async () => () => {},
       reload: vi.fn(),
     }));
     expect(platform.name).toBe('desktop');
     expect(platform.capabilities).toEqual({
-      backgroundReminders: false,
+      backgroundReminders: true,
       nativeReminders: true,
       dataFolder: true,
       globalHotkey: true,
-      tray: false,
+      tray: true,
     });
     await platform.exportFile('orbit-export.json', '{}');
     expect(saveDialog).toHaveBeenCalledWith({

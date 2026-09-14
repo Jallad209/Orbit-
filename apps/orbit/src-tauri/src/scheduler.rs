@@ -6,10 +6,18 @@
 //!
 //! The database mutex is held only around the two short statements, never
 //! while a notification is shown: the UI shares that connection.
+//!
+//! Resident mode (week 11): the thread waits on a channel rather than a
+//! plain sleep, so a wake (resume, readiness, a reconcile that wrote rows)
+//! runs a pass at once and a stop returns within one bounded join. Ticks
+//! are skipped until the main window has acknowledged readiness for the
+//! current database generation, so a restore or relocation never delivers
+//! from a file the frontend has not reconciled yet.
 
-use std::sync::Mutex;
+use std::sync::mpsc::{self, RecvTimeoutError, Sender};
+use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use rusqlite::{params, Connection};
 use serde::Deserialize;
@@ -18,10 +26,54 @@ use tauri_plugin_notification::NotificationExt;
 
 use crate::commands::db::{Database, Db};
 use crate::logging::{self, Level};
+use crate::resident;
 use crate::time::now_iso;
 
 /// How often the queue is checked.
 pub const POLL_INTERVAL: Duration = Duration::from_secs(60);
+/// How long Quit waits for a pass that is mid-notification before giving up on the join.
+pub const STOP_DEADLINE: Duration = Duration::from_secs(5);
+
+enum Control {
+    Wake,
+    Stop,
+}
+
+/// The running thread's handle: a channel in, a "finished" flag out.
+pub struct Scheduler {
+    control: Sender<Control>,
+    finished: Arc<(Mutex<bool>, Condvar)>,
+}
+
+pub struct SchedulerState(pub Mutex<Option<Scheduler>>);
+
+impl Scheduler {
+    /// Run a pass now rather than at the next interval.
+    pub fn wake(&self) {
+        let _ = self.control.send(Control::Wake);
+    }
+
+    /// Ask the thread to stop and wait up to `deadline` for it. True when it finished.
+    pub fn stop(&self, deadline: Duration) -> bool {
+        let _ = self.control.send(Control::Stop);
+        let (lock, cv) = &*self.finished;
+        let Ok(mut done) = lock.lock() else {
+            return false;
+        };
+        let until = Instant::now() + deadline;
+        while !*done {
+            let left = until.saturating_duration_since(Instant::now());
+            if left.is_zero() {
+                return false;
+            }
+            let Ok((guard, _)) = cv.wait_timeout(done, left) else {
+                return false;
+            };
+            done = guard;
+        }
+        true
+    }
+}
 
 #[derive(Debug, Deserialize)]
 struct Due {
@@ -143,9 +195,13 @@ fn deliver(
     fired
 }
 
-/// One pass: deliver everything due. Returns how many fired.
+/// One pass: deliver everything due. Returns how many fired. Skipped while
+/// the main window has not acknowledged the current database generation.
 pub fn tick(app: &AppHandle) -> usize {
     let db = app.state::<Db>();
+    if !resident::scheduler_may_run(app, &db.0) {
+        return 0;
+    }
     let fired = deliver(&db.0, &now_iso(), |r| {
         app.notification()
             .builder()
@@ -165,15 +221,68 @@ pub fn tick(app: &AppHandle) -> usize {
     fired
 }
 
-/// Start the polling thread. Call after `Db` is managed.
+/// Start the polling thread. Call after `Db` is managed. Idempotent: a second
+/// call (a tray action, a second launch) never starts a second thread.
 pub fn start(app: AppHandle) {
+    let state = app.state::<SchedulerState>();
+    let Ok(mut slot) = state.0.lock() else { return };
+    if slot.is_some() {
+        return;
+    }
+    let (tx, rx) = mpsc::channel::<Control>();
+    let finished = Arc::new((Mutex::new(false), Condvar::new()));
+    let flag = finished.clone();
+    let handle = app.clone();
     thread::Builder::new()
         .name("orbit-reminders".into())
-        .spawn(move || loop {
-            tick(&app);
-            thread::sleep(POLL_INTERVAL);
+        .spawn(move || {
+            loop {
+                tick(&handle);
+                match rx.recv_timeout(POLL_INTERVAL) {
+                    Ok(Control::Wake) | Err(RecvTimeoutError::Timeout) => continue,
+                    Ok(Control::Stop) | Err(RecvTimeoutError::Disconnected) => break,
+                }
+            }
+            let (lock, cv) = &*flag;
+            if let Ok(mut done) = lock.lock() {
+                *done = true;
+            }
+            cv.notify_all();
         })
         .expect("spawn reminder scheduler");
+    *slot = Some(Scheduler {
+        control: tx,
+        finished,
+    });
+}
+
+/// Run a pass as soon as the thread is free.
+pub fn wake(app: &AppHandle) {
+    if let Some(state) = app.try_state::<SchedulerState>() {
+        if let Ok(slot) = state.0.lock() {
+            if let Some(s) = slot.as_ref() {
+                s.wake();
+            }
+        }
+    }
+}
+
+/// Stop the thread and wait for it, bounded. True when it stopped in time (or never ran).
+pub fn stop(app: &AppHandle, deadline: Duration) -> bool {
+    let Some(state) = app.try_state::<SchedulerState>() else {
+        return true;
+    };
+    let taken = state.0.lock().ok().and_then(|mut slot| slot.take());
+    match taken {
+        Some(s) => s.stop(deadline),
+        None => true,
+    }
+}
+
+/// The frontend asks for a pass after it wrote or reconciled reminder rows.
+#[tauri::command]
+pub fn scheduler_wake(app: AppHandle) {
+    wake(&app);
 }
 
 #[cfg(test)]

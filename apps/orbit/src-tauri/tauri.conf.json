@@ -20,7 +20,8 @@
         "height": 820,
         "minWidth": 900,
         "minHeight": 600,
-        "center": true
+        "center": true,
+        "visible": false
       },
       {
         "label": "capture",
@@ -52,7 +53,8 @@
     ],
     "windows": {
       "nsis": {
-        "installMode": "currentUser"
+        "installMode": "currentUser",
+        "installerHooks": "./windows/hooks.nsh"
       }
     }
   }

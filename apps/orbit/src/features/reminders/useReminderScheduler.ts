@@ -28,14 +28,20 @@ export function useReminderScheduler(clock: Clock = systemClock): void {
   const version = useAppStore((s) => s.dataVersion);
   const running = useRef(false);
   const native = platform.capabilities.nativeReminders;
+  const desktop = platform.desktop;
 
   useEffect(() => {
     const tick = async () => {
       if (running.current) return; // a slow tick never overlaps the next
       running.current = true;
       try {
-        await reconcileReminderQueue(repo, clock);
-        if (native) return;
+        const changed = await reconcileReminderQueue(repo, clock);
+        useAppStore.getState().noteReminderReconcile();
+        if (native) {
+          // Rows were written: the native scheduler should look now, not in a minute.
+          if (changed.length && desktop) void desktop.wakeScheduler().catch(() => undefined);
+          return;
+        }
         const due = await loadDueReminders(repo, clock);
         for (const pending of due) {
           // Mark first so a crash mid-toast cannot fire it twice; one bump at the end.
@@ -60,7 +66,18 @@ export function useReminderScheduler(clock: Clock = systemClock): void {
     };
     void tick();
     const interval = setInterval(() => void tick(), REMINDER_POLL_MS);
-    return () => clearInterval(interval);
+    // Resume, a returning user, or a local date change: reconcile at once rather than at the
+    // next interval, so a due reminder is prepared before the native scheduler's next pass.
+    const onVisible = () => {
+      if (document.visibilityState !== 'hidden') void tick();
+    };
+    window.addEventListener('focus', onVisible);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onVisible);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
     // `version` re-runs the reconcile after any write (a new bill, a new rule).
-  }, [repo, platform, clock, native, version]);
+  }, [repo, platform, clock, native, version, desktop]);
 }

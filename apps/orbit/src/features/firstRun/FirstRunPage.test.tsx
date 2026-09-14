@@ -7,6 +7,7 @@ import { createMemoryRepository, exportJson, serializeExport } from '@orbit/stor
 import { usePlanPrefs } from '@/features/today/planSettings';
 import { webPlatform, type Platform } from '@/platform';
 import { renderWithProviders } from '@/test/render';
+import { fakeResidentApi } from '@/test/desktop';
 import { AppRoutes } from '@/routes';
 import { useToastStore } from '@/components/ui/toastStore';
 import { FirstRunPage } from './FirstRunPage';
@@ -41,6 +42,7 @@ function desktopMock(overrides: Partial<NonNullable<Platform['desktop']>> = {}):
       lastRun: vi.fn(async () => ({ crashedLastTime: false, startedAt: null, crash: null })),
       saveDiagnostics: vi.fn(async () => null),
       logEvent: vi.fn(async () => {}),
+      ...fakeResidentApi().api,
       ...overrides,
     },
   };

@@ -49,6 +49,50 @@ export interface DiagnosticsBundle {
   bytes: number;
 }
 
+/** Machine-local desktop preferences (week 11); never part of an export. */
+export interface DesktopPrefs {
+  closeToTray: boolean;
+  closeExplanationSeen: boolean;
+  autostart: boolean;
+  legacyCloseMigrated: boolean;
+}
+
+/** Login launch as the OS actually has it, beside what the user asked for. */
+export interface AutostartStatus {
+  enabled: boolean;
+  wanted: boolean;
+  error: string | null;
+  backend: 'os' | 'fake';
+}
+
+export type ResidentPhase = 'booting' | 'ready' | 'degraded' | 'quitting';
+
+/** The shell's operational state, not a wish: what Settings shows. */
+export interface ResidentStatus {
+  phase: ResidentPhase;
+  launch: 'manual' | 'background' | 'capture';
+  trayAvailable: boolean;
+  trayError: string | null;
+  closeToTray: boolean;
+  closeToTrayEffective: boolean;
+  closeResolved: boolean;
+  closeExplanationSeen: boolean;
+  readyGeneration: number | null;
+  generation: number;
+  shutdownError: string | null;
+  /** The main window is shown (hidden to the tray otherwise). */
+  mainVisible: boolean;
+}
+
+/** Events the shell raises for the main window. */
+export type ShellEvent =
+  | 'orbit:navigate'
+  | 'orbit:close-explain'
+  | 'orbit:close-blocked'
+  | 'orbit:quit-failed'
+  | 'orbit:ready-timeout'
+  | 'orbit:quitting';
+
 /** Desktop-only operations. Present when `capabilities.dataFolder` is true. */
 export interface DesktopApi {
   dataFileStatus(): DataFileStatus | null;
@@ -77,6 +121,35 @@ export interface DesktopApi {
   saveDiagnostics(report: unknown, defaultName: string): Promise<DiagnosticsBundle | null>;
   /** Forward one redacted diagnostic event to the shell's log file. */
   logEvent(level: string, kind: string, fields?: Record<string, number | boolean>): Promise<void>;
+  /** The resident shell's state (week 11). */
+  residentStatus(): Promise<ResidentStatus>;
+  /**
+   * The main window finished opening the data file, migrating settings and
+   * preferences, and reconciling reminders: the shell may deliver for this
+   * generation. Rejected from any other window or for a stale generation.
+   */
+  markReady(): Promise<void>;
+  /** Orderly shutdown regardless of the close preference. */
+  quit(): Promise<void>;
+  showMain(): Promise<void>;
+  /** Hide the main window (after the close explanation was acknowledged). */
+  hideMain(): Promise<void>;
+  /** Ask the native scheduler for a pass now (after reminder rows were written). */
+  wakeScheduler(): Promise<void>;
+  prefs: {
+    get(): Promise<DesktopPrefs>;
+    set(
+      patch: Partial<Pick<DesktopPrefs, 'closeToTray' | 'closeExplanationSeen' | 'autostart'>>,
+    ): Promise<DesktopPrefs>;
+    /** Transfer the week-10 localStorage flag once; the raw value, or null when absent. */
+    migrateLegacy(value: string | null): Promise<DesktopPrefs>;
+  };
+  autostart: {
+    get(): Promise<AutostartStatus>;
+    set(enabled: boolean): Promise<AutostartStatus>;
+  };
+  /** Subscribe to a shell event; resolves to the unsubscribe function. */
+  onShellEvent<T = unknown>(name: ShellEvent, handler: (payload: T) => void): Promise<() => void>;
 }
 
 export interface Platform {

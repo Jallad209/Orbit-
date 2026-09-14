@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { useAppStore } from '@/app/store';
 import { webPlatform, type Platform } from '@/platform';
 import { renderWithProviders } from '@/test/render';
+import { fakeResidentApi } from '@/test/desktop';
 import { SettingsPage } from './SettingsPage';
 import { useToastStore } from '@/components/ui/toastStore';
 
@@ -35,6 +36,7 @@ const desktop: Platform = {
     lastRun: vi.fn(async () => ({ crashedLastTime: false, startedAt: null, crash: null })),
     saveDiagnostics: vi.fn(async () => null),
     logEvent: vi.fn(async () => {}),
+    ...fakeResidentApi().api,
   },
 };
 
@@ -65,7 +67,8 @@ describe('SettingsPage capability messaging', () => {
     expect(screen.getByTestId('integrity')).toHaveTextContent('FTS5');
     expect(screen.getByTestId('recovery')).toHaveTextContent('no backup was available');
     expect(screen.queryByTestId('web-storage')).not.toBeInTheDocument();
-    expect(screen.getByRole('switch', { name: /Close to tray/ })).toBeDisabled();
+    // Close-to-tray lives in the Desktop section now, driven by the shell's real state.
+    expect(screen.getByTestId('desktop-settings')).toBeInTheDocument();
   });
 
   it('reports a failed folder change and lets the user try again', async () => {

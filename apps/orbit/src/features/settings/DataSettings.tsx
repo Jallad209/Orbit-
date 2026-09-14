@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, SectionHeader } from '@/components/ui/Card';
-import { Toggle } from '@/components/ui/Checkbox';
 import { toast } from '@/components/ui/toastStore';
 import { useAppStore } from '@/app/store';
 import { usePlatform, useRepository } from '@/platform';
@@ -14,15 +13,14 @@ import { BackupList } from './BackupList';
 import { ImportSettings } from './ImportSettings';
 
 /**
- * Data section of Settings. Desktop: the data folder, integrity status, and
- * close-to-tray. Web: honest storage status. Both: export.
+ * Data section of Settings. Desktop: the data folder and integrity status
+ * (close-to-tray moved to the Desktop section in week 11). Web: honest
+ * storage status. Both: export.
  */
 export function DataSettings({ clock = systemClock }: { clock?: Clock } = {}) {
   const platform = usePlatform();
   const repo = useRepository();
   const storage = useAppStore((s) => s.storageStatus);
-  const closeToTray = useAppStore((s) => s.closeToTray);
-  const setCloseToTray = useAppStore((s) => s.setCloseToTray);
   const [busy, setBusy] = useState(false);
   const desktop = platform.desktop;
   const status = desktop?.dataFileStatus() ?? null;
@@ -116,19 +114,6 @@ export function DataSettings({ clock = systemClock }: { clock?: Clock } = {}) {
                 : ' and a fresh file was created; no backup was available.'}
             </p>
           ) : null}
-          <div className="w-64">
-            <Toggle
-              label="Close to tray"
-              description={
-                platform.capabilities.tray
-                  ? 'Keep Orbit running when the window closes.'
-                  : 'Not available in this version.'
-              }
-              disabled={!platform.capabilities.tray}
-              checked={platform.capabilities.tray && closeToTray}
-              onCheckedChange={setCloseToTray}
-            />
-          </div>
         </div>
       ) : (
         <div className="flex flex-col gap-2 text-sm" data-testid="web-storage">

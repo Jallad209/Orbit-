@@ -127,6 +127,8 @@ pub fn data_dir_relocate(
         write_settings(&app, &settings)
     })
     .inspect_err(|e| logging::error("data", "relocate", e))?;
+    // The webviews reload and acknowledge readiness again; the scheduler waits for that.
+    guard.generation += 1;
     logging::event(Level::Info, "data", "relocate", Map::new());
     Ok(dir.to_string_lossy().into_owned())
 }

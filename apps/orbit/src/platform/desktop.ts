@@ -3,11 +3,15 @@ import type { BackupCandidate, Repository, SqlDriver } from '@orbit/storage';
 import { recordEvent } from '@/lib/diagnostics';
 import { tauriSqlDriver, type Invoke } from './tauriSqlDriver';
 import type {
+  AutostartStatus,
   DataFileStatus,
   DesktopApi,
+  DesktopPrefs,
   DiagnosticsBundle,
   LastRun,
   Platform,
+  ResidentStatus,
+  ShellEvent,
   StorageStatus,
 } from './types';
 
@@ -35,15 +39,18 @@ interface Deps {
   };
   window: { startDragging(): Promise<void> };
   reload(): void;
+  /** Subscribe to a shell event; resolves to the unsubscribe function. */
+  listen<T>(name: string, handler: (payload: T) => void): Promise<() => void>;
 }
 
 async function loadDeps(): Promise<Deps> {
-  const [core, path, dialog, notification, win] = await Promise.all([
+  const [core, path, dialog, notification, win, event] = await Promise.all([
     import('@tauri-apps/api/core'),
     import('@tauri-apps/api/path'),
     import('@tauri-apps/plugin-dialog'),
     import('@tauri-apps/plugin-notification'),
     import('@tauri-apps/api/window'),
+    import('@tauri-apps/api/event'),
   ]);
   return {
     invoke: core.invoke as Invoke,
@@ -57,6 +64,7 @@ async function loadDeps(): Promise<Deps> {
     },
     window: { startDragging: () => win.getCurrentWindow().startDragging() },
     reload: () => window.location.reload(),
+    listen: (name, handler) => event.listen(name, (e) => handler(e.payload as never)),
   };
 }
 
@@ -164,16 +172,68 @@ export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Pla
       const d = await ready();
       await d.invoke<void>('diagnostics_log', { level, kind, fields: fields ?? {} });
     },
+    async residentStatus() {
+      const d = await ready();
+      return d.invoke<ResidentStatus>('resident_status');
+    },
+    async markReady() {
+      const d = await ready();
+      await d.invoke<void>('resident_ready', { generation });
+    },
+    async quit() {
+      const d = await ready();
+      await d.invoke<void>('resident_quit');
+    },
+    async showMain() {
+      const d = await ready();
+      await d.invoke<void>('resident_show_main');
+    },
+    async hideMain() {
+      const d = await ready();
+      await d.invoke<void>('resident_hide_main');
+    },
+    async wakeScheduler() {
+      const d = await ready();
+      await d.invoke<void>('scheduler_wake');
+    },
+    prefs: {
+      async get() {
+        const d = await ready();
+        return d.invoke<DesktopPrefs>('prefs_get');
+      },
+      async set(patch) {
+        const d = await ready();
+        return d.invoke<DesktopPrefs>('prefs_set', { patch });
+      },
+      async migrateLegacy(value) {
+        const d = await ready();
+        return d.invoke<DesktopPrefs>('prefs_migrate_legacy', { value });
+      },
+    },
+    autostart: {
+      async get() {
+        const d = await ready();
+        return d.invoke<AutostartStatus>('autostart_get');
+      },
+      async set(enabled) {
+        const d = await ready();
+        return d.invoke<AutostartStatus>('autostart_set', { enabled });
+      },
+    },
+    async onShellEvent<T>(name: ShellEvent, handler: (payload: T) => void) {
+      const d = await ready();
+      return d.listen<T>(name, handler);
+    },
   };
 
   return {
     name: 'desktop',
     capabilities: {
-      backgroundReminders: false, // needs the tray (week 12) so closing the window keeps Orbit alive
+      backgroundReminders: true, // the tray keeps the process (and its scheduler) alive when the window closes
       nativeReminders: true, // scheduler.rs delivers due reminders as OS notifications
       dataFolder: true,
       globalHotkey: true,
-      tray: false, // week 12
+      tray: true, // resident.rs/tray.rs (week 11); Settings → Desktop shows whether it actually came up
     },
     desktop,
 

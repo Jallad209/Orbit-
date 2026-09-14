@@ -6,9 +6,12 @@
  *   pnpm run edge:driver          # once per WebView2 update
  *   pnpm run e2e:desktop
  *
- * Every session gets a throwaway data folder (`ORBIT_DATA_DIR`) and a
- * throwaway WebView2 profile (`WEBVIEW2_USER_DATA_FOLDER`), so the tests never
- * touch the user's real database, settings, or local storage.
+ * Every session gets a throwaway data folder (`ORBIT_DATA_DIR`), a
+ * throwaway WebView2 profile (`WEBVIEW2_USER_DATA_FOLDER`), and a fake
+ * login-launch backend (`ORBIT_AUTOSTART_FAKE`); the shell also skips its
+ * single-instance and window-state registration under `ORBIT_DATA_DIR`. So the
+ * tests never touch the user's real database, settings, local storage, login
+ * items, or running Orbit.
  * Windows only for now: tauri-driver has no macOS backend.
  */
 import { spawn, type ChildProcess } from 'node:child_process';
@@ -73,6 +76,8 @@ export const config: WebdriverIO.Config = {
         ...process.env,
         ORBIT_DATA_DIR: join(sessionDir, 'data'),
         WEBVIEW2_USER_DATA_FOLDER: join(sessionDir, 'webview'),
+        // Login-launch registration goes to a file, never to this user's Run key.
+        ORBIT_AUTOSTART_FAKE: join(sessionDir, 'autostart.txt'),
       },
     });
     // Wait for the driver to listen before WebDriverIO opens the session.

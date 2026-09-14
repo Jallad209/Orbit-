@@ -20,6 +20,7 @@ import { usePlanPrefs } from '@/features/today/planSettings';
 import { createTask } from '@/features/structure/structureService';
 import { convertCapture } from '@/features/inbox/inboxService';
 import { renderWithProviders } from '@/test/render';
+import { fakeResidentApi } from '@/test/desktop';
 import { DataSettings, bundleMarkdown } from './DataSettings';
 import { PlanningSettings } from './PlanningSettings';
 import { loadSettings, saveSettings } from './settingsService';
@@ -278,6 +279,7 @@ describe('DataSettings', () => {
         lastRun: async () => ({ crashedLastTime: false, startedAt: null, crash: null }),
         saveDiagnostics: async () => null,
         logEvent: async () => {},
+        ...fakeResidentApi().api,
       },
     };
     const repo = createMemoryRepository({ clock });
@@ -333,6 +335,7 @@ describe('DataSettings', () => {
         lastRun: async () => ({ crashedLastTime: false, startedAt: null, crash: null }),
         saveDiagnostics: async () => null,
         logEvent: async () => {},
+        ...fakeResidentApi().api,
       },
     };
     renderWithProviders(<DataSettings />, { platform, route: '/settings' });

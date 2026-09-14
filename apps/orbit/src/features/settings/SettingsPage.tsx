@@ -6,6 +6,7 @@ import { usePlatform } from '@/platform';
 import { RulesSection } from '@/features/rules/RulesSection';
 import { AppearanceSettings } from './AppearanceSettings';
 import { DataSettings } from './DataSettings';
+import { DesktopSettings } from './DesktopSettings';
 import { DiagnosticsSettings } from './DiagnosticsSettings';
 import { InsightSettings } from './InsightSettings';
 import { PlanningSettings } from './PlanningSettings';
@@ -15,9 +16,9 @@ import { ShortcutsReference } from './ShortcutsReference';
 export function CapabilityNotes() {
   const { capabilities } = usePlatform();
   const reminders = capabilities.backgroundReminders
-    ? 'Reminders fire as system notifications, even while the window is closed.'
+    ? 'Reminders fire as system notifications while Orbit runs, including with the window closed to the tray. See Desktop for the current state.'
     : capabilities.nativeReminders
-      ? 'Reminders fire as system notifications while Orbit is running; background delivery arrives with the tray.'
+      ? 'Reminders fire as system notifications while Orbit is running.'
       : 'Reminders show inside Orbit while this tab is open. Install the desktop app for system notifications.';
   return (
     <Card data-testid="capability-notes">
@@ -55,6 +56,7 @@ const SECTIONS = [
   { id: 'insights', label: 'Insights' },
   { id: 'rules', label: 'Rules' },
   { id: 'data', label: 'Data' },
+  { id: 'desktop', label: 'Desktop' },
   { id: 'appearance', label: 'Appearance' },
   { id: 'shortcuts', label: 'Shortcuts' },
 ] as const;
@@ -100,6 +102,9 @@ export function SettingsPage() {
             <DataSettings />
             <DiagnosticsSettings />
             <CapabilityNotes />
+          </section>
+          <section id="desktop" aria-label="Desktop" className="scroll-mt-4">
+            <DesktopSettings />
           </section>
           <section id="appearance" aria-label="Appearance" className="scroll-mt-4">
             <AppearanceSettings />

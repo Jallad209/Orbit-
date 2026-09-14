@@ -14,8 +14,10 @@ interface AppState {
   /** Incremented after every write; `useRepoQuery` re-reads when it changes. */
   dataVersion: number;
   quickCaptureOpen: boolean;
-  /** Desktop: keep running for reminders when the window closes (tray in week 12). */
-  closeToTray: boolean;
+  /** Desktop: the shell began an orderly shutdown; new writes are refused with a message. */
+  quitting: boolean;
+  /** How many times the reminder queue has been reconciled; readiness waits for the first. */
+  reminderReconciles: number;
   /** Appearance: shorten every animation regardless of the OS setting. */
   reduceMotion: boolean;
   setStorageStatus: (status: StorageStatus) => void;
@@ -24,11 +26,13 @@ interface AppState {
   setUpdateAvailable: (available: boolean) => void;
   bump: () => void;
   setQuickCaptureOpen: (open: boolean) => void;
-  setCloseToTray: (on: boolean) => void;
+  setQuitting: (on: boolean) => void;
+  noteReminderReconcile: () => void;
   setReduceMotion: (on: boolean) => void;
 }
 
-const CLOSE_TO_TRAY_KEY = 'orbit-close-to-tray';
+// The week-10 close-to-tray flag now lives in the shell's native preferences; the raw
+// localStorage value is read once by the resident bridge for the migration.
 const REDUCE_MOTION_KEY = 'orbit-reduce-motion';
 function readFlag(key: string): boolean {
   try {
@@ -60,7 +64,8 @@ export const useAppStore = create<AppState>((set) => ({
   updateAvailable: false,
   dataVersion: 0,
   quickCaptureOpen: false,
-  closeToTray: readFlag(CLOSE_TO_TRAY_KEY),
+  quitting: false,
+  reminderReconciles: 0,
   reduceMotion: readFlag(REDUCE_MOTION_KEY),
   setStorageStatus: (storageStatus) => set({ storageStatus }),
   dismissStorageBanner: () => set({ storageBannerDismissed: true }),
@@ -68,10 +73,8 @@ export const useAppStore = create<AppState>((set) => ({
   setUpdateAvailable: (updateAvailable) => set({ updateAvailable }),
   bump: () => set((s) => ({ dataVersion: s.dataVersion + 1 })),
   setQuickCaptureOpen: (quickCaptureOpen) => set({ quickCaptureOpen }),
-  setCloseToTray: (closeToTray) => {
-    writeFlag(CLOSE_TO_TRAY_KEY, closeToTray);
-    set({ closeToTray });
-  },
+  setQuitting: (quitting) => set({ quitting }),
+  noteReminderReconcile: () => set((s) => ({ reminderReconciles: s.reminderReconciles + 1 })),
   setReduceMotion: (reduceMotion) => {
     writeFlag(REDUCE_MOTION_KEY, reduceMotion);
     applyReduceMotion(reduceMotion);

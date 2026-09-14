@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { createMemoryRepository } from '@orbit/storage';
 import { webPlatform, type Platform } from '@/platform';
 import { renderWithProviders } from '@/test/render';
+import { fakeResidentApi } from '@/test/desktop';
 import { QuickCaptureWindow } from './QuickCaptureWindow';
 
 describe('QuickCaptureWindow', () => {
@@ -33,6 +34,7 @@ describe('QuickCaptureWindow', () => {
         lastRun: async () => ({ crashedLastTime: false, startedAt: null, crash: null }),
         saveDiagnostics: async () => null,
         logEvent: async () => {},
+        ...fakeResidentApi().api,
       },
     };
     const repository = createMemoryRepository();

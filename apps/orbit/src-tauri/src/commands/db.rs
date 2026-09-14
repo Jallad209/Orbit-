@@ -18,7 +18,12 @@ pub struct Database {
     pub connection: Option<Connection>,
     pub generation: u64,
     owner: Option<(String, Instant)>,
+    /// Shutdown has begun: new independent writes and new transactions are refused with a
+    /// clear message; a transaction that already owns the connection may still finish.
+    pub quitting: bool,
 }
+
+pub const QUITTING_MESSAGE: &str = "Orbit is quitting; this change was not saved.";
 
 pub struct Db(pub Mutex<Database>);
 
@@ -46,6 +51,12 @@ impl Database {
         Ok(())
     }
 
+    /// No transaction is owned (an abandoned one is expired first). Shutdown waits for this.
+    pub fn is_idle(&mut self) -> bool {
+        let _ = self.expire();
+        self.owner.is_none()
+    }
+
     pub fn authorize(&mut self, owner: Option<&str>) -> Result<(), String> {
         self.expire()?;
         match (&mut self.owner, owner) {
@@ -60,6 +71,9 @@ impl Database {
     }
 
     pub fn begin(&mut self, owner: String) -> Result<(), String> {
+        if self.quitting {
+            return Err(QUITTING_MESSAGE.into());
+        }
         self.authorize(None)?;
         self.connection
             .as_ref()
@@ -121,6 +135,7 @@ fn with_conn<T>(
     state: &State<'_, Db>,
     owner: Option<&str>,
     generation: Option<u64>,
+    read_only: bool,
     f: impl FnOnce(&Connection) -> rusqlite::Result<T>,
 ) -> Result<T, String> {
     let mut guard = state
@@ -128,6 +143,9 @@ fn with_conn<T>(
         .lock()
         .map_err(|_| "database lock poisoned".to_string())?;
     guard.check_generation(generation)?;
+    if guard.quitting && owner.is_none() && !read_only {
+        return Err(QUITTING_MESSAGE.into());
+    }
     guard.authorize(owner)?;
     let conn = guard
         .connection
@@ -205,7 +223,7 @@ pub fn db_execute(
     owner: Option<String>,
     generation: Option<u64>,
 ) -> Result<usize, String> {
-    with_conn(&state, owner.as_deref(), generation, |conn| {
+    with_conn(&state, owner.as_deref(), generation, false, |conn| {
         conn.execute(&sql, params_from_iter(params.iter().map(to_sql)))
     })
 }
@@ -219,7 +237,7 @@ pub fn db_select(
     owner: Option<String>,
     generation: Option<u64>,
 ) -> Result<Vec<Row>, String> {
-    with_conn(&state, owner.as_deref(), generation, |conn| {
+    with_conn(&state, owner.as_deref(), generation, true, |conn| {
         let mut stmt = conn.prepare(&sql)?;
         let names: Vec<String> = stmt.column_names().iter().map(|n| n.to_string()).collect();
         let rows = stmt.query_map(params_from_iter(params.iter().map(to_sql)), |row| {
@@ -241,7 +259,7 @@ pub fn db_exec(
     owner: Option<String>,
     generation: Option<u64>,
 ) -> Result<(), String> {
-    with_conn(&state, owner.as_deref(), generation, |conn| {
+    with_conn(&state, owner.as_deref(), generation, false, |conn| {
         conn.execute_batch(&sql)
     })
 }
@@ -286,6 +304,22 @@ mod tests {
         db.generation += 1;
         assert!(db.check_generation(Some(0)).unwrap_err().contains("Reload"));
         db.check_generation(Some(1)).unwrap();
+    }
+
+    #[test]
+    fn shutdown_refuses_new_transactions_but_lets_an_owned_one_finish() {
+        let mut db = Database {
+            connection: Some(Connection::open_in_memory().unwrap()),
+            ..Default::default()
+        };
+        db.begin("main".into()).unwrap();
+        db.quitting = true;
+        assert!(!db.is_idle(), "the owned transaction is still settling");
+        assert_eq!(db.begin("capture".into()).unwrap_err(), QUITTING_MESSAGE);
+        db.authorize(Some("main")).unwrap();
+        db.finish("main", true).unwrap();
+        assert!(db.is_idle());
+        assert_eq!(db.begin("later".into()).unwrap_err(), QUITTING_MESSAGE);
     }
 
     #[test]

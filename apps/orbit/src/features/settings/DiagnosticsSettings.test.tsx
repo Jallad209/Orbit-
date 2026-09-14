@@ -17,6 +17,7 @@ import { clearEvents, installDiagnostics, recordError } from '@/lib/diagnostics'
 import { webPlatform, type Platform } from '@/platform';
 import type { DesktopApi } from '@/platform/types';
 import { renderWithProviders } from '@/test/render';
+import { fakeResidentApi } from '@/test/desktop';
 import { DiagnosticsSettings } from './DiagnosticsSettings';
 import { buildDiagnosticsReport, diagnosticsFileName, saveDiagnostics } from './diagnosticsService';
 
@@ -66,6 +67,7 @@ function desktopWith(overrides: Partial<DesktopApi>): Platform {
       lastRun: async () => ({ crashedLastTime: false, startedAt: null, crash: null }),
       saveDiagnostics: async () => null,
       logEvent: async () => {},
+      ...fakeResidentApi().api,
       ...overrides,
     },
   };
