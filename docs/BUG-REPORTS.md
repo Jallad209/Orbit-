@@ -43,7 +43,8 @@ replaced (`/projects/:id`), the script path and line/column when the browser rep
 Desktop bundles also carry:
 
 - `logs/orbit-<date>.<n>.log` — the rolling log, one JSON object per line: timestamp, level,
-  subsystem (`db`, `data`, `scheduler`, `process`, `webview`, `diagnostics`), operation, and
+  subsystem (`db`, `data`, `scheduler`, `process`, `webview`, `diagnostics`, `resident`,
+  `prefs`, `autostart`), operation, and
   fields. A new file starts each day and whenever one reaches 10 MB; the seven newest are kept.
 - `last-run.json` — when the previous run started, whether it ended cleanly, and the panic
   record if it did not.

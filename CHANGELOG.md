@@ -21,10 +21,33 @@ then edited by hand before each release.
   counts, and error kinds — no titles, bodies, names, queries, or paths. See
   `docs/BUG-REPORTS.md`.
 
+- Insights: an **Insights** screen (and `g o`, or the "Open insights" command) lists what
+  needs attention — overloaded days, weekly area targets beyond available time, stale
+  projects, estimates that run over, and people with several open commitments — each with its
+  threshold visible and the records and arithmetic behind it. Snooze for a day, a week, or
+  until the data changes; dismiss until restored; history with Restore. Today shows the first
+  three; the Timeline warns about an overloaded day and links to the evidence. Thresholds are
+  in Settings → Insights. See `docs/INSIGHTS.md`.
+- Desktop: Orbit stays in the **system tray** when the window is closed (Open Orbit, Quick
+  Capture, Plan my day, Quit); the first close explains this. One Orbit process: launching it
+  again brings the window back. **Start at login** is opt-in in Settings → Desktop and shows
+  what Windows actually has registered. Reminders for known bills and follow-ups are prepared
+  ahead with their dates, so they arrive while the window is hidden. See
+  `docs/RESIDENT-BEHAVIOUR.md`.
+
 ### Changed
 
 - Restoring a backup made before the search index existed is accepted; the index is rebuilt on
   the next open.
+- Project "stale" badges, the Today screen, and the at-risk list now share one definition of
+  activity (a project's own change, its tasks and milestones — including deleting one — and
+  sessions) and the stale threshold from Settings → Insights.
+- Reminder wording carries dates ("Rent due 2026-09-20", "No reply on … since 2026-09-10")
+  instead of "due in 3 days".
+- Export schema is now 4 (insight thresholds and snooze state). Older Orbit refuses a v4
+  file; this version reads v1–v3.
+- Close-to-tray moved from Settings → Data to Settings → Desktop; the earlier setting is
+  carried over once.
 
 ## [0.1.0-alpha.2] — 2026-09-13
 

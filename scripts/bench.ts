@@ -13,12 +13,23 @@
  * The search entries (week 10) run the real MiniSearch service over a
  * 50,000-task / 5,000-note world: one query, and the one-off index build
  * whose cost is why the app warms the index after the first paint.
+ *
+ * The insights entry (week 11) is the real `computeInsights`: indexing, all
+ * five detectors, and complete evidence construction over the same world.
+ * The shared-health entry keeps the older helper workload beside it so a
+ * regression in either shows on its own line.
  */
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { Bench } from 'tinybench';
 import {
+  BlockSchema,
+  DEFAULT_INSIGHT_SETTINGS,
+  addDays,
+  buildProjectActivity,
+  createRecord,
   computeAreaAttention,
   computeGoalAttention,
+  computeInsights,
   computeProjectHealth,
   expandRecurrence,
   fixedClock,
@@ -56,6 +67,64 @@ const health = {
 };
 const attention = { ...bigWorld, now };
 const routines = bigWorld.routines;
+const activity = buildProjectActivity(bigWorld);
+
+// The seeded world is healthy, so on its own the engine would return nothing and the
+// benchmark would skip the evidence construction it exists to measure. Push it over every
+// threshold: run 20 days later (every project stale, the last 30 days of completions in
+// the estimate window), record every completed task at 1.6× its estimate (hundreds of
+// sample rows per area), give every area a 40 h target (the weekly deficit), and book
+// forty overlapping blocks on each of the seven days ahead (seven overloaded days).
+const insightClock = fixedClock(new Date(now.getTime() + 20 * 86_400_000));
+const insightToday = new Date(
+  insightClock.now().getFullYear(),
+  insightClock.now().getMonth(),
+  insightClock.now().getDate(),
+);
+const insightDate = (offset: number) =>
+  addDays(
+    `${insightToday.getFullYear()}-${String(insightToday.getMonth() + 1).padStart(2, '0')}-${String(insightToday.getDate()).padStart(2, '0')}`,
+    offset,
+  );
+const openTasks = bigWorld.tasks.filter((t) => t.status === 'open').slice(0, 40);
+const overloadBlocks = Array.from({ length: 7 }, (_, day) =>
+  openTasks.map((t, i) =>
+    createRecord(BlockSchema, insightClock, {
+      date: insightDate(day),
+      startMin: 540 + (i % 8) * 60,
+      endMin: 540 + (i % 8) * 60 + 60,
+      taskId: t.id,
+      source: 'manual',
+    }),
+  ),
+).flat();
+const insightWorld = {
+  ...bigWorld,
+  areas: bigWorld.areas.map((a) => ({ ...a, weeklyHoursTarget: 40 })),
+  tasks: bigWorld.tasks.map((t) =>
+    t.status === 'done' && t.completedAt && t.estimateMin > 0
+      ? { ...t, actualMin: Math.round(t.estimateMin * 1.6) }
+      : t,
+  ),
+  blocks: [...bigWorld.blocks, ...overloadBlocks],
+};
+const insightInput = {
+  snapshot: insightWorld,
+  settings: DEFAULT_INSIGHT_SETTINGS,
+  planning: {
+    workingWindow: { startMin: 540, endMin: 1080 },
+    restBoundaries: [{ startMin: 750, endMin: 795 }],
+    defaultEstimateMin: 30,
+  },
+  clock: insightClock,
+};
+{
+  const probe = computeInsights(insightInput);
+  const rows = probe.insights.reduce((n, i) => n + i.evidence.length, 0);
+  console.log(
+    `insights world: ${probe.insights.length} insights (${probe.coverage.map((c) => `${c.kind} ${c.emitted}`).join(', ')}), ${rows} evidence rows`,
+  );
+}
 
 // The search index over the big world, built once; the query benchmark
 // runs against it, the build benchmark rebuilds it from a fresh service.
@@ -102,10 +171,19 @@ const entries: Entry[] = [
     },
   },
   {
-    name: 'insights: health + attention, 50k world',
+    name: 'insights: computeInsights, five detectors + evidence, 50k world',
     budgetMs: 200,
     fn: () => {
-      for (const p of bigWorld.projects) computeProjectHealth(p, health);
+      const report = computeInsights(insightInput);
+      // Evidence is built in full for every emitted insight; keep the result alive.
+      return report.insights.reduce((n, i) => n + i.evidence.length, 0);
+    },
+  },
+  {
+    name: 'insights: shared health + attention, 50k world',
+    budgetMs: 200,
+    fn: () => {
+      for (const p of bigWorld.projects) computeProjectHealth(p, { ...health, activity });
       for (const g of bigWorld.goals) computeGoalAttention(g, attention);
       for (const a of bigWorld.areas) computeAreaAttention(a, attention);
     },

@@ -3,7 +3,7 @@
 **Tech Stack:** TypeScript (strict) + Zod + Vitest + Dexie (IndexedDB) + SQLite (Tauri SQL plugin, from week 7) + MiniSearch / FTS5 + Tauri 2 Rust commands (from week 7)
 **Repository:** `C:\Orbit`
 **Packages Owned:** `packages/core`, `packages/storage`, `apps/orbit/src-tauri` (from week 7)
-**Current Status:** Weeks 1-10 ✅ COMPLETE
+**Current Status:** Weeks 1-11 ✅ COMPLETE
 
 > In Orbit there is no server. "Backend" means the pure domain engine (`packages/core`), the storage layer (`packages/storage`), and, from week 7, the Rust shell commands. Weeks 1–6 run entirely in the browser against IndexedDB. Everything here must run with the network cable unplugged.
 
@@ -633,7 +633,7 @@ pnpm run bench   # search: minisearch query, 50k tasks + 5k notes — 5 ms mean,
 
 ---
 
-## Week 11: Insights Engine
+## Week 11: Insights Engine ✅ COMPLETE
 
 **Description:** This week you will implement `computeInsights`, producing explainable observations from real data. Each insight carries evidence records, the threshold that triggered it, and a snooze/dismiss state. First four: estimate bias by task type, stale projects, overloaded days, and goals requiring more weekly hours than available.
 
@@ -661,22 +661,47 @@ pnpm run bench   # search: minisearch query, 50k tasks + 5k notes — 5 ms mean,
 - Deficit uses working window from settings
 - Each insight has non-empty evidence
 
+**What was done:**
+
+- **One pure entry point**, `computeInsights` in `packages/core/src/insights/`: a snapshot of records (tombstones allowed where they count as activity), the insight settings, the planning window, and an injected clock in; sorted insights, per-detector coverage, and the next time boundaries out. Every insight has a stable key (`estimate-bias:area:<id>` / `estimate-bias:unassigned`, `stale-project:<id>`, `overloaded-day:<date>`, `weekly-target-deficit:<week-start>`, `person-commitments:<id>`), a severity, plain copy, a typed subject, typed evidence rows (never empty), a threshold with the actual value, operator, limit, and sample size, unformatted metrics, notes, `computedAt`, a source fingerprint, and an algorithm version. Order: risk → attention → info, then overload, weekly deficit, stale project, estimate bias, people, then date/subject/key. Identical input gives identical output; input order changes nothing; dangling references never crash. Indexes are built once (`snapshot.ts`), not per project or card
+- **Estimate bias** (`estimateBias.ts`): per effective area (or Unassigned), sum of recorded ÷ sum of estimated over live completed tasks in the inclusive 30-day window; explicit `actualMin` (including zero) beats closed sessions ended by now; zero estimates, missing actuals, future/out-of-window completions, running sessions excluded; strict at 1.3; fewer than 5 samples is "insufficient data" in the coverage, never silence; evidence is every sample with its source; the fingerprint covers the area's recorded data regardless of the window so a sample ageing out is not a source edit
+- **Stale projects** (`staleProjects.ts`) on the **shared activity definition** `services/activity.ts` (`buildProjectActivity`, `elapsedDays`, `staleAt`): project record, task and milestone changes, sessions, and task/milestone tombstones; ≥ threshold complete 24-hour periods; `computeProjectHealth` and `computeAtRisk` take the same map and threshold, so the badge and the card cannot disagree; future timestamps clamp to zero
+- **Full-day capacity** (`capacity.ts`, distinct from the planner's remaining `freeMin`): window minus rest, events, and whole reservations clipped and unioned; area reservations kept with labels; energy rules ignored; no blocks and no elapsed time subtracted. **Day load** (`dayLoad.ts`): task/routine/manual blocks by stored length (overlaps add), event blocks excluded, deleted/archived tasks and skipped/orphan instances excluded, done work kept, out-of-window work counted and marked, accepted-but-unscheduled tasks once at the planner-rounded estimate (default estimate for zero), split parts by their own lengths; > capacity × 1.1 for today + 6 dates; zero capacity says "no available work time" with a minutes threshold, never Infinity; the workload-only caveat is on every card
+- **Weekly area-target deficit** (`goalDeficit.ts`): next full Monday–Sunday week, 60 × Σ positive live area targets (each once, no per-goal multiplication) against Σ of the seven full-day capacities; weekends count unless reserved; scheduled work not subtracted; evidence is every target and every day's capacity breakdown
+- **Open commitments per person** (`personCommitments.ts`): ≥ 3 live open commitments with a live person, both directions with subtotals
+- **Suppression** (`state.ts`): 1 day / 1 week (exact elapsed hours, in force through source edits), until data changes (fingerprint), dismiss (stable key until restored), restore; `applyInsightStates` and `canonicalState` (newest `updatedAt`, then id, among duplicates); `InsightState` gained `snoozeMode`, `suppressedFingerprint`, and a versioned `lastSummary`; `AppSettings` gained the validated `insights` group (defaults 10 / 30 / 5 / 1.3 / 1.1 / 3 with bounds). `normalizeAppSettings` / `normalizeInsightState` (`schema/compat.ts`) give old records defaults, repair malformed values field by field and report them, and map a legacy non-null `snoozedUntil` to a timed snooze; every adapter runs them on read, import and restore run them on raw rows, export schema is 4 (v1–3 read with defaults, v4 refused by older readers). `writeInsightState` (storage) upserts by key inside one owned transaction that re-reads the current rows and retires duplicates. Fixture generator gained `--only export`; the v4 export fixture was generated alone and the shipped v1–3 / IndexedDB v3 / SQLite v2 fixtures are byte-for-byte unchanged; `tests/fixtures/behaviour/week9-rows.json` holds legacy rows for the read-boundary tests
+- Commands: "Show neglected goals" stays on `/goals?filter=neglected`; "Open insights" added (`/insights`), available when the capability is on
+- Tests: 51 in `core/test/insights/` (boundary cases per detector as listed in the plan, determinism and reordering, coverage, fingerprints, suppression semantics, settings validation and normalization), 12 in `storage/test/insights/state.test.ts` across memory / IndexedDB / SQLite (legacy rows on every read path, upsert by key, duplicate merge, stale caller, rollback), export v3 → v4 compatibility
+- Bench: `insights: computeInsights, five detectors + evidence, 50k world` — 29 ms mean (24 insights, 1,636 evidence rows) against the 200 ms budget; the shared health helpers keep their own line (76 ms)
+
+**Files created:**
+
+- `packages/core/src/insights/{types,settings,fingerprint,snapshot,capacity,dayLoad,estimateBias,staleProjects,goalDeficit,personCommitments,state,index}.ts`, `packages/core/src/services/activity.ts`, `packages/core/src/schema/compat.ts` ✅
+- `packages/storage/src/{normalize,insights}.ts`, `tests/fixtures/export/v4.json`, `tests/fixtures/behaviour/week9-rows.json` ✅
+- `packages/core/test/insights/*.test.ts`, `packages/storage/test/insights/state.test.ts` ✅
+
 **Deliverables:**
 
-- [ ] `packages/core/src/insights/*`
-- [ ] Unit tests written and passing
+- [x] `packages/core/src/insights/*`
+- [x] Unit tests written and passing
 
 **Verification:**
 
 ```bash
-pnpm run test --filter @orbit/core -- insights
+pnpm exec vitest run --project core insights
+pnpm exec vitest run --project storage insights settings
+pnpm run bench   # insights: computeInsights, five detectors + evidence, 50k world — 29 ms mean, budget 200 ms
 ```
+
+See `docs/INSIGHTS.md` for the exact formulas, evidence, suppression, and limitations.
 
 ---
 
 ## Week 12: Weekly Review, People, Bills & Tray
 
 **Description:** This week you will build the data services behind the weekly review and complete the people/commitments and bills flows. The weekly review processes the inbox, cleans overdue tasks, inspects every active project, updates goals, reviews bills, and prepares next week's capacity check. The Rust shell gains tray presence and autostart so reminders work while the window is closed.
+
+> Boundary with week 11: the resident process — single instance, tray (Open Orbit, Quick Capture, Plan my day, Quit), close-to-tray, opt-in autostart, and reminder rows prepared ahead for delivery while hidden — shipped in week 11 (`docs/RESIDENT-BEHAVIOUR.md`). Task 5 below is therefore done except for richer notification click routing into People, Bills, and the Weekly Review, which stays here with those screens (task 6). Week 12 is not marked complete by that.
 
 ### Research Required:
 
@@ -777,8 +802,8 @@ pnpm run test
 | **Week 8**  | Actuals, Sessions & Review Data Services               | ✅ COMPLETE | 100%     |
 | **Week 9**  | Rules Engine & Reminder Scheduler                      | ✅ COMPLETE | 100%     |
 | **Week 10** | Search Index & Command Registry                        | ✅ COMPLETE | 100%     |
-| **Week 11** | Insights Engine                                        | ⏳ PENDING  | 0%       |
+| **Week 11** | Insights Engine                                        | ✅ COMPLETE | 100%     |
 | **Week 12** | Weekly Review, People, Bills & Tray                    | ⏳ PENDING  | 0%       |
 | **Week 13** | Hardening, Performance & Data Safety                   | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 10/13 weeks complete (77%)
+**Total Progress:** 11/13 weeks complete (85%)

@@ -3,7 +3,7 @@
 **Tech Stack:** React 18 + Vite + TypeScript + Tailwind CSS + Radix UI Primitives + Framer Motion + Zustand + Vite PWA + Tauri 2 API (from week 7) + Vitest + Testing Library
 **Repository:** `C:\Orbit`
 **Packages Owned:** `apps/orbit/src`
-**Current Status:** Weeks 1-10 ✅ COMPLETE
+**Current Status:** Weeks 1-11 ✅ COMPLETE
 
 > The frontend talks only to `@orbit/core` services, the `Repository` interface, and a `Platform` interface. It never issues SQL, never imports Tauri APIs outside `src/platform/`, and never calls the network. All fonts and assets are bundled. Weeks 1–6 run in a plain browser; the desktop shell is integrated in week 7.
 
@@ -642,7 +642,7 @@ pnpm run dev
 
 ---
 
-## Week 11: Insights & Project Health Surfaces
+## Week 11: Insights & Project Health Surfaces ✅ COMPLETE
 
 **Description:** This week you will surface system intelligence. The insights panel lists observations with severity, a plain-language explanation, and expandable evidence linking to the exact records. Users can snooze or dismiss. Project and goal lists gain health indicators driven by the same engine, and the Today screen's insights strip goes live.
 
@@ -669,17 +669,33 @@ pnpm run dev
 - Health badge maps each state to the right label
 - Timeline header shows the overload warning when the engine reports one
 
+**What was done:**
+
+- **One computation per data generation** (`features/insights/useInsights.ts`, `InsightsProvider` mounted in the app shell): `loadInsightView` reads the repository once (tombstones included where they count), runs `computeInsights`, applies suppression, and builds the history; refreshes after a local write (250 ms debounce), at the next boundary the report named (snooze expiry, stale threshold, sample expiry, local midnight — one timer), on focus/visibility when the op-log head moved or a boundary passed, and on request; a read from a replaced repository is dropped; a failed refresh keeps the last view marked stale with Retry. Today's strip, the Insights page, and the Timeline header all read it
+- **/insights** (`InsightsPage`, lazy-loaded; navigation "Insights", hotkey `g o`, command "Open insights"): risk / attention / info groups with counts; `InsightCard` with severity as text and icon as well as colour, the threshold and sample size visible without expanding, evidence behind a disclosure, "Open project / Open that day / Preview person" on the subject, a Snooze menu (1 day, 1 week, until data changes) and Dismiss with a toast that offers Restore; `InsightEvidence` renders typed rows in pages of 25 with the total shown and the arithmetic behind the title, each row opening a working destination (`insightRoutes.ts`: project page, `/timeline?date=&block=`, the settings section owning a rest boundary or rule, or the read-only `SearchPreview` for tasks and people); `InsightHistory` lists snoozed and dismissed observations with when and how, "still applies today" / "no longer applies", Restore, and "a previously dismissed observation" for week-9 rows with no summary. Empty states distinguish nothing-found (with the coverage notes for detectors that could not judge) from everything-suppressed; the page never says "healthy". `?open=<key>` focuses that card with its evidence open; after a dismiss or snooze focus moves to the next card and the change is announced
+- **Today**: `computeInsightsStub` and the local `Insight` type are gone; `InsightsStrip` shows the first three unsuppressed observations from the shared view (card lazy-loaded, no snooze/dismiss there) with "See all (n more)"; reload or another window's snooze gives the same three. At-risk, blocked, overdue, and goal-attention sections are unchanged
+- **Shared health**: `todayService` and `structureService` load tasks and milestones with tombstones, build one activity map, read `staleProjectDays` from the settings document, and pass both to `computeProjectHealth` and `computeAtRisk`; `HealthBadges` shows the threshold on the stale chip; `GoalHealthBadge` (same file) is the one goal vocabulary used by the goals list and the goal page. Dismissing an insight never removes a chip
+- **Timeline**: the date lives in the URL (`?date=YYYY-MM-DD`, DayNav writes it; a malformed date or id is ignored, never rewritten, so no loop); `&block=<uuid>` selects, scrolls to, and focuses the block once its day loads, and a removed block keeps the date with a notice. `OverloadWarning` reads the shared report inside the seven-date horizon and calls the shared day-load helper for any other date, linking to `/insights?open=overloaded-day:<date>`
+- **Settings → Insights** (`InsightSettings`): the six thresholds with help text, bounds, validation in the form and again at the storage boundary (an out-of-bounds value is refused visibly), Restore defaults that leaves planning alone; `saveSettings` merges a patch into a fresh copy inside a transaction (nested group field by field) so a stale form cannot overwrite another window's change; the form re-keys after an import or restore. `usePlanPrefs` mirrors the insight group
+- Tests: 13 in `features/insights/` (page grouping, thresholds, evidence links, snooze/history/restore/dismiss with reload, exact expiry via a focus check, coverage wording, URL focus and focus-after-dismiss; engine hook: one computation per generation, op-log head on focus, replaced-repository cancellation, stale on failure, boundary timer), 4 Timeline evidence-link cases, 3 settings cases, 6 for the resident bridge and Desktop section; Playwright `insights.spec.ts` (weekly deficit on Today and /insights, evidence to the Timeline date, snooze across a reload, history and Restore, threshold validation, the palette command)
+
+**Files created:**
+
+- `apps/orbit/src/features/insights/{insightService,useInsights,InsightsProvider,InsightsPage,InsightCard,InsightEvidence,InsightHistory,InsightsStrip,insightRoutes,format}.ts(x)` ✅
+- `apps/orbit/src/features/settings/{InsightSettings,DesktopSettings}.tsx`, `apps/orbit/src/features/timeline/{OverloadWarning.tsx,timelineParams.ts}`, `apps/orbit/src/features/desktop/{ResidentBridge,CloseExplanationDialog}.tsx` ✅
+- `tests/e2e/playwright/insights.spec.ts` ✅
+
 **Deliverables:**
 
-- [ ] `apps/orbit/src/features/insights/*`
-- [ ] `apps/orbit/src/components/HealthBadge.tsx`
-- [ ] Unit tests written and passing
+- [x] `apps/orbit/src/features/insights/*`
+- [x] `apps/orbit/src/components/HealthBadge.tsx`
+- [x] Unit tests written and passing
 
 **Verification:**
 
 ```bash
-pnpm run dev
-# Seed a stale project and an overloaded Wednesday; verify both insights appear with evidence
+pnpm exec vitest run --project orbit insights settings timeline
+pnpm exec playwright test tests/e2e/playwright/insights.spec.ts
 ```
 
 ---
@@ -788,8 +804,8 @@ pnpm run build && pnpm run preview
 | **Week 8**  | Morning Briefing, Evening Shutdown & Timer    | ✅ COMPLETE | 100%     |
 | **Week 9**  | Rules & Settings                              | ✅ COMPLETE | 100%     |
 | **Week 10** | Command Palette & Global Search               | ✅ COMPLETE | 100%     |
-| **Week 11** | Insights & Project Health Surfaces            | ⏳ PENDING  | 0%       |
+| **Week 11** | Insights & Project Health Surfaces            | ✅ COMPLETE | 100%     |
 | **Week 12** | Weekly Review, People, Bills & Notes          | ⏳ PENDING  | 0%       |
 | **Week 13** | Mobile PWA Layouts, Accessibility & Polish    | ⏳ PENDING  | 0%       |
 
-**Total Progress:** 10/13 weeks complete (77%)
+**Total Progress:** 11/13 weeks complete (85%)
