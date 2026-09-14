@@ -22,6 +22,25 @@ use super::db::Db;
 pub const DATA_FILE: &str = "orbit.db";
 const SETTINGS_FILE: &str = "settings.json";
 
+/// The tables each schema version added (`packages/storage/src/sqlite/migrations.ts`).
+/// A backup is judged against its own version's inventory: a schema-1 file has no
+/// reminder or settings tables and a schema-2 file no review tables, and both are
+/// still complete Orbit backups that migrate forward after the restore.
+const TABLES_V2: &[&str] = &["reminders", "appSettings"];
+const TABLES_V3: &[&str] = &["weeklyReviews", "weeklyReviewActions"];
+
+/// Whether a table that exists in the live file is expected in a backup at `version`.
+fn table_expected_at(table: &str, version: i64) -> bool {
+    if version < 2 && TABLES_V2.contains(&table) {
+        return false;
+    }
+    if version < 3 && TABLES_V3.contains(&table) {
+        return false;
+    }
+    // The search index (week 10) is a rebuildable cache, not part of the data.
+    !table.starts_with("search_")
+}
+
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct Settings {
     #[serde(default)]
@@ -411,12 +430,7 @@ fn restore_connection(
         .collect::<rusqlite::Result<Vec<_>>>()
         .map_err(|e| e.to_string())?;
     for table in tables {
-        if source_version == 1 && matches!(table.as_str(), "reminders" | "appSettings") {
-            continue;
-        }
-        // The search index (week 10) is a rebuildable cache, not part of the data:
-        // a backup made before it existed is still a complete Orbit file.
-        if table.starts_with("search_") {
+        if !table_expected_at(&table, source_version) {
             continue;
         }
         source
@@ -610,6 +624,65 @@ mod tests {
     fn count(conn: &Connection) -> i64 {
         conn.query_row("SELECT count(*) FROM tasks", [], |row| row.get(0))
             .unwrap()
+    }
+
+    /// The real fixture files written by older schema versions (`pnpm run make:fixture`).
+    fn fixture_db(version: u32) -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../tests/fixtures/db")
+            .join(format!("v{version}.db"))
+    }
+
+    #[test]
+    fn table_expectations_follow_the_backup_version() {
+        assert!(table_expected_at("tasks", 1));
+        assert!(!table_expected_at("reminders", 1));
+        assert!(!table_expected_at("weeklyReviews", 1));
+        assert!(table_expected_at("reminders", 2));
+        assert!(!table_expected_at("weeklyReviewActions", 2));
+        assert!(table_expected_at("weeklyReviews", 3));
+        assert!(!table_expected_at("search_fts", 3));
+    }
+
+    #[test]
+    fn real_old_backups_restore_into_a_schema_3_file_and_migrate_forward() {
+        // A live file at schema 3 holds every table, including the week-12 review stores.
+        let live_schema = std::fs::read_to_string(
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../tests/fixtures/sqlite/v3.sql"),
+        )
+        .unwrap();
+        for version in [1u32, 2] {
+            let temp = tempfile::tempdir().unwrap();
+            let live_dir = temp.path().join("live");
+            fs::create_dir_all(&live_dir).unwrap();
+            let live = Connection::open(live_dir.join(DATA_FILE)).unwrap();
+            live.execute_batch(&live_schema).unwrap();
+            live.execute_batch("PRAGMA journal_mode=WAL").unwrap();
+            let backup = temp.path().join(format!("backup-v{version}.db"));
+            fs::copy(fixture_db(version), &backup).unwrap();
+            let mut active = Some(live);
+            restore_connection(&mut active, &backup, copy_into)
+                .unwrap_or_else(|e| panic!("v{version} backup should restore: {e}"));
+            let conn = active.as_ref().unwrap();
+            let restored: i64 = conn
+                .query_row("PRAGMA user_version", [], |r| r.get(0))
+                .unwrap();
+            assert_eq!(restored, i64::from(version), "the file is the backup's version");
+            let tasks: i64 = conn
+                .query_row("SELECT count(*) FROM tasks", [], |r| r.get(0))
+                .unwrap();
+            assert!(tasks > 0);
+            // The forward migration is the frontend's job on reload; the older file must
+            // simply lack the newer tables rather than carry half of them.
+            let reviews: i64 = conn
+                .query_row(
+                    "SELECT count(*) FROM sqlite_schema WHERE name = 'weeklyReviews'",
+                    [],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            assert_eq!(reviews, 0);
+        }
     }
 
     #[test]

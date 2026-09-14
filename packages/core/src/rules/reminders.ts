@@ -2,6 +2,7 @@ import type { Clock } from '../clock';
 import { addDays, toInstant, toLocalDate } from '../dates';
 import { createRecord } from '../records';
 import { ReminderSchema } from '../schema';
+import { followUpBaseline, isOpenCommitment } from '../services/people';
 import type { Bill, Commitment, Id, Instant, LocalDate, Person, Reminder, Rule } from '../schema';
 
 /**
@@ -59,7 +60,10 @@ function fireOn(date: LocalDate): Instant {
  *   enters the window (due − days); an overdue or late-found bill fires as
  *   soon as a scheduler sees it, because that day has passed;
  * - `followUpAfter(days)`: each open commitment owed to me, firing at 09:00
- *   on the day the quiet period runs out (last contact + days).
+ *   on the day the quiet period runs out: the later of the commitment's
+ *   creation and the person's last contact, plus `days` (week 12: an old
+ *   contact date never makes a new promise overdue). A deleted person has
+ *   no follow-ups.
  * One row per stored source: a recurring bill's later occurrences do not
  * exist until the bill does, so nothing is expanded ahead of the data.
  */
@@ -88,16 +92,11 @@ export function computeReminders(snapshot: ReminderSnapshot, _now: Date): Remind
       }
     } else {
       for (const commitment of snapshot.commitments ?? []) {
-        if (
-          commitment.deletedAt !== null ||
-          commitment.status !== 'open' ||
-          commitment.direction !== 'owed-to-me'
-        ) {
-          continue;
-        }
+        if (!isOpenCommitment(commitment) || commitment.direction !== 'owed-to-me') continue;
         const person = personById.get(commitment.personId);
-        const lastContact = person?.lastContactAt ?? commitment.createdAt;
-        const since = toLocalDate(new Date(lastContact));
+        // Only a live person's promises are followed up; the caller passes live people.
+        if (snapshot.people && !person) continue;
+        const since = toLocalDate(new Date(followUpBaseline(commitment, person)));
         const expires = addDays(since, c.days);
         out.push({
           key: reminderKey(rule.id, commitment.id, expires),

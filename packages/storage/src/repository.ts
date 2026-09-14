@@ -24,6 +24,8 @@ import type {
   Rule,
   Session,
   Task,
+  WeeklyReview,
+  WeeklyReviewAction,
 } from '@orbit/core';
 
 export interface ListOptions {
@@ -99,6 +101,8 @@ export interface Repository {
   readonly captures: EntityStore<Capture>;
   readonly reminders: EntityStore<Reminder>;
   readonly appSettings: EntityStore<AppSettings>;
+  readonly weeklyReviews: EntityStore<WeeklyReview>;
+  readonly weeklyReviewActions: EntityStore<WeeklyReviewAction>;
   readonly links: LinkStore;
   readonly opLog: OpLogReader;
 
@@ -138,6 +142,8 @@ export const STORE_ENTITY: Record<
   captures: 'capture',
   reminders: 'reminder',
   appSettings: 'appSettings',
+  weeklyReviews: 'weeklyReview',
+  weeklyReviewActions: 'weeklyReviewAction',
   links: 'link',
 };
 

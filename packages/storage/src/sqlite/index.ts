@@ -21,6 +21,8 @@ import {
   RuleSchema,
   SessionSchema,
   TaskSchema,
+  WeeklyReviewActionSchema,
+  WeeklyReviewSchema,
   nowIso,
   shallowPatch,
   systemClock,
@@ -261,6 +263,8 @@ function repositoryFor(ctx: Ctx): Repository {
     captures: new SqliteStore('captures', CaptureSchema, ctx),
     reminders: new SqliteStore('reminders', ReminderSchema, ctx),
     appSettings: new SqliteStore('appSettings', AppSettingsSchema, ctx),
+    weeklyReviews: new SqliteStore('weeklyReviews', WeeklyReviewSchema, ctx),
+    weeklyReviewActions: new SqliteStore('weeklyReviewActions', WeeklyReviewActionSchema, ctx),
     links: new SqliteLinkStore('links', LinkSchema, ctx),
     opLog: new SqliteOpLog(ctx),
 

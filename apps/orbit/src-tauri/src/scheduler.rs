@@ -13,6 +13,15 @@
 //! are skipped until the main window has acknowledged readiness for the
 //! current database generation, so a restore or relocation never delivers
 //! from a file the frontend has not reconciled yet.
+//!
+//! Pre-delivery validation mirrors `rules/reminders.ts`: a row fires only
+//! while its rule is enabled, its source is live (an unpaid bill with the
+//! same due date; an open owed-to-me commitment of a live person), and no
+//! source changed after the row was prepared (`updatedAt` watermarks). A
+//! reply recorded after preparation therefore holds the row until the
+//! frontend has cancelled the old key and queued the new one; a deleted
+//! person cancels delivery outright. Fired and dismissed rows are history
+//! and are never revived; a cancelled pending row may be.
 
 use std::sync::mpsc::{self, RecvTimeoutError, Sender};
 use std::sync::{Arc, Condvar, Mutex};
@@ -103,7 +112,8 @@ fn take_due(conn: &Connection, now: &str) -> Vec<Due> {
             WHERE c.id = json_extract(r.data, '$.entityId') AND json_extract(c.data, '$.deletedAt') IS NULL \
             AND json_extract(c.data, '$.status') = 'open' AND json_extract(c.data, '$.direction') = 'owed-to-me' \
             AND json_extract(c.data, '$.updatedAt') <= json_extract(r.data, '$.updatedAt') \
-            AND (p.id IS NULL OR json_extract(p.data, '$.updatedAt') <= json_extract(r.data, '$.updatedAt'))))) \
+            AND p.id IS NOT NULL AND json_extract(p.data, '$.deletedAt') IS NULL \
+            AND json_extract(p.data, '$.updatedAt') <= json_extract(r.data, '$.updatedAt')))) \
          ORDER BY r.fireAt LIMIT 20",
     ) {
         Ok(s) => s,
@@ -304,6 +314,9 @@ mod tests {
              CREATE TABLE people(id TEXT, data TEXT);
              INSERT INTO rules VALUES ('rule', '{\"enabled\":true,\"updatedAt\":\"2026-09-18T06:00:00.000Z\"}');
              INSERT INTO bills VALUES ('bill', '{\"paid\":false,\"dueAt\":\"2026-09-21\",\"updatedAt\":\"2026-09-18T06:00:00.000Z\"}');
+             INSERT INTO people VALUES ('omar', '{\"deletedAt\":null,\"lastContactAt\":\"2026-09-01T06:00:00.000Z\",\"updatedAt\":\"2026-09-10T06:00:00.000Z\"}');
+             INSERT INTO commitments VALUES ('promise', '{\"personId\":\"omar\",\"status\":\"open\",\"direction\":\"owed-to-me\",\"deletedAt\":null,\"createdAt\":\"2026-09-08T06:00:00.000Z\",\"updatedAt\":\"2026-09-10T06:00:00.000Z\"}');
+
              INSERT INTO reminders(id, data) VALUES
                ('a', '{\"id\":\"a\",\"title\":\"Rent due\",\"body\":\"900\",\"status\":\"pending\",\"fireAt\":\"2026-09-18T07:00:00.000Z\",\"deletedAt\":null}'),
                ('b', '{\"id\":\"b\",\"title\":\"Later\",\"body\":\"\",\"status\":\"pending\",\"fireAt\":\"2099-01-01T07:00:00.000Z\",\"deletedAt\":null}'),
@@ -316,18 +329,28 @@ mod tests {
         Mutex::new(state)
     }
 
+    /// A prepared follow-up row for Omar's open owed-to-me commitment.
+    fn with_follow_up(db: &Mutex<Database>) {
+        db.lock().unwrap().connection.as_ref().unwrap().execute_batch(
+            "INSERT INTO reminders(id, data) VALUES
+               ('f', '{\"id\":\"f\",\"title\":\"Follow up with Omar\",\"body\":\"\",\"status\":\"pending\",\"fireAt\":\"2026-09-15T07:00:00.000Z\",\"deletedAt\":null,\"ruleId\":\"rule\",\"entityId\":\"promise\",\"entityType\":\"commitment\",\"key\":\"rule:promise:2026-09-15\",\"updatedAt\":\"2026-09-18T06:00:00.000Z\"}')",
+        ).unwrap();
+    }
+
     #[test]
     fn takes_only_pending_due_rows_and_marks_them_fired() {
         let db = fresh();
+        with_follow_up(&db);
         let now = "2026-09-18T09:00:00.000Z";
+        let mut seen = Vec::new();
         assert_eq!(
             deliver(&db, now, |r| {
-                assert_eq!(r.id, "a");
-                assert_eq!(r.title, "Rent due");
+                seen.push(r.id.clone());
                 Ok(())
             }),
-            1
+            2
         );
+        assert_eq!(seen, vec!["f", "a"], "oldest fire time first: the follow-up, then the bill");
         assert_eq!(deliver(&db, now, |_| panic!("already fired")), 0);
         let guard = db.lock().unwrap();
         let conn = guard.connection.as_ref().unwrap();
@@ -379,6 +402,39 @@ mod tests {
         let db = fresh();
         db.lock().unwrap().connection.as_ref().unwrap().execute_batch("INSERT INTO reminders(id, data) SELECT 'duplicate', json_set(data, '$.id', 'duplicate') FROM reminders WHERE id = 'a'").unwrap();
         assert_eq!(deliver(&db, "2026-09-18T09:00:00.000Z", |_| Ok(())), 1);
+    }
+
+    #[test]
+    fn follow_ups_need_a_live_person_and_an_unchanged_open_owed_to_me_commitment() {
+        for sql in [
+            // A reply recorded after the row was prepared: the frontend re-keys it first.
+            "UPDATE people SET data = json_set(data, '$.lastContactAt', '2026-09-17T06:00:00.000Z', '$.updatedAt', '2026-09-18T08:00:00.000Z')",
+            "UPDATE people SET data = json_set(data, '$.deletedAt', '2026-09-18T08:00:00.000Z')",
+            "DELETE FROM people",
+            "UPDATE commitments SET data = json_set(data, '$.status', 'done')",
+            "UPDATE commitments SET data = json_set(data, '$.direction', 'owed-by-me')",
+            "UPDATE commitments SET data = json_set(data, '$.deletedAt', '2026-09-18T08:00:00.000Z')",
+        ] {
+            let db = fresh();
+            with_follow_up(&db);
+            db.lock()
+                .unwrap()
+                .connection
+                .as_ref()
+                .unwrap()
+                .execute_batch(sql)
+                .unwrap();
+            let mut seen = Vec::new();
+            deliver(&db, "2026-09-18T09:00:00.000Z", |r| {
+                seen.push(r.id.clone());
+                Ok(())
+            });
+            assert_eq!(seen, vec!["a"], "only the bill fires after: {sql}");
+        }
+        // Untouched, the follow-up is delivered.
+        let db = fresh();
+        with_follow_up(&db);
+        assert_eq!(deliver(&db, "2026-09-18T09:00:00.000Z", |_| Ok(())), 2);
     }
 
     #[test]

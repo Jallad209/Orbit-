@@ -7,6 +7,7 @@
 import type { Clock } from './clock';
 import { fixedClock, nowIso } from './clock';
 import { addDays, toLocalDate } from './dates';
+import { startOfWeek } from './recurrence/expand';
 import { createRecord } from './records';
 import {
   APP_SETTINGS_ID,
@@ -30,6 +31,8 @@ import {
   RuleSchema,
   SessionSchema,
   TaskSchema,
+  WeeklyReviewActionSchema,
+  WeeklyReviewSchema,
 } from './schema';
 import type {
   AppSettings,
@@ -55,6 +58,8 @@ import type {
   Rule,
   Session,
   Task,
+  WeeklyReview,
+  WeeklyReviewAction,
 } from './schema';
 
 export interface SeedSizes {
@@ -101,6 +106,8 @@ export interface SeedWorld {
   captures: Capture[];
   reminders: Reminder[];
   appSettings: AppSettings[];
+  weeklyReviews: WeeklyReview[];
+  weeklyReviewActions: WeeklyReviewAction[];
   links: Link[];
 }
 
@@ -313,6 +320,59 @@ export function seedWorld(options: SeedOptions = {}): SeedWorld {
       paid: rng() < 0.3,
     }),
   );
+  // Week 12: a recurring series with a paid occurrence and its generated successor, plus a
+  // legacy-shaped paid recurring row (no payment time recorded, no successor).
+  const rentAnchor = addDays(startOfWeek(today), -28);
+  const rentSeries = seededId(rng);
+  const rentPaid = make(BillSchema, ago(28), {
+    title: 'Rent',
+    amount: 900,
+    currency: 'USD',
+    dueAt: rentAnchor,
+    recurrence: {
+      freq: 'monthly',
+      interval: 1,
+      byDay: [],
+      byMonthDay: null,
+      count: null,
+      until: null,
+    },
+    paid: true,
+    seriesId: rentSeries,
+    recurrenceAnchor: rentAnchor,
+    occurrenceIndex: 0,
+    scheduledFor: rentAnchor,
+    paidAt: ago(26).now().toISOString(),
+  });
+  const rentNext = make(BillSchema, ago(26), {
+    title: 'Rent',
+    amount: 900,
+    currency: 'USD',
+    dueAt: addDays(rentAnchor, 30),
+    recurrence: rentPaid.recurrence,
+    paid: false,
+    seriesId: rentSeries,
+    recurrenceAnchor: rentAnchor,
+    occurrenceIndex: 1,
+    scheduledFor: addDays(rentAnchor, 30),
+  });
+  rentPaid.nextBillId = rentNext.id;
+  const legacyPaid = make(BillSchema, ago(40), {
+    title: 'Gym (legacy)',
+    amount: 35,
+    currency: 'USD',
+    dueAt: addDays(today, -20),
+    recurrence: {
+      freq: 'weekly',
+      interval: 1,
+      byDay: [],
+      byMonthDay: null,
+      count: null,
+      until: null,
+    },
+    paid: true,
+  });
+  bills.push(rentPaid, rentNext, legacyPaid);
 
   const sessions: Session[] = [];
   const blocks: Block[] = [];
@@ -448,6 +508,135 @@ export function seedWorld(options: SeedOptions = {}): SeedWorld {
     }
   }
 
+  // Week 12: one completed review for last week (read-only history with receipts) and one
+  // paused review for this week holding an unsubmitted draft choice.
+  const thisWeek = startOfWeek(today);
+  const lastWeek = addDays(thisWeek, -7);
+  const completedReview = make(WeeklyReviewSchema, ago(6), {
+    reviewWeekStart: lastWeek,
+    targetWeekStart: thisWeek,
+    status: 'completed',
+    currentStep: 'capacity',
+    startedAt: ago(6).now().toISOString(),
+    completedAt: ago(6).now().toISOString(),
+    revision: 9,
+    steps: (['inbox', 'overdue', 'projects', 'goals', 'bills', 'capacity'] as const).map(
+      (step) => ({
+        step,
+        status: step === 'overdue' ? 'deferred' : 'done',
+        at: ago(6).now().toISOString(),
+        fingerprint: '0123456789abcdef',
+        resolved: step === 'inbox' ? 2 : 0,
+        deferred: step === 'overdue' ? 1 : 0,
+        remaining: 0,
+        reason: step === 'overdue' ? 'Waiting on a reply' : '',
+      }),
+    ),
+    summary: {
+      version: 1,
+      reviewWeekStart: lastWeek,
+      targetWeekStart: thisWeek,
+      computedAt: ago(6).now().toISOString(),
+      steps: [],
+      actionCount: 3,
+      items: tasks[0]
+        ? [
+            {
+              step: 'overdue',
+              ref: { type: 'task', id: tasks[0].id },
+              label: tasks[0].title,
+              status: 'deferred',
+            },
+          ]
+        : [],
+      capacity: {
+        bookedMin: 1500,
+        availableMin: 3465,
+        targetMin: 2400,
+        overloadedDays: 1,
+        computedAt: ago(6).now().toISOString(),
+      },
+    },
+  });
+  const pausedReview = make(WeeklyReviewSchema, ago(1), {
+    reviewWeekStart: thisWeek,
+    targetWeekStart: addDays(thisWeek, 7),
+    status: 'paused',
+    currentStep: 'overdue',
+    startedAt: ago(1).now().toISOString(),
+    pausedAt: ago(1).now().toISOString(),
+    revision: 3,
+    steps: [
+      {
+        step: 'inbox',
+        status: 'done',
+        at: ago(1).now().toISOString(),
+        fingerprint: 'fedcba9876543210',
+        resolved: 1,
+        deferred: 0,
+        remaining: 0,
+        reason: '',
+      },
+    ],
+    stepDraft: tasks[1]
+      ? {
+          version: 1,
+          step: 'overdue',
+          savedAt: ago(1).now().toISOString(),
+          choices: [
+            {
+              ref: { type: 'task', id: tasks[1].id },
+              baseFingerprint: 'abcdef0123456789',
+              choice: { action: 'reschedule', dueAt: addDays(today, 3) },
+            },
+          ],
+        }
+      : null,
+  });
+  const weeklyReviews = [completedReview, pausedReview];
+  const weeklyReviewActions: WeeklyReviewAction[] = [
+    make(WeeklyReviewActionSchema, ago(6), {
+      reviewId: completedReview.id,
+      step: 'inbox',
+      kind: 'archive-capture',
+      refs: captures[0] ? [{ type: 'capture', id: captures[0].id }] : [],
+      fingerprint: '0123456789abcdef',
+      choice: {},
+      result: { status: 'archived' },
+      at: ago(6).now().toISOString(),
+    }),
+    make(WeeklyReviewActionSchema, ago(6), {
+      reviewId: completedReview.id,
+      step: 'overdue',
+      kind: 'defer',
+      refs: tasks[0] ? [{ type: 'task', id: tasks[0].id }] : [],
+      fingerprint: '0123456789abcdef',
+      choice: { reason: 'Waiting on a reply' },
+      result: {},
+      at: ago(6).now().toISOString(),
+    }),
+    make(WeeklyReviewActionSchema, ago(6), {
+      reviewId: completedReview.id,
+      step: 'bills',
+      kind: 'pay-bill',
+      refs: [{ type: 'bill', id: rentPaid.id }],
+      fingerprint: '0123456789abcdef',
+      choice: { paidAt: rentPaid.paidAt },
+      result: { successorId: rentNext.id },
+      at: ago(6).now().toISOString(),
+    }),
+    make(WeeklyReviewActionSchema, ago(1), {
+      reviewId: pausedReview.id,
+      step: 'inbox',
+      kind: 'acknowledge',
+      refs: [],
+      fingerprint: 'fedcba9876543210',
+      choice: {},
+      result: {},
+      at: ago(1).now().toISOString(),
+    }),
+  ];
+
   return {
     areas,
     goals,
@@ -468,6 +657,8 @@ export function seedWorld(options: SeedOptions = {}): SeedWorld {
     insightStates,
     captures,
     reminders: [],
+    weeklyReviews,
+    weeklyReviewActions,
     // The settings document keeps its fixed id so every adapter can `get` it.
     appSettings: [
       createRecord(AppSettingsSchema, ago(sizes.days), {

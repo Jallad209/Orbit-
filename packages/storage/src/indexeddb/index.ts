@@ -22,6 +22,8 @@ import {
   RuleSchema,
   SessionSchema,
   TaskSchema,
+  WeeklyReviewActionSchema,
+  WeeklyReviewSchema,
   nowIso,
   shallowPatch,
   systemClock,
@@ -40,7 +42,7 @@ import type {
 import { STORE_ENTITY } from '../repository';
 import { normalizerFor } from '../normalize';
 
-export const INDEXEDDB_SCHEMA_VERSION = 3;
+export const INDEXEDDB_SCHEMA_VERSION = 4;
 export const DEFAULT_DB_NAME = 'orbit';
 
 /**
@@ -51,7 +53,11 @@ export const DEFAULT_DB_NAME = 'orbit';
  * upgrades older databases in place. Never edit a shipped version.
  */
 const STORES_V1: Record<
-  Exclude<StoreName, 'captures' | 'reminders' | 'appSettings'> | 'opLog',
+  | Exclude<
+      StoreName,
+      'captures' | 'reminders' | 'appSettings' | 'weeklyReviews' | 'weeklyReviewActions'
+    >
+  | 'opLog',
   string
 > = {
   areas: 'id',
@@ -86,11 +92,18 @@ const STORES_V3: Partial<Record<StoreName, string>> = {
   appSettings: 'id',
 };
 
+/** v4 (week 12): weekly reviews and their action receipts. */
+const STORES_V4: Partial<Record<StoreName, string>> = {
+  weeklyReviews: 'id, reviewWeekStart, status',
+  weeklyReviewActions: 'id, reviewId, at',
+};
+
 /** Every shipped schema version, oldest first. The migration matrix replays these. */
 export const SCHEMA_VERSIONS: ReadonlyArray<{ version: number; stores: Record<string, string> }> = [
   { version: 1, stores: STORES_V1 },
   { version: 2, stores: STORES_V2 as Record<string, string> },
   { version: 3, stores: STORES_V3 as Record<string, string> },
+  { version: 4, stores: STORES_V4 as Record<string, string> },
 ];
 
 type OpLogInsert = Omit<OpLogEntry, 'seq'>;
@@ -103,6 +116,7 @@ class OrbitDb extends Dexie {
     this.version(1).stores(STORES_V1);
     this.version(2).stores(STORES_V2);
     this.version(3).stores(STORES_V3);
+    this.version(4).stores(STORES_V4);
   }
 }
 
@@ -298,6 +312,8 @@ export async function createIndexedDbRepository(
     captures: new IdbStore('captures', CaptureSchema, ctx),
     reminders: new IdbStore('reminders', ReminderSchema, ctx),
     appSettings: new IdbStore('appSettings', AppSettingsSchema, ctx),
+    weeklyReviews: new IdbStore('weeklyReviews', WeeklyReviewSchema, ctx),
+    weeklyReviewActions: new IdbStore('weeklyReviewActions', WeeklyReviewActionSchema, ctx),
     links: new IdbLinkStore('links', LinkSchema, ctx),
     opLog: new IdbOpLog(ctx),
 

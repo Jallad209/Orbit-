@@ -1,4 +1,5 @@
 import type { InsightSettings } from '../schema';
+import { countCommitments } from '../services/people';
 import { byId, fingerprint } from './fingerprint';
 import type { InsightIndex } from './snapshot';
 import type { CommitmentEvidence, DetectorCoverage, Insight } from './types';
@@ -35,8 +36,7 @@ export function personCommitments(
       dueAt: c.dueAt,
       personId,
     }));
-    const owedByMe = evidence.filter((e) => e.direction === 'owed-by-me').length;
-    const owedToMe = evidence.length - owedByMe;
+    const { owedByMe, owedToMe } = countCommitments(open);
     insights.push({
       key: `person-commitments:${personId}`,
       kind: 'person-commitments',

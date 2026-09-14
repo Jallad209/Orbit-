@@ -3,8 +3,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import Dexie from 'dexie';
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
-import { CaptureSchema, createRecord, fixedClock } from '@orbit/core';
-import type { BaseRecord } from '@orbit/core';
+import { CaptureSchema, createRecord, fixedClock, newWeeklyReview } from '@orbit/core';
+import type { BaseRecord, Bill } from '@orbit/core';
 import { EXPORT_SCHEMA_VERSION, STORE_ORDER, importJson, parseExport } from '../../src/export';
 import {
   INDEXEDDB_SCHEMA_VERSION,
@@ -75,6 +75,13 @@ describe('IndexedDB schema upgrades', () => {
         createRecord(CaptureSchema, clock, { text: 'after upgrade', type: 'task' }),
       );
       expect(await repo.captures.count()).toBe((fixture.stores.captures?.length ?? 0) + 1);
+      // Week 12: the review stores exist after the upgrade and old recurring bills read as roots.
+      const review = newWeeklyReview(clock, '2026-09-12');
+      await repo.weeklyReviews.upsert(review);
+      expect(await repo.weeklyReviews.get(review.id)).toEqual(review);
+      for (const bill of await repo.bills.list({ includeDeleted: true })) {
+        if ((bill as Bill).recurrence) expect((bill as Bill).seriesId).not.toBeNull();
+      }
       await repo.close();
 
       expect(await indexedDbVersion('orbit-migrate', deps)).toBe(INDEXEDDB_SCHEMA_VERSION);

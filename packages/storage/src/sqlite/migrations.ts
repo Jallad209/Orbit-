@@ -12,8 +12,34 @@ export interface Migration {
   sql: string;
 }
 
-/** Every record lives as JSON in `data`; indexed fields are generated columns over it. */
-type V1Store = Exclude<StoreName, 'reminders' | 'appSettings'>;
+/**
+ * Every record lives as JSON in `data`; indexed fields are generated columns
+ * over it. Each migration's store inventory is a frozen literal: adding a
+ * store to the Repository type must never widen an older migration's
+ * generated table list, so the emitted SQL of a shipped version cannot drift.
+ */
+const V1_STORES = [
+  'areas',
+  'goals',
+  'projects',
+  'milestones',
+  'tasks',
+  'events',
+  'routines',
+  'routineInstances',
+  'notes',
+  'people',
+  'commitments',
+  'bills',
+  'blocks',
+  'dayCommitments',
+  'sessions',
+  'rules',
+  'insightStates',
+  'captures',
+  'links',
+] as const satisfies readonly StoreName[];
+type V1Store = (typeof V1_STORES)[number];
 const INDEXED_V1: Record<V1Store, string[]> = {
   areas: [],
   goals: ['areaId', 'status'],
@@ -37,10 +63,26 @@ const INDEXED_V1: Record<V1Store, string[]> = {
 };
 
 /** Stores added in 0002 (week 9). */
-const INDEXED_V2: Record<Exclude<StoreName, V1Store>, string[]> = {
+const V2_STORES = ['reminders', 'appSettings'] as const satisfies readonly StoreName[];
+const INDEXED_V2: Record<(typeof V2_STORES)[number], string[]> = {
   reminders: ['key', 'status', 'fireAt'],
   appSettings: [],
 };
+
+/** Stores added in 0003 (week 12). */
+const V3_STORES = ['weeklyReviews', 'weeklyReviewActions'] as const satisfies readonly StoreName[];
+const INDEXED_V3: Record<(typeof V3_STORES)[number], string[]> = {
+  weeklyReviews: ['reviewWeekStart', 'status'],
+  weeklyReviewActions: ['reviewId', 'at'],
+};
+
+/** Which tables a file at `version` holds: what a restore verifier may expect of it. */
+export function tablesAtVersion(version: number): StoreName[] {
+  const out: StoreName[] = [...V1_STORES];
+  if (version >= 2) out.push(...V2_STORES);
+  if (version >= 3) out.push(...V3_STORES);
+  return out;
+}
 
 function table(name: StoreName, fields: string[]): string {
   const generated = ['deletedAt', 'updatedAt', ...fields]
@@ -62,7 +104,7 @@ function table(name: StoreName, fields: string[]): string {
 
 const INIT = [
   '-- 0001_init: one table per store, JSON in `data`, generated columns for indexes.',
-  ...(Object.keys(INDEXED_V1) as V1Store[]).map((n) => table(n, INDEXED_V1[n])),
+  ...V1_STORES.map((n) => table(n, INDEXED_V1[n])),
   `CREATE INDEX IF NOT EXISTS idx_links_from ON links(fromType, fromId);`,
   `CREATE INDEX IF NOT EXISTS idx_links_to ON links(toType, toId);`,
   `CREATE TABLE IF NOT EXISTS opLog (
@@ -78,14 +120,18 @@ const INIT = [
 
 const REMINDERS = [
   '-- 0002_reminders: the reminder queue and the one-row settings document.',
-  ...(Object.keys(INDEXED_V2) as Array<keyof typeof INDEXED_V2>).map((n) =>
-    table(n, INDEXED_V2[n]),
-  ),
+  ...V2_STORES.map((n) => table(n, INDEXED_V2[n])),
+].join('\n\n');
+
+const WEEKLY_REVIEWS = [
+  '-- 0003_weekly_reviews: weekly reviews and their action receipts.',
+  ...V3_STORES.map((n) => table(n, INDEXED_V3[n])),
 ].join('\n\n');
 
 export const MIGRATIONS: readonly Migration[] = [
   { version: 1, name: '0001_init', sql: INIT },
   { version: 2, name: '0002_reminders', sql: REMINDERS },
+  { version: 3, name: '0003_weekly_reviews', sql: WEEKLY_REVIEWS },
 ];
 
 export const SQLITE_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

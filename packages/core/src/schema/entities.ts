@@ -208,14 +208,61 @@ export const CommitmentSchema = BaseRecordSchema.extend({
 });
 export type Commitment = z.infer<typeof CommitmentSchema>;
 
-/** v1 "expense" is a bill: an amount with a due date. */
+/**
+ * v1 "expense" is a bill: an amount with a due date. Since week 12 a bill is
+ * one occurrence of a possibly recurring schedule, and the schedule travels
+ * with the chain rather than living in a separate series store:
+ * - `seriesId` groups every occurrence generated from one original
+ *   schedule (null for a one-off bill; a legacy recurring row is its own
+ *   series root, so its id is the series id);
+ * - `recurrenceAnchor` is the original schedule's first date and is never
+ *   moved to a clamped month-end date;
+ * - `occurrenceIndex` is the zero-based position under the original rule,
+ *   so COUNT is counted from the rule, not from how often "Mark paid" ran;
+ * - `scheduledFor` is the date the rule produced for this occurrence;
+ *   `dueAt` may be an explicit override of that installment's deadline;
+ * - `paidAt` is when the payment was recorded (null on legacy paid rows:
+ *   "payment time not recorded", never invented);
+ * - `nextBillId` links the one successor a payment generated;
+ * - `repeatStopped` stops generation from this occurrence on while keeping
+ *   the recurrence description and history intact.
+ */
 export const BillSchema = BaseRecordSchema.extend({
   title,
-  amount: z.number().min(0),
+  amount: z.number().finite().min(0),
   currency: z.string().default(''),
   dueAt: LocalDateSchema,
   recurrence: RecurrenceSchema.nullable().default(null),
   paid: z.boolean().default(false),
+  seriesId: nullableId,
+  recurrenceAnchor: nullableDate,
+  occurrenceIndex: z.number().int().min(0).default(0),
+  scheduledFor: nullableDate,
+  paidAt: nullableInstant,
+  nextBillId: nullableId,
+  repeatStopped: z.boolean().default(false),
+}).superRefine((bill, ctx) => {
+  const issue = (path: string, message: string) =>
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message });
+  if (bill.seriesId === null) {
+    if (bill.occurrenceIndex !== 0) issue('occurrenceIndex', 'a one-off bill has no position');
+    if (bill.nextBillId !== null) issue('nextBillId', 'a one-off bill has no successor');
+  } else {
+    if (bill.recurrence === null) issue('recurrence', 'a series occurrence keeps its rule');
+    if (bill.recurrenceAnchor === null) issue('recurrenceAnchor', 'a series has an anchor');
+    if (bill.scheduledFor === null) issue('scheduledFor', 'a series occurrence has a date');
+    if (
+      bill.recurrence?.count !== null &&
+      bill.recurrence?.count !== undefined &&
+      bill.occurrenceIndex >= bill.recurrence.count
+    ) {
+      issue('occurrenceIndex', "beyond the rule's count");
+    }
+  }
+  if (bill.paidAt !== null && !bill.paid) issue('paidAt', 'an unpaid bill has no payment time');
+  if (bill.nextBillId !== null && !bill.paid)
+    issue('nextBillId', 'only a paid bill has a successor');
+  if (bill.nextBillId === bill.id) issue('nextBillId', 'a bill cannot succeed itself');
 });
 export type Bill = z.infer<typeof BillSchema>;
 
@@ -466,3 +513,183 @@ export const AppSettingsSchema = BaseRecordSchema.extend({
   insights: InsightSettingsSchema.default({}),
 });
 export type AppSettings = z.infer<typeof AppSettingsSchema>;
+
+// ---------------------------------------------------------------------------
+// Weekly review (week 12): a resumable six-step flow with durable receipts
+// ---------------------------------------------------------------------------
+
+/** The six steps, by stable identifier. The closing summary is not a step. */
+export const WeeklyReviewStepSchema = z.enum([
+  'inbox',
+  'overdue',
+  'projects',
+  'goals',
+  'bills',
+  'capacity',
+]);
+export type WeeklyReviewStep = z.infer<typeof WeeklyReviewStepSchema>;
+export const WEEKLY_REVIEW_STEPS: readonly WeeklyReviewStep[] = WeeklyReviewStepSchema.options;
+
+export const WeeklyReviewStatusSchema = z.enum(['inProgress', 'paused', 'completed']);
+export type WeeklyReviewStatus = z.infer<typeof WeeklyReviewStatusSchema>;
+
+/** A typed reference from a review or a receipt to the record it concerns. */
+export const ReviewRefSchema = z.object({ type: EntityTypeSchema, id: IdSchema });
+export type ReviewRef = z.infer<typeof ReviewRefSchema>;
+
+/**
+ * What a step's acknowledgement recorded: the subject set it covered (as a
+ * fingerprint, so a later change is detectable), when, and the counts at
+ * that moment. `deferred` is a decision, not a healthy state.
+ */
+export const WeeklyReviewStepOutcomeSchema = z.object({
+  step: WeeklyReviewStepSchema,
+  status: z.enum(['done', 'deferred']),
+  at: InstantSchema,
+  /** Fingerprint of the subjects shown when the step was acknowledged. */
+  fingerprint: z.string().default(''),
+  resolved: z.number().int().min(0).default(0),
+  deferred: z.number().int().min(0).default(0),
+  remaining: z.number().int().min(0).default(0),
+  reason: z.string().max(500).default(''),
+});
+export type WeeklyReviewStepOutcome = z.infer<typeof WeeklyReviewStepOutcomeSchema>;
+
+/**
+ * Unsubmitted choices saved by Pause. Restoring the draft never applies an
+ * action or marks anything reviewed; it puts the choices back for an
+ * explicit Apply. Each choice carries the fingerprint of the record it was
+ * made against so a changed record is shown as changed.
+ */
+export const WeeklyReviewDraftChoiceSchema = z.object({
+  ref: ReviewRefSchema,
+  baseFingerprint: z.string().default(''),
+  choice: z.record(z.unknown()).default({}),
+});
+export const WeeklyReviewStepDraftSchema = z.object({
+  version: z.literal(1),
+  step: WeeklyReviewStepSchema,
+  savedAt: InstantSchema,
+  choices: z.array(WeeklyReviewDraftChoiceSchema).max(200).default([]),
+});
+export type WeeklyReviewStepDraft = z.infer<typeof WeeklyReviewStepDraftSchema>;
+
+/** One unresolved or deferred item named by the completion summary. */
+export const WeeklyReviewSummaryItemSchema = z.object({
+  step: WeeklyReviewStepSchema,
+  ref: ReviewRefSchema,
+  label: z.string().max(200).default(''),
+  status: z.enum(['deferred', 'unresolved', 'changed']),
+});
+
+/**
+ * The compact historical record written by Finish. It says what was
+ * reviewed and decided at that moment and never changes afterwards.
+ */
+export const WeeklyReviewSummarySchema = z.object({
+  version: z.literal(1),
+  reviewWeekStart: LocalDateSchema,
+  targetWeekStart: LocalDateSchema,
+  computedAt: InstantSchema,
+  steps: z.array(WeeklyReviewStepOutcomeSchema).default([]),
+  /** Receipts committed by this review. */
+  actionCount: z.number().int().min(0).default(0),
+  items: z.array(WeeklyReviewSummaryItemSchema).max(500).default([]),
+  capacity: z
+    .object({
+      bookedMin: z.number().int().min(0),
+      availableMin: z.number().int().min(0),
+      targetMin: z.number().int().min(0),
+      overloadedDays: z.number().int().min(0),
+      computedAt: InstantSchema,
+    })
+    .nullable()
+    .default(null),
+});
+export type WeeklyReviewSummary = z.infer<typeof WeeklyReviewSummarySchema>;
+
+/**
+ * A weekly review. `reviewWeekStart` is the Monday of the local week being
+ * reviewed and `targetWeekStart` the Monday after it, both frozen when the
+ * review starts: resuming weeks later keeps the same periods. `revision`
+ * increments on every write so two windows cannot overwrite each other's
+ * progress. `currentStep` is an identifier, never a position.
+ */
+export const WeeklyReviewSchema = BaseRecordSchema.extend({
+  reviewWeekStart: LocalDateSchema,
+  targetWeekStart: LocalDateSchema,
+  flowVersion: z.number().int().min(1).default(1),
+  revision: z.number().int().min(1).default(1),
+  status: WeeklyReviewStatusSchema.default('inProgress'),
+  currentStep: WeeklyReviewStepSchema.default('inbox'),
+  steps: z.array(WeeklyReviewStepOutcomeSchema).max(6).default([]),
+  stepDraft: WeeklyReviewStepDraftSchema.nullable().default(null),
+  startedAt: InstantSchema,
+  pausedAt: nullableInstant,
+  completedAt: nullableInstant,
+  summary: WeeklyReviewSummarySchema.nullable().default(null),
+}).superRefine((review, ctx) => {
+  const issue = (path: string, message: string) =>
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message });
+  if (review.targetWeekStart <= review.reviewWeekStart)
+    issue('targetWeekStart', 'the target week follows the reviewed week');
+  if (review.status === 'completed' && review.completedAt === null)
+    issue('completedAt', 'a completed review records when');
+  if (review.status !== 'completed' && review.completedAt !== null)
+    issue('completedAt', 'only a completed review has a completion time');
+  const seen = new Set<string>();
+  for (const s of review.steps) {
+    if (seen.has(s.step)) issue('steps', `step ${s.step} recorded twice`);
+    seen.add(s.step);
+  }
+});
+export type WeeklyReview = z.infer<typeof WeeklyReviewSchema>;
+
+/** Every decision kind a receipt can record. */
+export const WeeklyReviewActionKindSchema = z.enum([
+  'convert-capture',
+  'archive-capture',
+  'triage-task',
+  'defer',
+  'acknowledge',
+  'reschedule-task',
+  'inbox-task',
+  'archive-task',
+  'complete-task',
+  'set-next-action',
+  'create-next-action',
+  'edit-project',
+  'archive-project',
+  'update-goal',
+  'goal-status',
+  'area-target',
+  'pay-bill',
+  'edit-bill',
+  'stop-bill',
+  'finish',
+]);
+export type WeeklyReviewActionKind = z.infer<typeof WeeklyReviewActionKindSchema>;
+
+/**
+ * A durable receipt for one submitted review action. Its id is the action
+ * UUID the UI generated on submit, which is the idempotency key: a retry
+ * with the same id, review, and payload returns the stored `result` and
+ * repeats nothing. Receipts are immutable history after commit; a later
+ * correction is a new receipt that names the earlier one in `supersedes`.
+ */
+export const WeeklyReviewActionSchema = BaseRecordSchema.extend({
+  reviewId: IdSchema,
+  step: WeeklyReviewStepSchema,
+  kind: WeeklyReviewActionKindSchema,
+  /** The records the action concerned (before it ran). */
+  refs: z.array(ReviewRefSchema).max(50).default([]),
+  /** Fingerprint of the reviewed sources at submission. */
+  fingerprint: z.string().default(''),
+  /** The user's choice or target, as submitted. */
+  choice: z.record(z.unknown()).default({}),
+  /** Compact outcome: ids created, statuses set. Never a copy of the records. */
+  result: z.record(z.unknown()).default({}),
+  at: InstantSchema,
+  supersedes: nullableId,
+});
+export type WeeklyReviewAction = z.infer<typeof WeeklyReviewActionSchema>;

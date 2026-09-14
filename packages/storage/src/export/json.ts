@@ -22,7 +22,10 @@ import {
   RuleSchema,
   SessionSchema,
   TaskSchema,
+  WeeklyReviewActionSchema,
+  WeeklyReviewSchema,
   normalizeAppSettings,
+  normalizeBill,
   normalizeInsightState,
   nowIso,
   systemClock,
@@ -37,8 +40,11 @@ export const EXPORT_FORMAT = 'orbit-export';
  * fingerprint, and summary on insight states. Older readers refuse a v4
  * file rather than silently dropping those fields; this reader defaults
  * them for v1–3 files.
+ * 5 (week 12): weekly reviews and their action receipts; occurrence
+ * metadata on bills. A v1–4 file has no review stores (they default to
+ * empty) and its bills are normalized as series roots.
  */
-export const EXPORT_SCHEMA_VERSION = 4;
+export const EXPORT_SCHEMA_VERSION = 5;
 
 /** Parents before children so a future FK-checking importer can stream in order. */
 export const STORE_ORDER: StoreName[] = [
@@ -62,6 +68,8 @@ export const STORE_ORDER: StoreName[] = [
   'captures',
   'reminders',
   'appSettings',
+  'weeklyReviews',
+  'weeklyReviewActions',
   'links',
 ];
 
@@ -86,6 +94,8 @@ const STORE_SCHEMAS: Record<StoreName, z.ZodTypeAny> = {
   captures: CaptureSchema,
   reminders: ReminderSchema,
   appSettings: AppSettingsSchema,
+  weeklyReviews: WeeklyReviewSchema,
+  weeklyReviewActions: WeeklyReviewActionSchema,
   links: LinkSchema,
 };
 
@@ -189,9 +199,11 @@ export function parseExport(input: string | unknown): ExportEnvelope {
 
 /**
  * Files from before v4 carry settings without `insights` and insight states
- * without a snooze mode. The compatibility policy runs on the raw rows before
- * validation so a legacy timed snooze is recognised as one; a row it cannot
- * repair is left for validation to report.
+ * without a snooze mode; files from before v5 carry bills without occurrence
+ * metadata. The compatibility policy runs on the raw rows before validation
+ * so a legacy timed snooze is recognised as one and a legacy recurring bill
+ * becomes its own series root; a row it cannot repair is left for
+ * validation to report.
  */
 function normalizeOldStores(raw: unknown): unknown {
   if (typeof raw !== 'object' || raw === null) return raw;
@@ -216,6 +228,9 @@ function normalizeOldStores(raw: unknown): unknown {
         : {}),
       ...(data.insightStates !== undefined
         ? { insightStates: fix(data.insightStates, (r) => normalizeInsightState(r).record) }
+        : {}),
+      ...(data.bills !== undefined
+        ? { bills: fix(data.bills, (r) => normalizeBill(r).record) }
         : {}),
     },
   };

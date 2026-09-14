@@ -196,23 +196,25 @@ describe('reminder rules', () => {
 
   it('a commitment owed to me with no reply for 8 days becomes a follow-up', () => {
     const followUp = rule('reminder', { kind: 'followUpAfter', days: 7 }, { name: 'Chase' });
+    // The promises predate the contacts, so the contact date is the baseline.
+    const earlier = fixedClock(new Date(2026, 8, 1, 9, 0));
     const omar = aPerson({ name: 'Omar', lastContactAt: '2026-09-10T10:00:00.000Z' }, clock);
     const quiet = aCommitment(
       { personId: omar.id, text: 'Interview feedback', direction: 'owed-to-me' },
-      clock,
+      earlier,
     );
     const recent = aPerson({ name: 'Lina', lastContactAt: '2026-09-16T10:00:00.000Z' }, clock);
     const fresh = aCommitment(
       { personId: recent.id, text: 'Slides', direction: 'owed-to-me' },
-      clock,
+      earlier,
     );
     const mine = aCommitment(
       { personId: omar.id, text: 'Send CV', direction: 'owed-by-me' },
-      clock,
+      earlier,
     );
     const done = aCommitment(
       { personId: omar.id, text: 'Old', direction: 'owed-to-me', status: 'done' },
-      clock,
+      earlier,
     );
     const out = computeReminders(
       { rules: [followUp], commitments: [quiet, fresh, mine, done], people: [omar, recent] },
@@ -241,6 +243,41 @@ describe('reminder rules', () => {
     expect(
       computeReminders({ rules: [followUp], commitments: [nobody] }, clock.now())[0]?.title,
     ).toBe('Follow up');
+  });
+
+  it('a new commitment counts from its own creation, not an older contact date (week 12)', () => {
+    const followUp = rule('reminder', { kind: 'followUpAfter', days: 7 }, { name: 'Chase' });
+    // Last contact was long ago; the promise was made today.
+    const omar = aPerson({ name: 'Omar', lastContactAt: '2026-08-01T10:00:00.000Z' }, clock);
+    const made = aCommitment(
+      { personId: omar.id, text: 'Reference letter', direction: 'owed-to-me' },
+      clock,
+    );
+    const [draft] = computeReminders(
+      { rules: [followUp], commitments: [made], people: [omar] },
+      clock.now(),
+    );
+    expect(draft).toMatchObject({
+      key: reminderKey(followUp.id, made.id, '2026-09-25'),
+      body: 'No reply on “Reference letter” since 2026-09-18',
+    });
+    // A reply after the promise restarts the wait from the reply.
+    const replied = { ...omar, lastContactAt: '2026-09-20T10:00:00.000Z' };
+    const [later] = computeReminders(
+      { rules: [followUp], commitments: [made], people: [replied] },
+      clock.now(),
+    );
+    expect(later?.key).toBe(reminderKey(followUp.id, made.id, '2026-09-27'));
+    // A deleted person has no follow-ups; a done or dropped commitment neither.
+    expect(
+      computeReminders({ rules: [followUp], commitments: [made], people: [] }, clock.now()),
+    ).toHaveLength(0);
+    expect(
+      computeReminders(
+        { rules: [followUp], commitments: [{ ...made, status: 'dropped' }], people: [omar] },
+        clock.now(),
+      ),
+    ).toHaveLength(0);
   });
 
   it('lists the pending reminders whose time has come, oldest first', () => {

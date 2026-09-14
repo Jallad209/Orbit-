@@ -10,3 +10,6 @@ export * from './completion';
 export * from './atRisk';
 export * from './morning';
 export * from './evening';
+export * from './bills';
+export * from './people';
+export * from './weeklyReview';

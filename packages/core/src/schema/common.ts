@@ -54,6 +54,8 @@ export const EntityTypeSchema = z.enum([
   'capture',
   'reminder',
   'appSettings',
+  'weeklyReview',
+  'weeklyReviewAction',
 ]);
 export type EntityType = z.infer<typeof EntityTypeSchema>;
 

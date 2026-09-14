@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
-import { CaptureSchema, createRecord, fixedClock } from '@orbit/core';
-import type { BaseRecord } from '@orbit/core';
+import { CaptureSchema, createRecord, fixedClock, newWeeklyReview } from '@orbit/core';
+import type { BaseRecord, Bill } from '@orbit/core';
 import { STORE_ORDER } from '../../src/export';
 import type { EntityStore, StoreName } from '../../src/repository';
 import {
@@ -85,6 +85,19 @@ describe('SQLite fixture databases', () => {
         createRecord(CaptureSchema, clock, { text: 'after upgrade', type: 'task' }),
       );
       expect(await repo.captures.count()).toBe((expected.get('captures') ?? 0) + 1);
+      // Week 12: reviews, people, bills, and notes open on the migrated file; old recurring
+      // bills read as series roots without anything being generated.
+      const review = newWeeklyReview(clock, '2026-09-12');
+      await repo.weeklyReviews.upsert(review);
+      expect(await repo.weeklyReviews.get(review.id)).toEqual(review);
+      expect(await repo.weeklyReviewActions.count()).toBe(expected.get('weeklyReviewActions'));
+      expect((await repo.people.list()).length + (await repo.notes.list()).length).toBeGreaterThan(
+        0,
+      );
+      const billsBefore = expected.get('bills');
+      const bills = (await repo.bills.list({ includeDeleted: true })) as Bill[];
+      expect(bills).toHaveLength(billsBefore ?? 0);
+      for (const bill of bills) if (bill.recurrence) expect(bill.seriesId).not.toBeNull();
       await repo.close();
     });
   }

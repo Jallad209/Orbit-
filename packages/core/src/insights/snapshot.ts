@@ -12,6 +12,7 @@ import type {
   RoutineInstance,
   Task,
 } from '../schema';
+import { isOpenCommitment } from '../services/people';
 import { buildProjectActivity, type ProjectActivity } from '../services/activity';
 import { areaOfTask } from '../services/timeByArea';
 import type { InsightSnapshot } from './types';
@@ -80,7 +81,8 @@ export function buildInsightIndex(snapshot: InsightSnapshot, now: Date): Insight
   }
   const openCommitmentsByPerson = new Map<Id, Commitment[]>();
   for (const c of snapshot.commitments) {
-    if (c.deletedAt !== null || c.status !== 'open' || !personById.has(c.personId)) continue;
+    // One definition of "open" for the badge, the detector, and the people screen.
+    if (!isOpenCommitment(c) || !personById.has(c.personId)) continue;
     push(openCommitmentsByPerson, c.personId, c);
   }
 

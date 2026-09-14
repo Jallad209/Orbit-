@@ -21,6 +21,8 @@ import {
   RuleSchema,
   SessionSchema,
   TaskSchema,
+  WeeklyReviewActionSchema,
+  WeeklyReviewSchema,
   nowIso,
   shallowPatch,
   systemClock,
@@ -209,6 +211,8 @@ export function createMemoryRepository(options: MemoryRepositoryOptions = {}): R
     captures: new MemoryStore('captures', CaptureSchema, ctx),
     reminders: new MemoryStore('reminders', ReminderSchema, ctx),
     appSettings: new MemoryStore('appSettings', AppSettingsSchema, ctx),
+    weeklyReviews: new MemoryStore('weeklyReviews', WeeklyReviewSchema, ctx),
+    weeklyReviewActions: new MemoryStore('weeklyReviewActions', WeeklyReviewActionSchema, ctx),
     links: new MemoryLinkStore('links', LinkSchema, ctx),
     opLog: new MemoryOpLog(ctx),
 
