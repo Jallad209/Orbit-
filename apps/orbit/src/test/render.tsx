@@ -1,10 +1,11 @@
 import { render, type RenderOptions } from '@testing-library/react';
-import type { ReactElement, ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
+import { createContext, useContext, useState, type ReactElement, type ReactNode } from 'react';
+import { RouterProvider, createMemoryRouter } from 'react-router';
 import { createMemoryRepository } from '@orbit/storage';
 import { createMiniSearchService } from '@orbit/storage/search/minisearch';
 import type { Repository, SearchService } from '@orbit/storage';
 import type { Clock, CommandRegistry } from '@orbit/core';
+import { DraftGuard } from '@/features/drafts/DraftGuard';
 import { InsightsProvider } from '@/features/insights/InsightsProvider';
 import { CommandRegistryProvider } from '@/features/palette/commandRegistry';
 import { SearchProvider } from '@/features/search/SearchProvider';
@@ -12,6 +13,11 @@ import { HotkeyRegistry } from '@/lib/hotkeys';
 import { HotkeyProvider } from '@/lib/HotkeyProvider';
 import { TooltipProvider } from '@/components/ui/Popover';
 import { PlatformProvider, webPlatform, type Platform } from '@/platform';
+
+const ChildrenContext = createContext<ReactNode>(null);
+function RoutedChildren() {
+  return <>{useContext(ChildrenContext)}</>;
+}
 
 interface Options extends Omit<RenderOptions, 'wrapper'> {
   route?: string;
@@ -39,10 +45,29 @@ export function renderWithProviders(ui: ReactElement, options: Options = {}) {
       : (options.search ?? createMiniSearchService({ repo: repository }));
 
   function Wrapper({ children }: { children: ReactNode }) {
+    // The same shape as the app: a data router with one catch-all route hosting the tree, so
+    // the draft guard's blocker works under test exactly as it does in the shell. The children
+    // reach the route through context so a rerender with new children still updates.
+    const [router] = useState(() =>
+      createMemoryRouter(
+        [
+          {
+            path: '*',
+            element: (
+              <HotkeyProvider registry={registry}>
+                <RoutedChildren />
+                <DraftGuard />
+              </HotkeyProvider>
+            ),
+          },
+        ],
+        { initialEntries: [options.route ?? '/today'] },
+      ),
+    );
     const routed = (
-      <MemoryRouter initialEntries={[options.route ?? '/today']}>
-        <HotkeyProvider registry={registry}>{children}</HotkeyProvider>
-      </MemoryRouter>
+      <ChildrenContext.Provider value={children}>
+        <RouterProvider router={router} />
+      </ChildrenContext.Provider>
     );
     const inner = (
       <CommandRegistryProvider registry={options.commands}>

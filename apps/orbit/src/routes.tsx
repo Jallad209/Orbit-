@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { MissingRecordPage } from '@/pages/MissingRecordPage';
 import { Placeholder } from '@/pages/Placeholder';
 import { InboxPage } from '@/features/inbox/InboxPage';
 import { AreasPage } from '@/features/structure/AreasPage';
@@ -94,6 +95,7 @@ export function AppRoutes() {
           }
         />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/missing" element={<MissingRecordPage />} />
         {ComponentsGallery ? (
           <Route
             path="/dev/components"

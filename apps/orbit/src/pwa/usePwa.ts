@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { useAppStore } from '@/app/store';
 import { toast } from '@/components/ui/toastStore';
+import { confirmLeave } from '@/features/drafts/draftStore';
 
 /**
  * Registers the service worker and surfaces two moments as toasts:
@@ -46,8 +47,11 @@ export function usePwa(): void {
       durationMs: 0,
       action: {
         label: 'Reload',
+        // A reload is a document unload: unsaved input goes through the same guard first.
         onClick: () => {
-          void updateServiceWorker(true);
+          void confirmLeave('reload Orbit').then((ok) => {
+            if (ok) void updateServiceWorker(true);
+          });
         },
       },
     });

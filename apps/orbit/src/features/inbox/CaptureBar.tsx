@@ -1,7 +1,14 @@
 import { parseCapture, reclassify, systemClock } from '@orbit/core';
 import type { CaptureResult, CaptureToken, Clock, TokenKind } from '@orbit/core';
 import { X } from 'lucide-react';
-import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type Ref,
+} from 'react';
 import { useRepoQuery } from '@/data/useQuery';
 import { useRepository } from '@/platform';
 import { Input } from '@/components/ui/Input';
@@ -36,13 +43,23 @@ const TOKEN_ORDER: TokenKind[] = [
   'cue',
 ];
 
+/** What a host window may do with the bar's unsaved text (the quit handshake). */
+export interface CaptureBarHandle {
+  /** Save the current text as a capture; false when there was nothing to save. */
+  save(): Promise<boolean>;
+  clear(): void;
+}
+
 export interface CaptureBarProps {
   autoFocus?: boolean;
   placeholder?: string;
   /** Called after a capture is saved. */
   onSaved?: (result: CaptureResult) => void;
+  /** Called whenever the typed text changes, with the raw text. */
+  onTextChange?: (text: string) => void;
   clock?: Clock;
   className?: string;
+  ref?: Ref<CaptureBarHandle>;
 }
 
 /**
@@ -55,15 +72,21 @@ export function CaptureBar({
   autoFocus = false,
   placeholder = 'Capture anything… "Submit report next Friday", "Pay rent every month"',
   onSaved,
+  onTextChange,
   clock = systemClock,
   className,
+  ref,
 }: CaptureBarProps) {
   const repo = useRepository();
   const { data: names } = useRepoQuery(loadCaptureNames, []);
-  const [text, setText] = useState('');
+  const [text, setTextState] = useState('');
   const [altIndex, setAltIndex] = useState(0);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const setText = (next: string) => {
+    setTextState(next);
+    onTextChange?.(next);
+  };
 
   const ctx = useMemo(() => contextFor(names, clock), [names, clock]);
   const base = useMemo(() => (text.trim() ? parseCapture(text, ctx) : null), [text, ctx]);
@@ -100,6 +123,18 @@ export function CaptureBar({
       inputRef.current?.focus();
     }
   };
+
+  useImperativeHandle(ref, () => ({
+    save: async () => {
+      if (!result) return false;
+      await submit();
+      return true;
+    },
+    clear: () => {
+      setText('');
+      setAltIndex(0);
+    },
+  }));
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Tab' && base) {

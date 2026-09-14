@@ -17,7 +17,16 @@
 //! | X before preferences settled            | main stays; the frontend explains startup is running|
 //! | tray Quit                               | orderly shutdown regardless of the preference       |
 //! | readiness never arrives (background)    | main is shown so the error is reachable             |
+//!
+//! Quit preparation (week 12): before the database is closed, every live
+//! window that holds drafts is asked to save or discard them and to
+//! acknowledge with the request and generation ids. A refusal, a failed
+//! save, or a missing acknowledgment cancels the quit and the app stays
+//! reachable with the reason; only an explicit "discard and quit" skips
+//! the step. An OS kill cannot be made transactional with an unsaved
+//! textarea: only acknowledged saves survive forced termination.
 
+use std::collections::HashMap;
 use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -41,6 +50,10 @@ pub const CAPTURE_ARG: &str = "--capture";
 pub const READY_TIMEOUT: Duration = Duration::from_secs(30);
 /// How long Quit waits for an owned database transaction to settle.
 pub const SETTLE_DEADLINE: Duration = Duration::from_secs(10);
+/// How long Quit waits for every window to save or discard its drafts.
+pub const PREPARE_DEADLINE: Duration = Duration::from_secs(20);
+/// The capture window's label (`tauri.conf.json`).
+pub const CAPTURE_WINDOW: &str = "capture";
 
 /// The window-state fields that are restored. Visibility is deliberately not one of them:
 /// whether the main window shows is the launch policy's decision, never a saved value.
@@ -96,6 +109,83 @@ pub struct Resident {
     pub shutdown_error: Option<String>,
     /// The window-state plugin is registered (not in an isolated test run).
     pub window_state: bool,
+    /// The capture window's bridge is listening for quit preparation.
+    pub capture_subscribed: bool,
+    /// The quit preparation in flight, if any.
+    pub quit_request: Option<QuitRequest>,
+}
+
+/// One quit preparation: which windows must answer, and what they said.
+#[derive(Debug, Clone)]
+pub struct QuitRequest {
+    pub id: u64,
+    pub generation: u64,
+    pub force: bool,
+    pub awaiting: Vec<String>,
+    pub acks: HashMap<String, QuitAck>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct QuitAck {
+    pub ok: bool,
+    pub reason: Option<String>,
+}
+
+/// What preparation concluded.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Prepared {
+    Proceed,
+    Cancelled { window: String, reason: String },
+}
+
+impl QuitRequest {
+    /// Every asked window answered.
+    pub fn complete(&self) -> bool {
+        self.awaiting.iter().all(|w| self.acks.contains_key(w))
+    }
+
+    /// The verdict so far: a refusal decides at once; otherwise wait for the rest.
+    pub fn verdict(&self, timed_out: bool) -> Option<Prepared> {
+        for (window, ack) in &self.acks {
+            if !ack.ok {
+                return Some(Prepared::Cancelled {
+                    window: window.clone(),
+                    reason: ack
+                        .reason
+                        .clone()
+                        .unwrap_or_else(|| "A window has unsaved changes.".into()),
+                });
+            }
+        }
+        if self.complete() {
+            return Some(Prepared::Proceed);
+        }
+        if timed_out {
+            let missing = self
+                .awaiting
+                .iter()
+                .find(|w| !self.acks.contains_key(*w))
+                .cloned()
+                .unwrap_or_else(|| "timeout".into());
+            return Some(Prepared::Cancelled {
+                window: "timeout".into(),
+                reason: format!(
+                    "Orbit could not confirm that the {missing} window saved its changes. Nothing was lost; try again or discard them."
+                ),
+            });
+        }
+        None
+    }
+
+    /// Record an answer; stale ids and unexpected windows are ignored.
+    pub fn record(&mut self, window: &str, id: u64, generation: u64, ack: QuitAck) -> bool {
+        if id != self.id || generation != self.generation || !self.awaiting.iter().any(|w| w == window)
+        {
+            return false;
+        }
+        self.acks.insert(window.to_string(), ack);
+        true
+    }
 }
 
 impl Resident {
@@ -110,8 +200,24 @@ impl Resident {
             clean_shutdown: false,
             shutdown_error: None,
             window_state: false,
+            capture_subscribed: false,
+            quit_request: None,
         }
     }
+}
+
+/// Which windows a quit must hear from: the main window once it reported readiness for
+/// the open generation, the capture window once its bridge subscribed. A window that
+/// never got that far holds nothing to save.
+pub fn windows_to_ask(resident: &Resident, generation: u64) -> Vec<String> {
+    let mut out = Vec::new();
+    if resident.ready_generation == Some(generation) {
+        out.push(MAIN_WINDOW.to_string());
+    }
+    if resident.capture_subscribed {
+        out.push(CAPTURE_WINDOW.to_string());
+    }
+    out
 }
 
 pub struct ResidentState(pub Mutex<Resident>);
@@ -331,7 +437,7 @@ pub fn on_main_close_requested(app: &AppHandle) -> CloseDecision {
             let _ = app.emit_to(MAIN_WINDOW, "orbit:close-explain", ());
         }
         CloseDecision::Hide => hide_main(app),
-        CloseDecision::Quit => request_quit(app),
+        CloseDecision::Quit => request_quit(app, false),
         CloseDecision::Allow => {}
     }
     decision
@@ -376,6 +482,8 @@ pub fn decide_close(prefs: &prefs::DesktopPrefs, tray_available: bool) -> CloseD
 }
 
 /// Orderly shutdown, off the event loop:
+/// 0. ask every live window to save or discard its drafts and wait for the acknowledgments
+///    (skipped with `force`); a refusal or a missing answer cancels;
 /// 1. enter Quitting (the frontend refuses new independent writes);
 /// 2. stop the scheduler with a bounded join;
 /// 3. let an owned transaction settle, bounded;
@@ -383,25 +491,122 @@ pub fn decide_close(prefs: &prefs::DesktopPrefs, tray_available: bool) -> CloseD
 /// 5. save window state; mark the run clean; exit every window and the process.
 ///
 /// If a write cannot settle or the file will not close, the app stays visible with the error.
-pub fn request_quit(app: &AppHandle) {
-    let already = with_resident(app, |r| {
+pub fn request_quit(app: &AppHandle, force: bool) {
+    let generation = app
+        .try_state::<Db>()
+        .and_then(|db| db.0.lock().ok().map(|g| g.generation))
+        .unwrap_or(0);
+    let request = with_resident(app, |r| {
         if r.phase == Phase::Quitting {
-            true
-        } else {
-            r.phase = Phase::Quitting;
-            r.shutdown_error = None;
-            false
+            return None;
         }
+        r.phase = Phase::Quitting;
+        r.shutdown_error = None;
+        let id = r.quit_request.as_ref().map(|q| q.id + 1).unwrap_or(1);
+        let awaiting = if force {
+            Vec::new()
+        } else {
+            windows_to_ask(r, generation)
+        };
+        let request = QuitRequest {
+            id,
+            generation,
+            force,
+            awaiting,
+            acks: HashMap::new(),
+        };
+        r.quit_request = Some(request.clone());
+        Some(request)
     })
-    .unwrap_or(true);
-    if already {
+    .flatten();
+    let Some(request) = request else {
         return;
-    }
+    };
     let handle = app.clone();
     thread::Builder::new()
         .name("orbit-shutdown".into())
-        .spawn(move || run_shutdown(&handle))
+        .spawn(move || {
+            if let Prepared::Cancelled { window, reason } = prepare_quit(&handle, &request) {
+                cancel_quit(&handle, &window, &reason);
+                return;
+            }
+            run_shutdown(&handle);
+        })
         .ok();
+}
+
+/// Ask the windows and wait, bounded, for their answers.
+fn prepare_quit(app: &AppHandle, request: &QuitRequest) -> Prepared {
+    if request.awaiting.is_empty() {
+        return Prepared::Proceed;
+    }
+    let mut fields = Map::new();
+    fields.insert("windows".into(), json!(request.awaiting.len()));
+    logging::event(Level::Info, "resident", "quit-prepare", fields);
+    let payload = json!({ "requestId": request.id, "generation": request.generation });
+    for window in &request.awaiting {
+        let _ = app.emit_to(window.as_str(), "orbit:quit-prepare", payload.clone());
+    }
+    let until = Instant::now() + PREPARE_DEADLINE;
+    loop {
+        let timed_out = Instant::now() >= until;
+        let verdict = with_resident(app, |r| {
+            r.quit_request
+                .as_ref()
+                .filter(|q| q.id == request.id)
+                .and_then(|q| q.verdict(timed_out))
+        })
+        .flatten();
+        if let Some(v) = verdict {
+            return v;
+        }
+        if timed_out {
+            return Prepared::Cancelled {
+                window: "timeout".into(),
+                reason: "Orbit could not confirm that your changes were saved.".into(),
+            };
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+}
+
+/// A window said no (or nothing): back to Ready, visible, with the reason.
+fn cancel_quit(app: &AppHandle, window: &str, reason: &str) {
+    let mut fields = Map::new();
+    fields.insert("window".into(), json!(window));
+    logging::event(Level::Warn, "resident", "quit-cancelled", fields);
+    with_resident(app, |r| {
+        r.phase = if r.ready_generation.is_some() {
+            Phase::Ready
+        } else {
+            Phase::Booting
+        };
+        r.quit_request = None;
+    });
+    show_main(app);
+    let _ = app.emit_to(
+        MAIN_WINDOW,
+        "orbit:quit-cancelled",
+        json!({ "reason": reason, "window": window }),
+    );
+}
+
+/// A window's answer to the preparation request. Stale or unexpected answers are ignored.
+pub fn ack_quit(
+    app: &AppHandle,
+    window_label: &str,
+    id: u64,
+    generation: u64,
+    ok: bool,
+    reason: Option<String>,
+) -> bool {
+    with_resident(app, |r| {
+        r.quit_request
+            .as_mut()
+            .map(|q| q.record(window_label, id, generation, QuitAck { ok, reason }))
+            .unwrap_or(false)
+    })
+    .unwrap_or(false)
 }
 
 fn run_shutdown(app: &AppHandle) {
@@ -504,8 +709,30 @@ pub fn resident_hide_main(app: AppHandle) {
 }
 
 #[tauri::command]
-pub fn resident_quit(app: AppHandle) {
-    request_quit(&app);
+pub fn resident_quit(app: AppHandle, force: Option<bool>) {
+    request_quit(&app, force.unwrap_or(false));
+}
+
+#[tauri::command]
+pub fn resident_quit_ack(
+    app: AppHandle,
+    window: Window,
+    request_id: u64,
+    generation: u64,
+    ok: bool,
+    reason: Option<String>,
+) {
+    ack_quit(&app, window.label(), request_id, generation, ok, reason);
+}
+
+/// The capture window's bridge is listening: quits wait for its answer from now on.
+#[tauri::command]
+pub fn resident_capture_subscribed(app: AppHandle, window: Window) -> Result<(), String> {
+    if window.label() != CAPTURE_WINDOW {
+        return Err("Only the capture window subscribes here.".into());
+    }
+    with_resident(&app, |r| r.capture_subscribed = true);
+    Ok(())
 }
 
 #[cfg(test)]
@@ -565,5 +792,75 @@ mod tests {
         assert!(r.ready_generation.is_none());
         assert!(!r.tray_available);
         assert!(!r.clean_shutdown);
+        assert!(r.quit_request.is_none());
+    }
+
+    #[test]
+    fn quit_asks_only_the_windows_that_can_hold_drafts() {
+        let mut r = Resident::new(Launch::Manual);
+        assert!(windows_to_ask(&r, 1).is_empty(), "nothing loaded: nothing to save");
+        r.ready_generation = Some(1);
+        assert_eq!(windows_to_ask(&r, 1), vec!["main"]);
+        assert!(windows_to_ask(&r, 2).is_empty(), "a stale generation holds no drafts");
+        r.capture_subscribed = true;
+        assert_eq!(windows_to_ask(&r, 1), vec!["main", "capture"]);
+    }
+
+    fn request() -> QuitRequest {
+        QuitRequest {
+            id: 7,
+            generation: 3,
+            force: false,
+            awaiting: vec!["main".into(), "capture".into()],
+            acks: HashMap::new(),
+        }
+    }
+
+    #[test]
+    fn quit_proceeds_only_when_every_window_acknowledged() {
+        let mut q = request();
+        assert_eq!(q.verdict(false), None);
+        assert!(q.record("main", 7, 3, QuitAck { ok: true, reason: None }));
+        assert_eq!(q.verdict(false), None, "the capture window has not answered");
+        assert!(q.record("capture", 7, 3, QuitAck { ok: true, reason: None }));
+        assert_eq!(q.verdict(false), Some(Prepared::Proceed));
+    }
+
+    #[test]
+    fn a_refusal_or_a_missing_answer_cancels_with_the_reason() {
+        let mut q = request();
+        assert!(q.record(
+            "capture",
+            7,
+            3,
+            QuitAck {
+                ok: false,
+                reason: Some("The quick capture window still holds text.".into())
+            }
+        ));
+        assert_eq!(
+            q.verdict(false),
+            Some(Prepared::Cancelled {
+                window: "capture".into(),
+                reason: "The quick capture window still holds text.".into()
+            })
+        );
+        let q = request();
+        match q.verdict(true) {
+            Some(Prepared::Cancelled { window, reason }) => {
+                assert_eq!(window, "timeout");
+                assert!(reason.contains("main window"));
+            }
+            other => panic!("expected a timeout cancellation, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn stale_or_foreign_acknowledgments_are_ignored() {
+        let mut q = request();
+        assert!(!q.record("main", 6, 3, QuitAck { ok: true, reason: None }), "old request id");
+        assert!(!q.record("main", 7, 2, QuitAck { ok: true, reason: None }), "old generation");
+        assert!(!q.record("settings", 7, 3, QuitAck { ok: true, reason: None }), "unknown window");
+        assert!(q.acks.is_empty());
     }
 }

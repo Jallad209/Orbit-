@@ -10,6 +10,7 @@ import type {
   DiagnosticsBundle,
   LastRun,
   Platform,
+  QuitPrepareRequest,
   ResidentStatus,
   ShellEvent,
   StorageStatus,
@@ -180,9 +181,26 @@ export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Pla
       const d = await ready();
       await d.invoke<void>('resident_ready', { generation });
     },
-    async quit() {
+    async quit(options) {
       const d = await ready();
-      await d.invoke<void>('resident_quit');
+      await d.invoke<void>('resident_quit', { force: options?.force ?? false });
+    },
+    async ackQuit(request: QuitPrepareRequest, ok, reason) {
+      const d = await ready();
+      await d.invoke<void>('resident_quit_ack', {
+        requestId: request.requestId,
+        generation: request.generation,
+        ok,
+        reason: reason ?? null,
+      });
+    },
+    async showCaptureWindow() {
+      const d = await ready();
+      await d.invoke<void>('capture_show');
+    },
+    async captureSubscribed() {
+      const d = await ready();
+      await d.invoke<void>('resident_capture_subscribed');
     },
     async showMain() {
       const d = await ready();

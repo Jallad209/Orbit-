@@ -48,7 +48,7 @@ pub fn perform(app: &AppHandle, action: TrayAction) {
             resident::show_main(app);
             resident::navigate(app, "/today?regenerate=1");
         }
-        TrayAction::Quit => resident::request_quit(app),
+        TrayAction::Quit => resident::request_quit(app, false),
     }
 }
 

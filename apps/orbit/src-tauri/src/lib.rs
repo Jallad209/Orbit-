@@ -220,6 +220,8 @@ pub fn run() {
             resident::resident_show_main,
             resident::resident_hide_main,
             resident::resident_quit,
+            resident::resident_quit_ack,
+            resident::resident_capture_subscribed,
             scheduler::scheduler_wake,
         ])
         .build(tauri::generate_context!())
@@ -232,7 +234,7 @@ pub fn run() {
         } => {
             if resident::phase(app) != resident::Phase::Quitting {
                 api.prevent_exit();
-                resident::request_quit(app);
+                resident::request_quit(app, false);
             }
         }
         RunEvent::Exit => {

@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from '@/components/ui/toastStore';
 import { useAppStore } from '@/app/store';
+import { flushDrafts } from '@/features/drafts/draftStore';
 import { recordEvent } from '@/lib/diagnostics';
 import { usePlatform } from '@/platform';
+import type { QuitCancelled, QuitPrepareRequest } from '@/platform/types';
 import { CloseExplanationDialog } from './CloseExplanationDialog';
 
 /** The week-10 localStorage flag, read raw once for the native migration. */
@@ -22,7 +24,10 @@ function readLegacyClose(): string | null {
  * the legacy close preference once, so a user close is honoured against the
  * user's own setting rather than a temporary default; routes tray
  * navigation; shows the first-close explanation; and reports shutdown
- * problems instead of letting the window vanish mid-write.
+ * problems instead of letting the window vanish mid-write. Before a quit
+ * (week 12) it saves every registered draft and acknowledges with the
+ * request and generation ids, or refuses with the reason; the shell then
+ * cancels and the failure stays visible with a "discard and quit" choice.
  */
 export function ResidentBridge() {
   const platform = usePlatform();
@@ -91,6 +96,37 @@ export function ResidentBridge() {
             }),
         ],
         ['orbit:quitting', () => setQuitting(true)],
+        [
+          'orbit:quit-prepare',
+          (payload) => {
+            const request = payload as QuitPrepareRequest;
+            void flushDrafts()
+              .then((result) =>
+                desktop.ackQuit(request, result.ok, result.ok ? undefined : result.reason),
+              )
+              .catch((e: unknown) =>
+                desktop.ackQuit(request, false, e instanceof Error ? e.message : 'Save failed.'),
+              )
+              .catch(() => undefined);
+          },
+        ],
+        [
+          'orbit:quit-cancelled',
+          (payload) => {
+            const cancelled = payload as QuitCancelled;
+            toast({
+              id: 'quit-cancelled',
+              title: 'Orbit did not quit',
+              description: cancelled.reason,
+              variant: 'warning',
+              durationMs: 0,
+              action: {
+                label: 'Discard unsaved changes and quit',
+                onClick: () => void desktop.quit({ force: true }),
+              },
+            });
+          },
+        ],
       ];
       for (const [name, handler] of handlers) {
         const off = await desktop.onShellEvent(name, handler).catch(() => () => {});
