@@ -193,4 +193,5 @@ file rather than dropping fields; this Orbit reads v1–v3 with defaults.
 - Weekly targets are area targets; goals have no hour requirement of their own.
 - The engine reads the whole repository once per generation. On the 50 000-task benchmark
   world it stays within the 200 ms budget (`pnpm run bench`), but a page can still be slow
-  for other reasons; loading and rendering are measured separately.
+  for other reasons: repository loading and page rendering are not benchmarked yet, only
+  the engine is.
