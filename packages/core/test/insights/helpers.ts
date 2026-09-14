@@ -52,7 +52,7 @@ export function snapshotWith(parts: Partial<InsightSnapshot>): InsightSnapshot {
 
 export function run(
   parts: Partial<InsightSnapshot>,
-  overrides: Partial<InsightInput> & { settings?: Partial<InsightSettings> } = {},
+  overrides: Omit<Partial<InsightInput>, 'settings'> & { settings?: Partial<InsightSettings> } = {},
 ): InsightReport {
   return computeInsights({
     snapshot: snapshotWith(parts),

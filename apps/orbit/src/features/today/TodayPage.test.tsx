@@ -3,7 +3,9 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   AreaSchema,
+  CommitmentSchema,
   GoalSchema,
+  PersonSchema,
   ProjectSchema,
   TaskSchema,
   createRecord,
@@ -258,20 +260,35 @@ describe('TodayPage', () => {
     await waitFor(async () => expect((await repo.tasks.get(overdue.id))?.actualMin).toBe(45));
   });
 
-  it('shows at-risk items and the insight strip with evidence', async () => {
+  it('shows at-risk items, and the insight strip from the shared engine with its evidence', async () => {
     const user = userEvent.setup();
     const { repo } = await seed();
+    // Three open commitments with one person trip the info detector; nothing else does.
+    const sara = createRecord(PersonSchema, clock, { name: 'Sara' });
+    await repo.people.upsert(sara);
+    for (const text of ['Send the slides', 'Book the room', 'Reply about the lab']) {
+      await repo.commitments.upsert(
+        createRecord(CommitmentSchema, clock, { personId: sara.id, text }),
+      );
+    }
     render(repo);
     const atRisk = await screen.findByTestId('at-risk');
     expect(within(atRisk).getByText('Overdue')).toBeInTheDocument();
     expect(within(atRisk).getByText('Send the draft')).toBeInTheDocument();
     expect(within(atRisk).getByText('6d left')).toBeInTheDocument();
 
-    const insights = screen.getByTestId('insights');
-    const button = within(insights).getByRole('button', { name: /1 task is overdue/ });
-    await user.click(button);
-    expect(within(insights).getByRole('list', { name: 'Evidence' })).toHaveTextContent(
-      '“Send the draft” was due 2026-09-10',
+    const insights = await screen.findByTestId('insights');
+    const card = await within(insights).findByTestId('insight-card');
+    expect(card).toHaveTextContent(
+      'There are 3 open commitments with Sara: 3 you owe and 0 owed to you.',
     );
+    expect(within(card).getByTestId('insight-threshold')).toHaveTextContent('3 >= 3');
+    // The strip never offers snooze or dismiss; the Insights page does.
+    expect(within(card).queryByRole('button', { name: /Snooze/ })).not.toBeInTheDocument();
+    await user.click(within(card).getByRole('button', { name: /Evidence \(3\)/ }));
+    expect(within(card).getByRole('list', { name: 'Evidence, 3 rows' })).toHaveTextContent(
+      'Send the slides — you owe',
+    );
+    expect(screen.getByTestId('insights-see-all')).toHaveAttribute('href', '/insights');
   });
 });

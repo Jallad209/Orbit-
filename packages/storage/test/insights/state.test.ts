@@ -147,7 +147,7 @@ for (const adapter of adapters) {
       expect((await repo.appSettings.list())[0]).toEqual(settings);
 
       const expected: InsightState = {
-        ...LEGACY_STATE,
+        ...(LEGACY_STATE as unknown as InsightState),
         snoozeMode: 'time',
         suppressedFingerprint: null,
         lastSummary: null,

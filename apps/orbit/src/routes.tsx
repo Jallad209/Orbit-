@@ -21,6 +21,11 @@ import { usePlatform } from '@/platform';
 const SearchPage = lazy(() =>
   import('@/features/search/SearchPage').then((m) => ({ default: m.SearchPage })),
 );
+// The insights page, cards, and evidence renderer load on first visit; the engine itself
+// runs from the shell so the Today strip and the Timeline warning share one computation.
+const InsightsPage = lazy(() =>
+  import('@/features/insights/InsightsPage').then((m) => ({ default: m.InsightsPage })),
+);
 
 const ComponentsGallery = import.meta.env.DEV
   ? lazy(() =>
@@ -54,6 +59,14 @@ export function AppRoutes() {
         <Route path="/goals" element={<GoalsPage />} />
         <Route path="/goals/:id" element={<GoalPage />} />
         <Route path="/areas" element={<AreasPage />} />
+        <Route
+          path="/insights"
+          element={
+            <Suspense fallback={null}>
+              <InsightsPage />
+            </Suspense>
+          }
+        />
         <Route
           path="/people"
           element={<Placeholder title="People" description="Arrives in week 12." />}

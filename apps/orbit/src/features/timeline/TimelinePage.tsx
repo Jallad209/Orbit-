@@ -8,7 +8,8 @@ import {
 } from '@dnd-kit/core';
 import type { Block, Clock, LocalDate, Task } from '@orbit/core';
 import { BlockError, minuteOfDay, systemClock, toLocalDate } from '@orbit/core';
-import { useCallback, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useSearchParams } from 'react-router';
 import type { Repository } from '@orbit/storage';
 import { Kbd } from '@/components/ui/Kbd';
 import { Skeleton } from '@/components/ui/Card';
@@ -19,6 +20,8 @@ import { useRepository } from '@/platform';
 import { settingsFor, usePlanPrefs } from '@/features/today/planSettings';
 import { DayNav } from './DayNav';
 import { canvasLayout, pxToMinute } from './layout';
+import { OverloadWarning } from './OverloadWarning';
+import { parseTimelineParams } from './timelineParams';
 import { TimelineCanvas } from './TimelineCanvas';
 import { TimelineList } from './TimelineList';
 import { UnscheduledPanel } from './UnscheduledPanel';
@@ -42,19 +45,46 @@ interface Props {
  * The day as time blocks. Drag tasks in, move and resize blocks, lock the
  * ones that must not move; every change re-plans the rest of the day.
  * Keyboard: arrows nudge 15 min, Shift+arrows resize, `l` locks, Delete removes.
+ * The date lives in the URL (`?date=YYYY-MM-DD`), so evidence links can open
+ * any day; `&block=<id>` selects and scrolls to one block once the day loads.
  */
 export function TimelinePage({ clock = systemClock, date: dateProp }: Props) {
   const repo = useRepository();
   const prefs = usePlanPrefs();
   const today = toLocalDate(clock.now());
-  const [dateChoice, setDateChoice] = useState<LocalDate | null>(null);
-  const date = dateProp ?? dateChoice ?? today;
+  const [params, setParams] = useSearchParams();
+  const linked = parseTimelineParams(params);
+  const date = dateProp ?? linked.date ?? today;
   const narrow = useMediaQuery(NARROW_QUERY);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // A linked block starts selected; a block that is gone leaves the date selected and says so.
+  const [selectedId, setSelectedId] = useState<string | null>(linked.blockId);
   const canvasRef = useRef<HTMLDivElement | null>(null);
+  const focusedLink = useRef<string | null>(null);
 
   const query = useCallback((r: Repository) => loadDay(r, date, clock), [date, clock]);
   const { data: day, loading } = useRepoQuery(query, [query]);
+  const linkedBlockLoaded = !!linked.blockId && !!day && day.date === date;
+  const linkedBlockFound = linkedBlockLoaded && day.blocks.some((b) => b.id === linked.blockId);
+  const missingBlock = linkedBlockLoaded && !linkedBlockFound ? linked.blockId : null;
+
+  // Scroll to and focus the linked block once, when its day has loaded.
+  useEffect(() => {
+    const id = linked.blockId;
+    if (!id || !linkedBlockFound || focusedLink.current === id) return;
+    focusedLink.current = id;
+    const frame = requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(`[data-testid="block-${id}"]`);
+      el?.scrollIntoView?.({ block: 'center' });
+      el?.focus?.();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [linked.blockId, linkedBlockFound]);
+
+  const changeDate = (d: LocalDate) => {
+    setSelectedId(null);
+    focusedLink.current = null;
+    setParams(d === today ? {} : { date: d });
+  };
   const settings = useMemo(() => settingsFor(prefs, date, []), [prefs, date]);
   const layout = useMemo(() => canvasLayout(prefs.workingWindow), [prefs.workingWindow]);
   const nowMin = day?.isToday ? minuteOfDay(day.now) : null;
@@ -162,17 +192,15 @@ export function TimelinePage({ clock = systemClock, date: dateProp }: Props) {
             around you.
           </p>
         </div>
-        {!dateProp ? (
-          <DayNav
-            date={date}
-            today={today}
-            onChange={(d) => {
-              setDateChoice(d);
-              setSelectedId(null);
-            }}
-          />
-        ) : null}
+        {!dateProp ? <DayNav date={date} today={today} onChange={changeDate} /> : null}
       </div>
+
+      <OverloadWarning date={date} clock={clock} />
+      {missingBlock ? (
+        <p role="status" data-testid="block-missing" className="text-[13px] text-ink-muted">
+          The block this link pointed at is no longer on this day; the day is still selected.
+        </p>
+      ) : null}
 
       {loading && !day ? <Skeleton className="h-64" /> : null}
 

@@ -2,6 +2,7 @@ import type { Goal } from '@orbit/core';
 import { Target } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
+import { GoalHealthBadge } from '@/components/HealthBadge';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, EmptyState, ProgressBar, SectionHeader } from '@/components/ui/Card';
@@ -27,29 +28,6 @@ function Importance({ value }: { value: number }) {
       ))}
     </span>
   );
-}
-
-function NeglectBadge({
-  goal,
-  minutes,
-  neglected,
-}: {
-  goal: Goal;
-  minutes: number;
-  neglected: boolean;
-}) {
-  if (goal.status !== 'active') return <Badge tone="outline">{goal.status}</Badge>;
-  if (neglected)
-    return (
-      <Badge
-        tone="gold"
-        data-neglected="true"
-        title="No time recorded on this goal in the last 14 days"
-      >
-        Neglected
-      </Badge>
-    );
-  return <Badge tone="ok">{(minutes / 60).toFixed(1)}h / 14d</Badge>;
 }
 
 /** Goals grouped by area, with importance and whether they are getting any time. */
@@ -185,11 +163,7 @@ export function GoalsPage() {
                         <span className="text-[12px] text-ink-faint tnum">by {g.targetDate}</span>
                       ) : null}
                       <span className="text-[12px] text-ink-faint">{projects} projects</span>
-                      <NeglectBadge
-                        goal={g}
-                        minutes={att?.minutesInWindow ?? 0}
-                        neglected={att?.neglected ?? false}
-                      />
+                      <GoalHealthBadge goal={g} attention={att} />
                     </Link>
                   </li>
                 );
@@ -328,7 +302,7 @@ export function GoalPage() {
               ? ` of ${(att.expectedMinutes / 60).toFixed(1)}h expected`
               : ' · set a weekly target on the area to get an expectation'}
           </span>
-          {att?.neglected ? <Badge tone="gold">Neglected</Badge> : null}
+          {att?.neglected ? <GoalHealthBadge goal={goal} attention={att} /> : null}
         </div>
       </Card>
 

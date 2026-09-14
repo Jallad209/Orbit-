@@ -7,6 +7,7 @@ import { RulesSection } from '@/features/rules/RulesSection';
 import { AppearanceSettings } from './AppearanceSettings';
 import { DataSettings } from './DataSettings';
 import { DiagnosticsSettings } from './DiagnosticsSettings';
+import { InsightSettings } from './InsightSettings';
 import { PlanningSettings } from './PlanningSettings';
 import { ShortcutsReference } from './ShortcutsReference';
 
@@ -51,6 +52,7 @@ export function CapabilityNotes() {
 
 const SECTIONS = [
   { id: 'planning', label: 'Planning' },
+  { id: 'insights', label: 'Insights' },
   { id: 'rules', label: 'Rules' },
   { id: 'data', label: 'Data' },
   { id: 'appearance', label: 'Appearance' },
@@ -87,6 +89,9 @@ export function SettingsPage() {
         <div className="flex min-w-0 flex-col gap-5">
           <section id="planning" aria-label="Planning" className="scroll-mt-4">
             <PlanningSettings />
+          </section>
+          <section id="insights" aria-label="Insights" className="scroll-mt-4">
+            <InsightSettings />
           </section>
           <section id="rules" aria-label="Rules" className="scroll-mt-4">
             <RulesSection />

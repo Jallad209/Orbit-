@@ -1,8 +1,8 @@
 import {
   activeSession,
   addDays,
+  buildProjectActivity,
   computeAtRisk,
-  computeGoalAttention,
   computeProjectHealth,
   localRange,
   materializePlan,
@@ -36,14 +36,7 @@ import type {
 import type { Repository } from '@orbit/storage';
 import { bumpData } from '@/data/useQuery';
 import { ensureRoutineInstances } from '@/data/routineInstances';
-
-export interface Insight {
-  key: string;
-  title: string;
-  detail: string;
-  evidence: string[];
-  tone: 'danger' | 'gold' | 'neutral';
-}
+import { readSettings } from '@/features/settings/settingsService';
 
 export interface TodayData {
   date: LocalDate;
@@ -63,7 +56,6 @@ export interface TodayData {
   timeByArea: Array<{ area: Area | null; minutes: number }>;
   upcomingCommitments: Array<{ commitment: Commitment; person: Person | undefined }>;
   activeProjects: Array<{ project: Project; health: ProjectHealth }>;
-  insights: Insight[];
   runningSession: Session | null;
 }
 
@@ -90,33 +82,38 @@ export async function loadToday(repo: Repository, options: LoadTodayOptions): Pr
     areas,
     goals,
     projects,
-    tasks,
+    allTasks,
     events,
     routines,
     routineInstances,
     blocks,
     sessions,
     rules,
-    milestones,
+    allMilestones,
     commitments,
     people,
     dayCommitments,
+    appSettings,
   ] = await Promise.all([
     repo.areas.list(),
     repo.goals.list(),
     repo.projects.list(),
-    repo.tasks.list(),
+    // Tombstones count as project activity (the shared staleness definition), nothing else.
+    repo.tasks.list({ includeDeleted: true }),
     repo.events.list(),
     repo.routines.list(),
     repo.routineInstances.list(),
     repo.blocks.list(),
     repo.sessions.list(),
     repo.rules.list(),
-    repo.milestones.list(),
+    repo.milestones.list({ includeDeleted: true }),
     repo.commitments.list(),
     repo.people.list(),
     repo.dayCommitments.query((c) => c.date === date),
+    readSettings(repo, clock),
   ]);
+  const tasks = allTasks.filter((t) => t.deletedAt === null);
+  const milestones = allMilestones.filter((m) => m.deletedAt === null);
 
   const snapshot = {
     areas,
@@ -180,12 +177,32 @@ export async function loadToday(repo: Repository, options: LoadTodayOptions): Pr
   const plannedToday = new Set(
     [...proposal.blocks, ...timeline].map((b) => b.taskId).filter((id): id is Id => !!id),
   );
+  // One activity map and one threshold for every health consumer on the screen.
+  const staleAfterDays = appSettings.insights.staleProjectDays;
+  const activity = buildProjectActivity({
+    projects,
+    tasks: allTasks,
+    milestones: allMilestones,
+    sessions,
+  });
   const atRisk = computeAtRisk(
-    { tasks, projects, milestones, sessions, plannedTaskIds: plannedToday, now },
+    {
+      tasks,
+      projects,
+      milestones,
+      sessions,
+      plannedTaskIds: plannedToday,
+      now,
+      staleAfterDays,
+      activity,
+    },
     date,
   );
   const health = new Map(
-    projects.map((p) => [p.id, computeProjectHealth(p, { milestones, tasks, sessions, now })]),
+    projects.map((p) => [
+      p.id,
+      computeProjectHealth(p, { milestones, tasks, sessions, now, staleAfterDays, activity }),
+    ]),
   );
   const active = projects
     .filter((p) => p.status === 'active')
@@ -208,8 +225,6 @@ export async function loadToday(repo: Repository, options: LoadTodayOptions): Pr
     .slice(0, 5)
     .map((commitment) => ({ commitment, person: personById.get(commitment.personId) }));
 
-  const insights = computeInsightsStub({ goals, areas, projects, tasks, sessions, now, health });
-
   const runningSession = activeSession(sessions);
 
   return {
@@ -227,75 +242,8 @@ export async function loadToday(repo: Repository, options: LoadTodayOptions): Pr
     timeByArea,
     upcomingCommitments,
     activeProjects: active.sort((a, b) => a.project.title.localeCompare(b.project.title)),
-    insights,
     runningSession,
   };
-}
-
-/**
- * Until the insight engine lands (week 11), the strip shows the three
- * strongest neglect signals the structure services already compute.
- */
-function computeInsightsStub(input: {
-  goals: Goal[];
-  areas: Area[];
-  projects: Project[];
-  tasks: Task[];
-  sessions: Session[];
-  now: Date;
-  health: Map<Id, ProjectHealth>;
-}): Insight[] {
-  const out: Insight[] = [];
-  const neglected = input.goals.filter(
-    (g) => g.status === 'active' && computeGoalAttention(g, input).neglected,
-  );
-  if (neglected.length) {
-    out.push({
-      key: 'neglected-goals',
-      title: `${neglected.length} goal${neglected.length === 1 ? '' : 's'} got no time in 14 days`,
-      detail: neglected.map((g) => g.title).join(', '),
-      evidence: neglected.map((g) => `“${g.title}”: 0 minutes of sessions in the last 14 days`),
-      tone: 'gold',
-    });
-  }
-  const stale = input.projects.filter((p) => input.health.get(p.id)?.stale);
-  if (stale.length) {
-    out.push({
-      key: 'stale-projects',
-      title: `${stale.length} project${stale.length === 1 ? ' has' : 's have'} stopped moving`,
-      detail: stale.map((p) => p.title).join(', '),
-      evidence: stale.map(
-        (p) => `“${p.title}”: no change for ${input.health.get(p.id)!.staleDays} days`,
-      ),
-      tone: 'neutral',
-    });
-  }
-  const blocked = input.projects.filter((p) => input.health.get(p.id)?.blocked);
-  if (blocked.length) {
-    out.push({
-      key: 'blocked-projects',
-      title: `${blocked.length} project${blocked.length === 1 ? ' is' : 's are'} fully blocked`,
-      detail: blocked.map((p) => p.title).join(', '),
-      evidence: blocked.map((p) => `“${p.title}”: every open task waits on another task`),
-      tone: 'danger',
-    });
-  }
-  const overdue = input.tasks.filter(
-    (t) => t.status === 'open' && t.dueAt && new Date(t.dueAt) < input.now,
-  );
-  if (overdue.length) {
-    out.push({
-      key: 'overdue-tasks',
-      title: `${overdue.length} task${overdue.length === 1 ? ' is' : 's are'} overdue`,
-      detail: overdue
-        .slice(0, 3)
-        .map((t) => t.title)
-        .join(', '),
-      evidence: overdue.map((t) => `“${t.title}” was due ${t.dueAt!.slice(0, 10)}`),
-      tone: 'danger',
-    });
-  }
-  return out.slice(0, 3);
 }
 
 /** Accept a proposal: replace the day's unlocked planner blocks and write the commitment. */

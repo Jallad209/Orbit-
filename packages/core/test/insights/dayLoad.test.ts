@@ -25,9 +25,9 @@ function block(startMin: number, endMin: number, fields: Partial<Block> = {}) {
   return aBlock({ date: WED, startMin, endMin, ...fields });
 }
 
-function reserve(
-  fields: Partial<Extract<Rule, { type: 'constraint' }>['config']> & { areaId?: string | null },
-) {
+type ReserveConfig = Extract<Extract<Rule, { type: 'constraint' }>['config'], { kind: 'reserve' }>;
+
+function reserve(fields: Partial<Omit<ReserveConfig, 'kind'>>) {
   return createRecord(RuleSchema, clockAt(), {
     type: 'constraint',
     name: 'Reserved',

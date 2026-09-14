@@ -87,7 +87,7 @@ export function useCommandContext(clock: Clock = systemClock): CommandContext {
       navigate: (path) => void navigate(path),
       notify: (n) =>
         toast({ title: n.title, description: n.description, variant: n.tone ?? 'neutral' }),
-      capabilities: { insights: false, weeklyReview: false },
+      capabilities: { insights: true, weeklyReview: false },
       settings: { defaultEstimateMin },
       names: names ?? { people: [], projects: [] },
     }),

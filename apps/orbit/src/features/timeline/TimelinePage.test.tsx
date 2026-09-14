@@ -228,3 +228,96 @@ describe('TimelinePage', () => {
     await waitFor(async () => expect((await repo.blocks.get(manual.id))?.startMin).toBe(915));
   });
 });
+
+describe('TimelinePage evidence links', () => {
+  beforeEach(() => {
+    usePlanPrefs.setState({ energyByDate: {} });
+    useToastStore.getState().clear();
+  });
+
+  function renderAt(repo: Awaited<ReturnType<typeof seed>>['repo'], route: string) {
+    return renderWithProviders(<TimelinePage clock={clock} />, { repository: repo, route, clock });
+  }
+
+  it('selects the date and block named in the URL, scrolling to the block once it loads', async () => {
+    const { repo, manual } = await seed();
+    const scrolled: string[] = [];
+    Element.prototype.scrollIntoView = function () {
+      scrolled.push((this as HTMLElement).dataset.testid ?? '');
+    };
+    renderAt(repo, `/timeline?date=${DATE}&block=${manual.id}`);
+    const block = await screen.findByTestId(`block-${manual.id}`);
+    await waitFor(() => expect(block).toHaveFocus());
+    expect(scrolled).toEqual([`block-${manual.id}`]);
+    expect(screen.getByRole('button', { name: DATE })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('keeps the linked date and explains a block that is gone; malformed parameters fall back to today', async () => {
+    const { repo } = await seed();
+    renderAt(repo, `/timeline?date=2026-09-18&block=019372a0-0000-7000-8000-00000000dead`);
+    expect(await screen.findByTestId('block-missing')).toHaveTextContent('no longer on this day');
+    expect(screen.getByRole('button', { name: '2026-09-18' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByText(/2026-09-18\. Drag, resize, lock/)).toBeInTheDocument();
+
+    renderAt(repo, '/timeline?date=2026-13-45&block=not-a-uuid');
+    await screen.findAllByTestId('timeline-canvas');
+    expect(screen.getAllByRole('button', { name: DATE }).at(-1)).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.queryByTestId('block-missing')).toBeInTheDocument(); // only the first render's notice
+  });
+
+  it('shows the overload warning from the shared day-load result, linking to the evidence', async () => {
+    const user = userEvent.setup();
+    const { repo, intro } = await seed();
+    // Five two-hour blocks on Wednesday: 600 minutes against 495 available.
+    for (let i = 0; i < 5; i += 1) {
+      await repo.blocks.upsert(
+        createRecord(BlockSchema, clock, {
+          date: '2026-09-16',
+          startMin: 540,
+          endMin: 660,
+          taskId: intro.id,
+          source: 'manual',
+        }),
+      );
+    }
+    renderAt(repo, '/timeline?date=2026-09-16');
+    const warning = await screen.findByTestId('overload-warning');
+    expect(warning).toHaveTextContent(
+      'Overloaded: 600 min of committed work against 495 min of available work time.',
+    );
+    expect(within(warning).getByRole('link', { name: 'See the evidence' })).toHaveAttribute(
+      'href',
+      '/insights?open=overloaded-day:2026-09-16',
+    );
+    // Today (14th) holds 150 minutes of blocks: no warning; the nav keeps the URL in charge.
+    await user.click(screen.getByRole('button', { name: 'Today' }));
+    await waitFor(() => expect(screen.queryByTestId('overload-warning')).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: DATE })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('uses the same calculation for a date outside the seven-day horizon', async () => {
+    const { repo, intro } = await seed();
+    for (let i = 0; i < 5; i += 1) {
+      await repo.blocks.upsert(
+        createRecord(BlockSchema, clock, {
+          date: '2026-10-07',
+          startMin: 540,
+          endMin: 660,
+          taskId: intro.id,
+          source: 'manual',
+        }),
+      );
+    }
+    renderAt(repo, '/timeline?date=2026-10-07');
+    const warning = await screen.findByTestId('overload-warning');
+    expect(warning).toHaveTextContent('600 min of committed work against 495 min');
+    expect(warning).toHaveTextContent('Outside the insights horizon; same calculation.');
+    expect(within(warning).queryByRole('link')).not.toBeInTheDocument();
+  });
+});

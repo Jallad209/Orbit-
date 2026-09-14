@@ -9,19 +9,14 @@ import { toast } from '@/components/ui/toastStore';
 import { useRepoQuery } from '@/data/useQuery';
 import { useRepository } from '@/platform';
 import { cn } from '@/lib/cn';
+import { InsightsStrip } from '@/features/insights/InsightsStrip';
 import { ReviewLaunchers } from '@/features/reviews/ReviewLaunchers';
 import { CompactTimeline } from './CompactTimeline';
 import { EnergyPicker } from './EnergyPicker';
 import { FocusHeader } from './FocusHeader';
 import { PlanPanel, type PlanDiff } from './PlanPanel';
 import { settingsFor, usePlanPrefs } from './planSettings';
-import {
-  ActiveProjects,
-  AtRiskPanel,
-  InsightsStrip,
-  TimeByArea,
-  UpcomingCommitments,
-} from './SidePanels';
+import { ActiveProjects, AtRiskPanel, TimeByArea, UpcomingCommitments } from './SidePanels';
 import { acceptPlan, defaultPlanDate, loadToday, nextBlock, unplanDay } from './todayService';
 
 export function diffProposals(previous: PlanProposal, current: PlanProposal): PlanDiff {
@@ -175,7 +170,7 @@ export function TodayPage({ clock = systemClock, date: dateProp }: Props) {
       {data ? (
         <>
           <FocusHeader data={data} block={focus} mode={mode} clock={clock} />
-          <InsightsStrip data={data} />
+          <InsightsStrip />
           <div className="grid gap-5 min-[900px]:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.9fr)]">
             <div className="flex flex-col gap-5">
               <ReviewLaunchers

@@ -7,6 +7,7 @@ import {
   TaskSchema,
   archiveProjectCascade,
   assertAreaDeletable,
+  buildProjectActivity,
   completeTask as completeTaskRecord,
   computeAreaAttention,
   computeGoalAttention,
@@ -44,6 +45,7 @@ import type {
 } from '@orbit/core';
 import type { Repository } from '@orbit/storage';
 import { bumpData } from '@/data/useQuery';
+import { readSettings } from '@/features/settings/settingsService';
 
 /** Everything the structure screens need, loaded in one pass. */
 export interface StructureData extends StructureSnapshot {
@@ -58,16 +60,27 @@ export async function loadStructure(
   repo: Repository,
   clock: Clock = systemClock,
 ): Promise<StructureData> {
-  const [areas, goals, projects, tasks, milestones, sessions] = await Promise.all([
+  const [areas, goals, projects, allTasks, allMilestones, sessions, settings] = await Promise.all([
     repo.areas.list(),
     repo.goals.list(),
     repo.projects.list(),
-    repo.tasks.list(),
-    repo.milestones.list(),
+    // Tombstones count as project activity (the shared staleness definition), nothing else.
+    repo.tasks.list({ includeDeleted: true }),
+    repo.milestones.list({ includeDeleted: true }),
     repo.sessions.list(),
+    readSettings(repo, clock),
   ]);
+  const tasks = allTasks.filter((t) => t.deletedAt === null);
+  const milestones = allMilestones.filter((m) => m.deletedAt === null);
   const now = clock.now();
   const attentionInput = { areas, goals, projects, tasks, sessions, now };
+  const staleAfterDays = settings.insights.staleProjectDays;
+  const activity = buildProjectActivity({
+    projects,
+    tasks: allTasks,
+    milestones: allMilestones,
+    sessions,
+  });
   return {
     areas: areas.sort((a, b) => a.name.localeCompare(b.name)),
     goals,
@@ -76,7 +89,10 @@ export async function loadStructure(
     milestones,
     sessions,
     health: new Map(
-      projects.map((p) => [p.id, computeProjectHealth(p, { milestones, tasks, sessions, now })]),
+      projects.map((p) => [
+        p.id,
+        computeProjectHealth(p, { milestones, tasks, sessions, now, staleAfterDays, activity }),
+      ]),
     ),
     goalAttention: new Map(goals.map((g) => [g.id, computeGoalAttention(g, attentionInput)])),
     areaAttention: new Map(areas.map((a) => [a.id, computeAreaAttention(a, attentionInput)])),

@@ -1,6 +1,4 @@
 import { formatDuration } from '@orbit/core';
-import { ChevronDown } from 'lucide-react';
-import { useState } from 'react';
 import { Link } from 'react-router';
 import { HealthBadges } from '@/components/HealthBadge';
 import { Badge } from '@/components/ui/Badge';
@@ -145,52 +143,5 @@ export function UpcomingCommitments({ data }: { data: TodayData }) {
         ))}
       </ul>
     </Card>
-  );
-}
-
-/** Top three signals with their evidence behind a disclosure. */
-export function InsightsStrip({ data }: { data: TodayData }) {
-  const [open, setOpen] = useState<string | null>(null);
-  if (data.insights.length === 0) return null;
-  return (
-    <section aria-label="Insights" data-testid="insights" className="flex flex-col gap-1.5">
-      {data.insights.map((i) => (
-        <div
-          key={i.key}
-          className={
-            'rounded-md border px-3 py-2 text-[13px] ' +
-            (i.tone === 'danger'
-              ? 'border-danger/30 bg-danger-soft/50'
-              : i.tone === 'gold'
-                ? 'border-gold-2/60 bg-gold-2/25'
-                : 'border-line bg-surface-2/60')
-          }
-        >
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 text-left"
-            aria-expanded={open === i.key}
-            onClick={() => setOpen(open === i.key ? null : i.key)}
-          >
-            <span className="font-medium">{i.title}</span>
-            <span className="min-w-0 flex-1 truncate text-ink-muted">{i.detail}</span>
-            <ChevronDown
-              className={
-                'size-4 shrink-0 text-ink-faint transition-transform ' +
-                (open === i.key ? 'rotate-180' : '')
-              }
-              aria-hidden="true"
-            />
-          </button>
-          {open === i.key ? (
-            <ul className="mt-1.5 flex flex-col gap-0.5 text-ink-muted" aria-label="Evidence">
-              {i.evidence.map((e) => (
-                <li key={e}>{e}</li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-      ))}
-    </section>
   );
 }

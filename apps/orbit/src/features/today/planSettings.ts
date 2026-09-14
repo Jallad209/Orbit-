@@ -1,4 +1,12 @@
-import type { AppSettings, Energy, LocalDate, PlanSettings, TimeWindow } from '@orbit/core';
+import { DEFAULT_INSIGHT_SETTINGS } from '@orbit/core';
+import type {
+  AppSettings,
+  Energy,
+  InsightSettings,
+  LocalDate,
+  PlanSettings,
+  TimeWindow,
+} from '@orbit/core';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -16,6 +24,8 @@ export interface PlanPrefs {
   defaultEstimateMin: number;
   /** Minute of day the "Evening shutdown" launcher appears. */
   eveningStartMin: number;
+  /** Insight thresholds (week 11), mirrored like the rest of the document. */
+  insights: InsightSettings;
   /** Whether the repository document has been read yet. */
   hydrated: boolean;
   energyByDate: Record<LocalDate, Energy>;
@@ -38,6 +48,7 @@ export const usePlanPrefs = create<PlanPrefs>()(
       bufferMin: 10,
       defaultEstimateMin: 30,
       eveningStartMin: 17 * 60,
+      insights: DEFAULT_INSIGHT_SETTINGS,
       hydrated: false,
       energyByDate: {},
       setEnergy: (date, energy) =>
@@ -49,6 +60,7 @@ export const usePlanPrefs = create<PlanPrefs>()(
           bufferMin: settings.bufferMin,
           defaultEstimateMin: settings.defaultEstimateMin,
           eveningStartMin: settings.eveningStartMin,
+          insights: settings.insights,
           hydrated: true,
         }),
       setWorkingWindow: (workingWindow) => set({ workingWindow }),
