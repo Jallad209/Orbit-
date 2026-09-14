@@ -158,3 +158,62 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Note preview (week 12): the handful of Markdown elements react-markdown emits. */
+@layer components {
+  .prose-orbit > * + * {
+    margin-top: 0.6em;
+  }
+  .prose-orbit h1,
+  .prose-orbit h2,
+  .prose-orbit h3,
+  .prose-orbit h4 {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+  }
+  .prose-orbit h1 {
+    font-size: 1.5rem;
+  }
+  .prose-orbit h2 {
+    font-size: 1.25rem;
+  }
+  .prose-orbit h3 {
+    font-size: 1.1rem;
+  }
+  .prose-orbit ul,
+  .prose-orbit ol {
+    padding-left: 1.5em;
+  }
+  .prose-orbit ul {
+    list-style: disc;
+  }
+  .prose-orbit ol {
+    list-style: decimal;
+  }
+  .prose-orbit blockquote {
+    border-left: 3px solid var(--color-line);
+    padding-left: 0.75em;
+    color: var(--color-ink-muted);
+  }
+  .prose-orbit code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9em;
+    background: var(--color-surface-3);
+    border-radius: var(--radius-sm);
+    padding: 0.1em 0.3em;
+  }
+  .prose-orbit pre {
+    background: var(--color-surface-3);
+    border-radius: var(--radius-md);
+    padding: 0.75em;
+    overflow-x: auto;
+  }
+  .prose-orbit pre code {
+    background: transparent;
+    padding: 0;
+  }
+  .prose-orbit hr {
+    border-color: var(--color-line);
+  }
+}

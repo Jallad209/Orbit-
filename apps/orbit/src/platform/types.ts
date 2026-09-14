@@ -196,6 +196,12 @@ export interface Platform {
   notify(title: string, body?: string): Promise<boolean>;
   /** Hand the user a file: download on web, save dialog on desktop. */
   exportFile(fileName: string, contents: string | Blob, mimeType?: string): Promise<void>;
+  /**
+   * Open an already-validated http(s)/mailto URL outside the app, after a user
+   * action: a new tab on the web, the system handler on desktop. Never called
+   * with anything the Markdown link policy did not pass.
+   */
+  openExternal(url: string): Promise<void>;
   /** Ask the runtime to keep data durable and report status. */
   requestPersistentStorage(): Promise<StorageStatus>;
   /** Desktop extras; undefined on the web. */

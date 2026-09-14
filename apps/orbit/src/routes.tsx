@@ -8,11 +8,14 @@ import { AreasPage } from '@/features/structure/AreasPage';
 import { GoalPage, GoalsPage } from '@/features/structure/GoalsPage';
 import { ProjectsPage } from '@/features/structure/ProjectsPage';
 import { ProjectPage } from '@/features/structure/ProjectPage';
+import { TaskPage } from '@/features/structure/TaskPage';
 import { TodayPage } from '@/features/today/TodayPage';
 import { TimelinePage } from '@/features/timeline/TimelinePage';
 import { FirstRunPage } from '@/features/firstRun/FirstRunPage';
 import { BillPage } from '@/features/bills/BillPage';
 import { BillsPage } from '@/features/bills/BillsPage';
+import { NotePage } from '@/features/notes/NotePage';
+import { NotesPage } from '@/features/notes/NotesPage';
 import { PeoplePage } from '@/features/people/PeoplePage';
 import { PersonPage } from '@/features/people/PersonPage';
 import { isFirstRunDone } from '@/features/firstRun/firstRun';
@@ -76,10 +79,9 @@ export function AppRoutes() {
         <Route path="/people/:id" element={<PersonPage />} />
         <Route path="/bills" element={<BillsPage />} />
         <Route path="/bills/:id" element={<BillPage />} />
-        <Route
-          path="/notes"
-          element={<Placeholder title="Notes" description="Arrives in week 12." />}
-        />
+        <Route path="/notes" element={<NotesPage />} />
+        <Route path="/notes/:id" element={<NotePage />} />
+        <Route path="/tasks/:id" element={<TaskPage />} />
         <Route path="/review/morning" element={<MorningFlow />} />
         <Route path="/review/evening" element={<EveningFlow />} />
         <Route

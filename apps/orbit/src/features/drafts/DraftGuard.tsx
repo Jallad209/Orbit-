@@ -48,7 +48,9 @@ export function DraftGuard() {
     return () => window.removeEventListener('beforeunload', warn);
   }, []);
 
-  const open = blocker.state === 'blocked' || pending !== null;
+  // A blocked navigation whose drafts have since saved is released by the effect above;
+  // the dialog never flashes for it.
+  const open = (blocker.state === 'blocked' && dirty.length > 0) || pending !== null;
   const action = pending?.action ?? 'leave this page';
   const label = describe(dirty.map((d) => d.label));
 

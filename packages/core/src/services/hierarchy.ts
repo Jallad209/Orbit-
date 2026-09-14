@@ -1,4 +1,4 @@
-import type { Area, Goal, Id, Milestone, Project, Task } from '../schema';
+import type { Area, Goal, Id, Milestone, Note, Project, Task } from '../schema';
 
 /**
  * The canonical parent chain: Task → Project → Goal → Area. A task or
@@ -77,6 +77,32 @@ export function resolveTaskParent<T extends Pick<Task, 'projectId' | 'areaId'>>(
     throw new HierarchyError('missing-area', 'That area does not exist.');
   }
   return task;
+}
+
+/**
+ * The note-parent policy (week 12). A note may belong to a project (then
+ * its area is the project's, never a contradicting one) or to an area
+ * directly. A new assignment to a missing, deleted, or archived project is
+ * refused; a note already inside an archived project keeps its parent and
+ * stays editable. Returns the note with a consistent `areaId`.
+ */
+export function resolveNoteParent<T extends Pick<Note, 'projectId' | 'areaId'>>(
+  note: T,
+  s: StructureSnapshot,
+  options: { previousProjectId?: Id | null } = {},
+): T {
+  if (note.projectId) {
+    const project = byId(s.projects).get(note.projectId);
+    if (!project) throw new HierarchyError('missing-project', 'That project does not exist.');
+    if (project.status === 'archived' && options.previousProjectId !== note.projectId) {
+      throw new HierarchyError('archived-parent', 'That project is archived. Restore it first.');
+    }
+    return { ...note, areaId: project.areaId };
+  }
+  if (note.areaId && !byId(s.areas).has(note.areaId)) {
+    throw new HierarchyError('missing-area', 'That area does not exist.');
+  }
+  return note;
 }
 
 export interface TaskAncestors {

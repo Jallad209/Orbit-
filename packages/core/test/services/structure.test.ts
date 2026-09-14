@@ -291,3 +291,38 @@ describe('durations', () => {
     expect(formatDuration(120)).toBe('2h');
   });
 });
+
+describe('resolveNoteParent (week 12)', () => {
+  it('derives the area from the project and refuses missing or archived parents for new assignments', async () => {
+    const { resolveNoteParent, HierarchyError } = await import('../../src/services/hierarchy');
+    const { anArea, aProject } = await import('../builders');
+    const area = anArea();
+    const other = anArea();
+    const project = aProject({ areaId: area.id });
+    const archived = aProject({ areaId: area.id, status: 'archived' });
+    const s = { areas: [area, other], goals: [], projects: [project, archived], tasks: [] };
+    expect(resolveNoteParent({ projectId: project.id, areaId: other.id }, s)).toEqual({
+      projectId: project.id,
+      areaId: area.id,
+    });
+    expect(resolveNoteParent({ projectId: null, areaId: other.id }, s)).toEqual({
+      projectId: null,
+      areaId: other.id,
+    });
+    expect(() => resolveNoteParent({ projectId: archived.id, areaId: null }, s)).toThrow(
+      HierarchyError,
+    );
+    // Already inside the archived project: still allowed to stay there.
+    expect(
+      resolveNoteParent({ projectId: archived.id, areaId: null }, s, {
+        previousProjectId: archived.id,
+      }),
+    ).toEqual({ projectId: archived.id, areaId: area.id });
+    expect(() =>
+      resolveNoteParent({ projectId: '00000000-0000-7000-8000-000000000001', areaId: null }, s),
+    ).toThrow('That project does not exist.');
+    expect(() =>
+      resolveNoteParent({ projectId: null, areaId: '00000000-0000-7000-8000-000000000001' }, s),
+    ).toThrow('That area does not exist.');
+  });
+});

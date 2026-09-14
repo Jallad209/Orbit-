@@ -15,6 +15,9 @@ import { useRepoQuery } from '@/data/useQuery';
 import { loadLinkCandidates } from '@/features/structure/structureService';
 import { cn } from '@/lib/cn';
 
+/** Rows rendered at once; the rest stay reachable through the search box. */
+const PAGE = 50;
+
 const KINDS: Array<{ type: EntityType | 'all'; label: string }> = [
   { type: 'all', label: 'All' },
   { type: 'note', label: 'Notes' },
@@ -47,24 +50,36 @@ export function LinkPicker({
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<EntityType | 'all'>('all');
   const [query, setQuery] = useState('');
-  const { data: candidates } = useRepoQuery(
-    (repo) => loadLinkCandidates(repo, from),
-    [from.type, from.id],
+  const [pending, setPending] = useState(false);
+  // Candidates load when the dialog opens, never on a closed render (week 12).
+  const {
+    data: candidates,
+    loading,
+    error,
+  } = useRepoQuery(
+    (repo) => (open ? loadLinkCandidates(repo, from) : Promise.resolve(null)),
+    [from.type, from.id, open],
   );
 
-  const filtered = useMemo(() => {
+  const matching = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (candidates ?? [])
       .filter((c) => kind === 'all' || c.type === kind)
       .filter((c) => !exclude.some((e) => e.type === c.type && e.id === c.id))
-      .filter((c) => !q || c.label.toLowerCase().includes(q))
-      .slice(0, 50);
+      .filter((c) => !q || c.label.toLowerCase().includes(q));
   }, [candidates, kind, query, exclude]);
+  const filtered = matching.slice(0, PAGE);
 
   const pick = async (c: EntityRef) => {
-    await onLink({ type: c.type, id: c.id });
-    setOpen(false);
-    setQuery('');
+    if (pending) return; // Enter and a click cannot submit the same link twice
+    setPending(true);
+    try {
+      await onLink({ type: c.type, id: c.id });
+      setOpen(false);
+      setQuery('');
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
@@ -127,8 +142,24 @@ export function LinkPicker({
               </button>
             </li>
           ))}
+          {loading && !candidates ? (
+            <li className="px-2 py-3 text-[13px] text-ink-faint" aria-busy="true">
+              Loading…
+            </li>
+          ) : null}
+          {error ? (
+            <li className="px-2 py-3 text-[13px] text-danger" role="alert">
+              Could not load candidates: {error.message}
+            </li>
+          ) : null}
           {candidates && filtered.length === 0 ? (
             <li className="px-2 py-3 text-[13px] text-ink-faint">Nothing matches.</li>
+          ) : null}
+          {matching.length > PAGE ? (
+            <li className="px-2 py-2 text-[12px] text-ink-faint" data-testid="link-picker-more">
+              {matching.length - PAGE} more match{matching.length - PAGE === 1 ? '' : 'es'}; narrow
+              the search to reach them.
+            </li>
           ) : null}
         </ul>
       </DialogContent>

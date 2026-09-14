@@ -55,6 +55,10 @@ export const webPlatform: Platform = {
     }
   },
 
+  async openExternal(url) {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  },
+
   async requestPersistentStorage(): Promise<StorageStatus> {
     const storage = typeof navigator !== 'undefined' ? navigator.storage : undefined;
     if (!storage) return { persisted: false, usageBytes: null, quotaBytes: null };

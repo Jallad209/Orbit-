@@ -143,6 +143,7 @@ describe('desktop platform', () => {
         send: vi.fn(),
       },
       window: { startDragging: async () => {} },
+      openUrl: async () => {},
       listen: async () => () => {},
     }));
     await platform.createRepository();
@@ -172,6 +173,7 @@ describe('desktop platform', () => {
         send: vi.fn(),
       },
       window: { startDragging: async () => {} },
+      openUrl: async () => {},
       listen: async () => () => {},
       reload,
     }));
@@ -197,6 +199,7 @@ describe('desktop platform', () => {
         send: vi.fn(),
       },
       window: { startDragging: async () => {} },
+      openUrl: async () => {},
       listen: async () => () => {},
       reload: vi.fn(),
     }));

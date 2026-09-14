@@ -3,6 +3,7 @@ import type { Block, Clock, Id, Task, TimeWindow } from '@orbit/core';
 import type { Repository, SearchHit, SearchableType } from '@orbit/storage';
 import { settingsFor, type PlanPrefs } from '@/features/today/planSettings';
 import { dropTask, firstFreeSlot, loadDay } from '@/features/timeline/timelineService';
+import { routeFor } from '@/lib/destinations';
 
 /**
  * Quick actions a search result offers. Only behaviour that already exists
@@ -24,10 +25,14 @@ export async function scheduleTaskToday(
   return dropTask(repo, day, task, slot, settingsFor(prefs, today, []), clock);
 }
 
-/** Where "Open" goes for a hit: projects have a page; everything else previews in place. */
+/**
+ * Where "Open" goes for a hit. Every searchable type has a screen since
+ * week 12; the preview drawer (`?open=type:id`) keeps working for saved
+ * URLs and offers the same Open from inside.
+ */
 export function openTarget(hit: SearchHit): { kind: 'route'; to: string } | { kind: 'preview' } {
-  if (hit.type === 'project') return { kind: 'route', to: `/projects/${hit.id}` };
-  return { kind: 'preview' };
+  const to = routeFor({ type: hit.type, id: hit.id });
+  return to ? { kind: 'route', to } : { kind: 'preview' };
 }
 
 export interface PreviewRef {

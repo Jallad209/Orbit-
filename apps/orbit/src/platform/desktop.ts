@@ -39,19 +39,22 @@ interface Deps {
     send(options: { title: string; body?: string }): void;
   };
   window: { startDragging(): Promise<void> };
+  /** The opener plugin: the OS handler for a URL. */
+  openUrl(url: string): Promise<void>;
   reload(): void;
   /** Subscribe to a shell event; resolves to the unsubscribe function. */
   listen<T>(name: string, handler: (payload: T) => void): Promise<() => void>;
 }
 
 async function loadDeps(): Promise<Deps> {
-  const [core, path, dialog, notification, win, event] = await Promise.all([
+  const [core, path, dialog, notification, win, event, opener] = await Promise.all([
     import('@tauri-apps/api/core'),
     import('@tauri-apps/api/path'),
     import('@tauri-apps/plugin-dialog'),
     import('@tauri-apps/plugin-notification'),
     import('@tauri-apps/api/window'),
     import('@tauri-apps/api/event'),
+    import('@tauri-apps/plugin-opener'),
   ]);
   return {
     invoke: core.invoke as Invoke,
@@ -64,6 +67,7 @@ async function loadDeps(): Promise<Deps> {
       send: notification.sendNotification,
     },
     window: { startDragging: () => win.getCurrentWindow().startDragging() },
+    openUrl: (url) => opener.openUrl(url),
     reload: () => window.location.reload(),
     listen: (name, handler) => event.listen(name, (e) => handler(e.payload as never)),
   };
@@ -291,6 +295,11 @@ export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Pla
       if (!path) return;
       const text = contents instanceof Blob ? await contents.text() : contents;
       await d.invoke<void>('file_write_text', { path, contents: text });
+    },
+
+    async openExternal(url) {
+      const d = await ready();
+      await d.openUrl(url);
     },
 
     async requestPersistentStorage(): Promise<StorageStatus> {

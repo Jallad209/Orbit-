@@ -86,9 +86,9 @@ function Meta({ label, value }: { label: string; value: string | null | undefine
 }
 
 /**
- * Read-only preview of a search result. People and notes have no screen
- * of their own until week 12; this drawer shows what they hold so a
- * search never dead-ends on a placeholder.
+ * Read-only preview of a search result, kept for the week-10 `?open=`
+ * URLs and quick looks; every record here has a real screen since week 12
+ * and the drawer offers Open to reach it.
  */
 export function SearchPreview({
   target,
@@ -157,6 +157,13 @@ export function SearchPreview({
                 ) : (
                   <Badge tone="ok">{record.task.status}</Badge>
                 )}
+                <Link
+                  to={routeFor({ type: 'task', id: record.task.id })!}
+                  className={buttonVariants({ size: 'sm', variant: 'ghost' })}
+                  onClick={onClose}
+                >
+                  Open task
+                </Link>
                 {record.task.projectId ? (
                   <Link
                     to={`/projects/${record.task.projectId}`}
@@ -185,12 +192,23 @@ export function SearchPreview({
               ) : (
                 <p className="text-sm text-ink-muted">This note has no body yet.</p>
               )}
-              {record.note.projectId ? (
-                <Link to={`/projects/${record.note.projectId}`} className="text-[13px] underline">
-                  Open project
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  to={routeFor({ type: 'note', id: record.note.id })!}
+                  className={buttonVariants({ size: 'sm', variant: 'secondary' })}
+                  onClick={onClose}
+                >
+                  Open note
                 </Link>
-              ) : null}
-              <p className="text-[12px] text-ink-faint">Editing notes arrives in week 12.</p>
+                {record.note.projectId ? (
+                  <Link
+                    to={`/projects/${record.note.projectId}`}
+                    className={buttonVariants({ size: 'sm', variant: 'ghost' })}
+                  >
+                    Open project
+                  </Link>
+                ) : null}
+              </div>
             </div>
           ) : null}
           {record?.type === 'project' ? (
