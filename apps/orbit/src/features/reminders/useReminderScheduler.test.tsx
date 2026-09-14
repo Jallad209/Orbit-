@@ -40,17 +40,23 @@ describe('useReminderScheduler', () => {
     const platform: Platform = { ...webPlatform, notify };
     renderWithProviders(<Bridge />, { repository: repo, platform });
 
-    await waitFor(async () => expect(await repo.reminders.count()).toBe(1));
-    const [reminder] = await repo.reminders.list();
-    expect(reminder).toMatchObject({
-      entityId: rent.id,
-      title: 'Rent due tomorrow',
-      status: 'fired',
-    });
+    // Both bills are prepared; only the rent is due (the gym row waits with its future fire time).
+    await waitFor(async () => expect(await repo.reminders.count()).toBe(2));
+    const reminder = (await repo.reminders.list()).find((r) => r.entityId === rent.id);
+    await waitFor(async () =>
+      expect((await repo.reminders.get(reminder!.id))?.status).toBe('fired'),
+    );
+    expect(reminder).toMatchObject({ entityId: rent.id, title: 'Rent due 2026-09-15' });
+    const gym = (await repo.reminders.list()).find((r) => r.entityId !== rent.id)!;
+    expect(gym).toMatchObject({ status: 'pending', title: 'Gym due 2026-10-01' });
+    expect(gym.fireAt > clock.now().toISOString()).toBe(true);
     const toasts = useToastStore.getState().toasts;
     expect(toasts).toHaveLength(1);
-    expect(toasts[0]).toMatchObject({ id: `reminder-${reminder!.id}`, title: 'Rent due tomorrow' });
-    expect(notify).toHaveBeenCalledWith('Rent due tomorrow', 'Due 2026-09-15 · 900');
+    expect(toasts[0]).toMatchObject({
+      id: `reminder-${reminder!.id}`,
+      title: 'Rent due 2026-09-15',
+    });
+    expect(notify).toHaveBeenCalledWith('Rent due 2026-09-15', '900');
 
     // Dismiss from the toast action.
     await act(async () => toasts[0]!.action!.onClick());
@@ -66,12 +72,12 @@ describe('useReminderScheduler', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(10);
     });
-    expect(await repo.reminders.count()).toBe(1);
+    expect(await repo.reminders.count()).toBe(2);
     clock.advance(REMINDER_POLL_MS);
     await act(async () => {
       await vi.advanceTimersByTimeAsync(REMINDER_POLL_MS + 10);
     });
-    expect(await repo.reminders.count()).toBe(1);
+    expect(await repo.reminders.count()).toBe(2);
     expect(useToastStore.getState().toasts).toHaveLength(1);
     clock.set(new Date(2026, 8, 14, 10, 0, 0));
   });
@@ -84,8 +90,8 @@ describe('useReminderScheduler', () => {
       capabilities: { ...webPlatform.capabilities, nativeReminders: true, dataFolder: true },
     };
     renderWithProviders(<Bridge />, { repository: repo, platform });
-    await waitFor(async () => expect(await repo.reminders.count()).toBe(1));
-    expect((await repo.reminders.list())[0]?.status).toBe('pending');
+    await waitFor(async () => expect(await repo.reminders.count()).toBe(2));
+    expect((await repo.reminders.list()).map((r) => r.status)).toEqual(['pending', 'pending']);
     expect(useToastStore.getState().toasts).toHaveLength(0);
   });
 });

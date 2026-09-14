@@ -153,22 +153,28 @@ describe('constraint rules', () => {
 describe('reminder rules', () => {
   const bills = rule('reminder', { kind: 'billDueWithin', days: 3 }, { name: 'Bills' });
 
-  it('a bill due in 2 days produces one reminder, not one per run', () => {
+  it('every unpaid bill gets one row, future ones prepared ahead with a date-stable title', () => {
     const rent = aBill({ title: 'Rent', amount: 900, currency: 'EUR', dueAt: '2026-09-20' }, clock);
     const later = aBill({ title: 'Gym', dueAt: '2026-09-30' }, clock);
     const paid = aBill({ title: 'Paid', dueAt: '2026-09-19', paid: true }, clock);
-    const first = computeReminders({ rules: [bills], bills: [rent, later, paid] }, clock.now());
-    expect(first).toHaveLength(1);
+    const all = computeReminders({ rules: [bills], bills: [rent, later, paid] }, clock.now());
+    expect(all).toHaveLength(2);
+    const first = all.filter((d) => d.entityId === rent.id);
     expect(first[0]).toMatchObject({
       key: reminderKey(bills.id, rent.id, '2026-09-20'),
       entityType: 'bill',
       entityId: rent.id,
-      title: 'Rent due in 2 days',
-      body: 'Due 2026-09-20 · 900 EUR',
+      title: 'Rent due 2026-09-20',
+      body: '900 EUR',
     });
-    // Fires 09:00 local on the day it entered the window (due − 3 days = the 17th).
+    // Fires 09:00 local on the day it enters the window (due − 3 days = the 17th).
     expect(new Date(first[0]!.fireAt).getHours()).toBe(9);
     expect(toLocalDate(new Date(first[0]!.fireAt))).toBe('2026-09-17');
+    // The gym bill is known now, so its row waits in the queue with its real future fire time.
+    const gym = all.find((d) => d.entityId === later.id)!;
+    expect(toLocalDate(new Date(gym.fireAt))).toBe('2026-09-27');
+    expect(gym).toMatchObject({ title: 'Gym due 2026-09-30', body: '10' });
+    expect(dueReminders(toReminderRecords([gym], clock), clock.now())).toEqual([]);
 
     const created = toReminderRecords(reconcileReminders([], first), clock);
     expect(created[0]!.status).toBe('pending');
@@ -212,15 +218,21 @@ describe('reminder rules', () => {
       { rules: [followUp], commitments: [quiet, fresh, mine, done], people: [omar, recent] },
       clock.now(),
     );
-    expect(out).toHaveLength(1);
+    // Both open owed-to-me commitments get a row; only Omar's is due, Lina's waits until the 23rd.
+    expect(out).toHaveLength(2);
     expect(out[0]).toMatchObject({
       entityType: 'commitment',
       entityId: quiet.id,
       title: 'Follow up with Omar',
-      body: 'No reply on “Interview feedback” for 8 days',
+      body: 'No reply on “Interview feedback” since 2026-09-10',
       key: reminderKey(followUp.id, quiet.id, '2026-09-17'),
     });
     expect(toLocalDate(new Date(out[0]!.fireAt))).toBe('2026-09-17');
+    expect(out[1]).toMatchObject({
+      entityId: fresh.id,
+      key: reminderKey(followUp.id, fresh.id, '2026-09-23'),
+    });
+    expect(toLocalDate(new Date(out[1]!.fireAt))).toBe('2026-09-23');
     // With no contact on record, the commitment's own age counts.
     const nobody = aCommitment(
       { personId: aPerson({}, clock).id, text: 'Ping', direction: 'owed-to-me' },

@@ -64,7 +64,7 @@ describe('reminders on desktop', () => {
       timeoutMsg: 'the reminder row was not queued',
     });
     const [queued] = await reminders();
-    expect(queued!.title).toContain('due tomorrow');
+    expect(queued!.title).toMatch(/due \d{4}-\d{2}-\d{2}$/);
 
     // …and the Rust scheduler (60 s poll) fires it as an OS notification and marks it.
     await browser.waitUntil(async () => (await reminders())[0]?.status === 'fired', {

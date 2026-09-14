@@ -6,17 +6,19 @@ import type { Bill, Commitment, Id, Instant, LocalDate, Person, Reminder, Rule }
 
 /**
  * Reminder rules turn bills and unanswered commitments into queued
- * notifications. `computeReminders` says which reminders should exist right
- * now; `reconcileReminders` says which of those are new. The key names the
- * thing being reminded about (rule, entity, due date), never the fire time,
- * so re-evaluating every minute cannot queue duplicates, and a dismissed
- * reminder stays dismissed.
+ * notifications. `computeReminders` says which reminders should exist for
+ * the sources known right now — including ones whose fire time is still
+ * ahead, so a resident shell can deliver them without the frontend being
+ * awake to prepare the row that morning (week 11); `reconcileReminders`
+ * says which of those are new. The key names the thing being reminded
+ * about (rule, entity, due date), never the fire time, so re-evaluating
+ * every minute cannot queue duplicates, and a dismissed reminder stays
+ * dismissed. Wording carries explicit dates rather than "in 3 days", which
+ * would be stale by the time a prepared row is delivered.
  */
 
 /** Reminders fire at 09:00 local on the day they become relevant. */
 export const REMINDER_HOUR_MIN = 9 * 60;
-
-const DAY_MS = 86_400_000;
 
 export interface ReminderDraft {
   key: string;
@@ -50,40 +52,29 @@ function fireOn(date: LocalDate): Instant {
   return toInstant(date, REMINDER_HOUR_MIN).toISOString();
 }
 
-function daysWord(n: number): string {
-  if (n < 0) return `${-n} day${n === -1 ? '' : 's'} overdue`;
-  if (n === 0) return 'due today';
-  if (n === 1) return 'due tomorrow';
-  return `due in ${n} days`;
-}
-
-function daysBetween(from: LocalDate, to: LocalDate): number {
-  return Math.round((Date.parse(to) - Date.parse(from)) / DAY_MS);
-}
-
 /**
- * Every reminder the enabled rules call for at `now`:
- * - `billDueWithin(days)`: each unpaid bill due on or before today + days
- *   (overdue ones included), firing at 09:00 the day it entered the window;
- * - `followUpAfter(days)`: each open commitment owed to me whose person has
- *   not been heard from in `days`, firing at 09:00 the day the window ran out.
+ * Every reminder the enabled rules call for, given the sources known at
+ * `now`. Fire times may be in the future: the row waits in the queue.
+ * - `billDueWithin(days)`: each unpaid bill, firing at 09:00 on the day it
+ *   enters the window (due − days); an overdue or late-found bill fires as
+ *   soon as a scheduler sees it, because that day has passed;
+ * - `followUpAfter(days)`: each open commitment owed to me, firing at 09:00
+ *   on the day the quiet period runs out (last contact + days).
+ * One row per stored source: a recurring bill's later occurrences do not
+ * exist until the bill does, so nothing is expanded ahead of the data.
  */
-export function computeReminders(snapshot: ReminderSnapshot, now: Date): ReminderDraft[] {
-  const today = toLocalDate(now);
+export function computeReminders(snapshot: ReminderSnapshot, _now: Date): ReminderDraft[] {
   const out: ReminderDraft[] = [];
   const personById = new Map((snapshot.people ?? []).map((p) => [p.id, p]));
 
   for (const rule of reminderRules(snapshot.rules)) {
     const c = rule.config;
     if (c.kind === 'billDueWithin') {
-      const limit = addDays(today, c.days);
       for (const bill of snapshot.bills ?? []) {
-        if (bill.deletedAt !== null || bill.paid || bill.dueAt > limit) continue;
-        // The day it entered the window is never after today (dueAt ≤ today + days);
-        // a bill found late fires as soon as the scheduler sees it.
+        if (bill.deletedAt !== null || bill.paid) continue;
         const enters = addDays(bill.dueAt, -c.days);
         const amount = bill.amount
-          ? ` · ${bill.amount}${bill.currency ? ` ${bill.currency}` : ''}`
+          ? `${bill.amount}${bill.currency ? ` ${bill.currency}` : ''}`
           : '';
         out.push({
           key: reminderKey(rule.id, bill.id, bill.dueAt),
@@ -91,8 +82,8 @@ export function computeReminders(snapshot: ReminderSnapshot, now: Date): Reminde
           entityType: 'bill',
           entityId: bill.id,
           fireAt: fireOn(enters),
-          title: `${bill.title} ${daysWord(daysBetween(today, bill.dueAt))}`,
-          body: `Due ${bill.dueAt}${amount}`,
+          title: `${bill.title} due ${bill.dueAt}`,
+          body: amount,
         });
       }
     } else {
@@ -108,8 +99,6 @@ export function computeReminders(snapshot: ReminderSnapshot, now: Date): Reminde
         const lastContact = person?.lastContactAt ?? commitment.createdAt;
         const since = toLocalDate(new Date(lastContact));
         const expires = addDays(since, c.days);
-        if (expires > today) continue;
-        const quiet = daysBetween(since, today);
         out.push({
           key: reminderKey(rule.id, commitment.id, expires),
           ruleId: rule.id,
@@ -117,7 +106,7 @@ export function computeReminders(snapshot: ReminderSnapshot, now: Date): Reminde
           entityId: commitment.id,
           fireAt: fireOn(expires),
           title: `Follow up${person ? ` with ${person.name}` : ''}`,
-          body: `No reply on “${commitment.text}” for ${quiet} day${quiet === 1 ? '' : 's'}`,
+          body: `No reply on “${commitment.text}” since ${since}`,
         });
       }
     }
