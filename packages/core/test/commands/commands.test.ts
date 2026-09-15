@@ -182,14 +182,15 @@ describe('navigation commands', () => {
     await registry.run('regenerate-plan', ctx);
     await registry.run('show-neglected-goals', ctx);
     await registry.run('review-this-week', ctx);
+    // Without the capability the command explains and stays put (week 12: it only navigates
+    // where the screen exists).
     expect(navigate.mock.calls.map((c) => c[0])).toEqual([
       '/today',
       '/today?regenerate=1',
       '/goals?filter=neglected',
-      '/review/weekly',
     ]);
     expect(notices).toEqual([
-      expect.objectContaining({ title: 'The weekly review is not available yet' }),
+      expect.objectContaining({ title: 'The weekly review is not available here' }),
     ]);
 
     // "Open insights" exists only once the capability is on; neglected goals stay on /goals.

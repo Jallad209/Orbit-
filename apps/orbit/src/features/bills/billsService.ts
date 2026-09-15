@@ -225,23 +225,31 @@ export async function payBill(
 ): Promise<PaymentOutcome> {
   const clock = options.clock ?? systemClock;
   return mutate(repo, async (tx) => {
-    const current = await currentRecord(tx.bills, { id: base.id }, { noun: 'bill' });
-    let outcome: PaymentOutcome;
-    if (current.paid) {
-      const successor = current.nextBillId
-        ? ((await tx.bills.get(current.nextBillId)) ?? null)
-        : null;
-      outcome = { paid: current, successor, plan: successorPlan(current), replayed: true };
-    } else {
-      const result = payBillRule(current, paidAt, clock);
-      const paid = await tx.bills.upsert(result.paid);
-      const successor = result.successor ? await tx.bills.upsert(result.successor) : null;
-      await reconcileReminderQueue(tx, clock);
-      outcome = { paid, successor, plan: result.plan, replayed: false };
-    }
+    const outcome = await payWithin(tx, base, paidAt, clock);
     if (options.within) await options.within(tx, outcome);
     return outcome;
   });
+}
+
+/** The payment inside an owned transaction; the weekly review calls this with its own. */
+export async function payWithin(
+  tx: Repository,
+  base: Pick<Bill, 'id'>,
+  paidAt: Instant,
+  clock: Clock,
+): Promise<PaymentOutcome> {
+  const current = await currentRecord(tx.bills, { id: base.id }, { noun: 'bill' });
+  if (current.paid) {
+    const successor = current.nextBillId
+      ? ((await tx.bills.get(current.nextBillId)) ?? null)
+      : null;
+    return { paid: current, successor, plan: successorPlan(current), replayed: true };
+  }
+  const result = payBillRule(current, paidAt, clock);
+  const paid = await tx.bills.upsert(result.paid);
+  const successor = result.successor ? await tx.bills.upsert(result.successor) : null;
+  await reconcileReminderQueue(tx, clock);
+  return { paid, successor, plan: result.plan, replayed: false };
 }
 
 /** A one-off correction: back to unpaid with the payment time cleared. */

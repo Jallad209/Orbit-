@@ -45,19 +45,23 @@ export interface CurrentOptions {
  * a newer stamp is a conflict too — callers that merge field by field use
  * `mergePatch` instead and pass no stamp.
  */
-export async function currentRecord<T extends BaseRecord>(
+export function currentRecord<T extends BaseRecord>(
   store: EntityStore<T>,
   base: Base,
   options: CurrentOptions = {},
 ): Promise<T> {
   const noun = options.noun ?? 'record';
-  const current = await store.get(base.id);
-  if (!current) throw new ConflictError('missing', `This ${noun} no longer exists.`);
-  if (current.deletedAt !== null && !options.allowDeleted)
-    throw new ConflictError('deleted', `This ${noun} was deleted.`);
-  if (base.updatedAt !== undefined && current.updatedAt !== base.updatedAt)
-    throw new ConflictError('changed', `This ${noun} changed since you opened it.`);
-  return current;
+  // A promise chain on the store's own promise, not an async wrapper: inside an IndexedDB
+  // transaction Dexie keeps its zone across one native await of a store promise, and an extra
+  // async level on top loses it (the transaction then commits under the caller's next write).
+  return store.get(base.id).then((current) => {
+    if (!current) throw new ConflictError('missing', `This ${noun} no longer exists.`);
+    if (current.deletedAt !== null && !options.allowDeleted)
+      throw new ConflictError('deleted', `This ${noun} was deleted.`);
+    if (base.updatedAt !== undefined && current.updatedAt !== base.updatedAt)
+      throw new ConflictError('changed', `This ${noun} changed since you opened it.`);
+    return current;
+  });
 }
 
 /**

@@ -8,19 +8,21 @@ import { bumpData } from '@/data/useQuery';
  * key names the thing being reminded about, so running this every minute
  * on both runtimes creates each reminder once.
  */
-export async function reconcileReminderQueue(
+export function reconcileReminderQueue(
   repo: Repository,
   clock: Clock = systemClock,
 ): Promise<Reminder[]> {
+  // Returned directly rather than through an async wrapper, so a caller inside a transaction
+  // awaits the transaction's own promise (see `currentRecord` for the Dexie zone rule).
   return repo.transaction(async (tx) => {
-    // The read AND write must share ownership, including across desktop windows.
-    const [rules, bills, commitments, people, reminders] = await Promise.all([
-      tx.rules.list({ includeDeleted: true }),
-      tx.bills.list({ includeDeleted: true }),
-      tx.commitments.list({ includeDeleted: true }),
-      tx.people.list({ includeDeleted: true }),
-      tx.reminders.list({ includeDeleted: true }),
-    ]);
+    // The read AND write must share ownership, including across desktop windows. The reads are
+    // sequential on purpose: a `Promise.all` inside a nested Dexie transaction lets the parent
+    // IndexedDB transaction commit before a caller's later writes (week 12).
+    const rules = await tx.rules.list({ includeDeleted: true });
+    const bills = await tx.bills.list({ includeDeleted: true });
+    const commitments = await tx.commitments.list({ includeDeleted: true });
+    const people = await tx.people.list({ includeDeleted: true });
+    const reminders = await tx.reminders.list({ includeDeleted: true });
     const desired = new Map(
       computeReminders(
         { rules, bills, commitments, people: people.filter((p) => p.deletedAt === null) },

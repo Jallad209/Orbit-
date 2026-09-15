@@ -54,12 +54,13 @@ function legacyPrefs(): SettingsPatch {
  * old rows on read (week 11), so the result always has every group; when
  * there is no document yet the defaults are returned and nothing is written.
  */
-export async function readSettings(
-  repo: Repository,
-  clock: Clock = systemClock,
-): Promise<AppSettings> {
-  const existing = await repo.appSettings.get(APP_SETTINGS_ID);
-  return existing && existing.deletedAt === null ? existing : defaultAppSettings(clock);
+export function readSettings(repo: Repository, clock: Clock = systemClock): Promise<AppSettings> {
+  // A chain on the store promise, safe to await from inside a transaction (see `currentRecord`).
+  return repo.appSettings
+    .get(APP_SETTINGS_ID)
+    .then((existing) =>
+      existing && existing.deletedAt === null ? existing : defaultAppSettings(clock),
+    );
 }
 
 /**
@@ -87,6 +88,11 @@ export async function loadSettings(
 }
 
 /** Task creation reads the persisted default without creating settings as a side effect. */
+/**
+ * Not for use inside a repository transaction on IndexedDB: it sits two
+ * async levels above the store read, and Dexie keeps its zone across one.
+ * Call `readSettings(tx)` there instead (week 12).
+ */
 export async function defaultTaskEstimate(
   repo: Repository,
   clock: Clock = systemClock,

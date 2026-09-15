@@ -22,6 +22,7 @@ import { isFirstRunDone } from '@/features/firstRun/firstRun';
 import { QuickCaptureWindow } from '@/features/inbox/QuickCaptureWindow';
 import { EveningFlow } from '@/features/reviews/EveningFlow';
 import { MorningFlow } from '@/features/reviews/MorningFlow';
+import { WeeklyFlow } from '@/features/reviews/WeeklyFlow';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { usePlatform } from '@/platform';
 
@@ -84,10 +85,7 @@ export function AppRoutes() {
         <Route path="/tasks/:id" element={<TaskPage />} />
         <Route path="/review/morning" element={<MorningFlow />} />
         <Route path="/review/evening" element={<EveningFlow />} />
-        <Route
-          path="/review/weekly"
-          element={<Placeholder title="Weekly review" description="Arrives in week 12." />}
-        />
+        <Route path="/review/weekly" element={<WeeklyFlow />} />
         <Route
           path="/search"
           element={

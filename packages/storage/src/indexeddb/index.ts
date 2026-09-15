@@ -1,4 +1,4 @@
-import Dexie, { type Table } from 'dexie';
+import Dexie, { type DBCore, type DBCoreCursor, type DBCoreTable, type Table } from 'dexie';
 import type { z } from 'zod';
 import {
   AppSettingsSchema,
@@ -108,6 +108,43 @@ export const SCHEMA_VERSIONS: ReadonlyArray<{ version: number; stores: Record<st
 
 type OpLogInsert = Omit<OpLogEntry, 'seq'>;
 
+/**
+ * Read normalization as a DBCore middleware (week 12). Rows of the stores
+ * whose shape grew (settings, insight states, bills) are normalized inside
+ * Dexie's own read path — get, getMany, query, and cursors — so a store
+ * method returns a plain Dexie promise. A `.then` chained onto the
+ * returned promise is not equivalent: awaited from an async helper inside
+ * a transaction, it lost Dexie's zone in the browser and the IndexedDB
+ * transaction auto-committed under the caller's later writes.
+ */
+function normalizingCore(core: DBCore): DBCore {
+  return {
+    ...core,
+    table(name: string): DBCoreTable {
+      const table = core.table(name);
+      const normalize = normalizerFor<BaseRecord>(name as StoreName);
+      if (!normalize) return table;
+      const fix = (row: unknown) =>
+        row === undefined || row === null ? row : normalize(row as BaseRecord);
+      const wrapCursor = (cursor: DBCoreCursor | null): DBCoreCursor | null =>
+        cursor &&
+        Object.create(cursor, {
+          value: { get: () => fix(cursor.value) },
+        });
+      return {
+        ...table,
+        get: (req) => table.get(req).then(fix),
+        getMany: (req) => table.getMany(req).then((rows) => rows.map(fix)),
+        query: (req) =>
+          table
+            .query(req)
+            .then((res) => (req.values ? { ...res, result: res.result.map(fix) } : res)),
+        openCursor: (req) => table.openCursor(req).then(wrapCursor),
+      };
+    },
+  };
+}
+
 class OrbitDb extends Dexie {
   opLog!: Table<OpLogEntry, number, OpLogInsert>;
 
@@ -117,6 +154,7 @@ class OrbitDb extends Dexie {
     this.version(2).stores(STORES_V2);
     this.version(3).stores(STORES_V3);
     this.version(4).stores(STORES_V4);
+    this.use({ stack: 'dbcore', name: 'orbit-normalize', create: normalizingCore });
   }
 }
 
@@ -126,16 +164,11 @@ interface Ctx {
 }
 
 class IdbStore<T extends BaseRecord> implements EntityStore<T> {
-  /** Week-11 read normalization for the stores whose shape grew; identity elsewhere. */
-  private readonly normalize: ((raw: T) => T) | null;
-
   constructor(
     protected readonly name: StoreName,
     protected readonly schema: z.ZodType<T, z.ZodTypeDef, unknown>,
     protected readonly ctx: Ctx,
-  ) {
-    this.normalize = normalizerFor<T>(name);
-  }
+  ) {}
 
   protected get table(): Table<T, Id> {
     return this.ctx.db.table(this.name) as Table<T, Id>;
@@ -155,38 +188,23 @@ class IdbStore<T extends BaseRecord> implements EntityStore<T> {
     });
   }
 
-  /**
-   * Reads stay Dexie promise chains rather than nested async functions: a
-   * second native `await` hop inside a transaction loses Dexie's zone and the
-   * transaction commits under the caller's feet.
-   */
-  protected readAll(rows: T[]): T[] {
-    const normalize = this.normalize;
-    return normalize ? rows.map((r) => normalize(r)) : rows;
-  }
-
+  // Reads return Dexie's own promises: the read path already normalized old rows (see
+  // `normalizingCore`), so nothing is chained onto them here.
   get(id: Id): Promise<T | undefined> {
-    const normalize = this.normalize;
-    const row = this.table.get(id);
-    return normalize ? row.then((r) => (r ? normalize(r) : r)) : row;
+    return this.table.get(id);
   }
 
   getMany(ids: readonly Id[]): Promise<T[]> {
-    return this.table
-      .bulkGet([...ids])
-      .then((rows) => this.readAll(rows.filter((r): r is T => r !== undefined)));
+    return this.table.bulkGet([...ids]).then((rows) => rows.filter((r): r is T => r !== undefined));
   }
 
   list(options?: ListOptions): Promise<T[]> {
-    const rows = options?.includeDeleted
+    return options?.includeDeleted
       ? this.table.toArray()
       : this.table.filter((r) => r.deletedAt === null).toArray();
-    return this.normalize ? rows.then((all) => this.readAll(all)) : rows;
   }
 
   query(predicate: (record: T) => boolean, options?: ListOptions): Promise<T[]> {
-    // Normalized stores filter after normalization so a predicate sees the current shape.
-    if (this.normalize) return this.list(options).then((rows) => rows.filter(predicate));
     if (options?.includeDeleted) return this.table.filter(predicate).toArray();
     return this.table.filter((r) => r.deletedAt === null && predicate(r)).toArray();
   }
@@ -318,6 +336,11 @@ export async function createIndexedDbRepository(
     opLog: new IdbOpLog(ctx),
 
     async transaction<T>(fn: (tx: Repository) => Promise<T>): Promise<T> {
+      // Inside a transaction already (a service calling another service): join it, as the
+      // memory and SQLite adapters do. A Dexie sub-transaction here lets the parent IndexedDB
+      // transaction auto-commit once the child settles, and the caller's next write then fails
+      // with "Transaction committed too early" (week 12).
+      if (Dexie.currentTransaction && Dexie.currentTransaction.db === db) return fn(repo);
       return db.transaction('rw', db.tables, () => fn(repo));
     },
 

@@ -195,9 +195,10 @@ export const reviewThisWeek: CommandDefinition = {
   async run(ctx) {
     if (!ctx.capabilities.weeklyReview) {
       ctx.notify({
-        title: 'The weekly review is not available yet',
-        description: 'It arrives in week 12. Morning and evening reviews are ready today.',
+        title: 'The weekly review is not available here',
+        description: 'This runtime has no weekly review screen.',
       });
+      return {};
     }
     ctx.navigate('/review/weekly');
     return {};

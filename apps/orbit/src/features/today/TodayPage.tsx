@@ -11,6 +11,7 @@ import { useRepository } from '@/platform';
 import { cn } from '@/lib/cn';
 import { InsightsStrip } from '@/features/insights/InsightsStrip';
 import { ReviewLaunchers } from '@/features/reviews/ReviewLaunchers';
+import { loadLanding } from '@/features/reviews/weeklyService';
 import { CompactTimeline } from './CompactTimeline';
 import { EnergyPicker } from './EnergyPicker';
 import { FocusHeader } from './FocusHeader';
@@ -68,6 +69,7 @@ export function TodayPage({ clock = systemClock, date: dateProp }: Props) {
     [date, settings, clock],
   );
   const { data, loading, refresh } = useRepoQuery(query, [query]);
+  const { data: weekly } = useRepoQuery((r) => loadLanding(r, clock), [clock]);
 
   const mode: 'proposal' | 'committed' = data?.commitment && !replanning ? 'committed' : 'proposal';
   const diff = useMemo(
@@ -178,6 +180,7 @@ export function TodayPage({ clock = systemClock, date: dateProp }: Props) {
                 now={data.now}
                 hasCommitment={data.commitment !== null}
                 eveningStartMin={prefs.eveningStartMin}
+                weekly={weekly?.active ? 'resume' : 'start'}
               />
               <PlanPanel
                 proposal={data.proposal}
