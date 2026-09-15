@@ -8,9 +8,11 @@
 //! opt-in login launch. No feature lives here that the engine could do in
 //! TypeScript.
 
+mod activation;
 mod autostart;
 mod commands;
 mod logging;
+mod notifications;
 mod prefs;
 mod resident;
 mod scheduler;
@@ -222,6 +224,8 @@ pub fn run() {
             resident::resident_quit,
             resident::resident_quit_ack,
             resident::resident_capture_subscribed,
+            resident::resident_activation_pending,
+            resident::resident_activation_subscribed,
             scheduler::scheduler_wake,
         ])
         .build(tauri::generate_context!())

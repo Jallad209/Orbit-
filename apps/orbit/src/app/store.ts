@@ -20,6 +20,8 @@ interface AppState {
   reminderReconciles: number;
   /** Appearance: shorten every animation regardless of the OS setting. */
   reduceMotion: boolean;
+  /** A resolved activation path held while first-run onboarding is still on screen (week 12). */
+  pendingActivation: string | null;
   setStorageStatus: (status: StorageStatus) => void;
   dismissStorageBanner: () => void;
   setOfflineReady: (ready: boolean) => void;
@@ -29,6 +31,7 @@ interface AppState {
   setQuitting: (on: boolean) => void;
   noteReminderReconcile: () => void;
   setReduceMotion: (on: boolean) => void;
+  setPendingActivation: (path: string | null) => void;
 }
 
 // The week-10 close-to-tray flag now lives in the shell's native preferences; the raw
@@ -67,6 +70,8 @@ export const useAppStore = create<AppState>((set) => ({
   quitting: false,
   reminderReconciles: 0,
   reduceMotion: readFlag(REDUCE_MOTION_KEY),
+  pendingActivation: null,
+  setPendingActivation: (pendingActivation) => set({ pendingActivation }),
   setStorageStatus: (storageStatus) => set({ storageStatus }),
   dismissStorageBanner: () => set({ storageBannerDismissed: true }),
   setOfflineReady: (offlineReady) => set({ offlineReady }),

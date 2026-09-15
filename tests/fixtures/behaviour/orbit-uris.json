@@ -1,0 +1,81 @@
+{
+  "$comment": "Shared vectors for the orbit:// parser in apps/orbit/src/lib/destinations.ts and apps/orbit/src-tauri/src/activation.rs (week 12). Both must accept exactly these and reject exactly those.",
+  "accept": [
+    {
+      "input": "orbit://reminder/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+      "kind": "reminder",
+      "id": "01a0a1b6-3ad4-7678-92cc-ae55e388b0a6"
+    },
+    {
+      "input": "orbit://task/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+      "kind": "task",
+      "id": "01a0a1b6-3ad4-7678-92cc-ae55e388b0a6"
+    },
+    {
+      "input": "orbit://person/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+      "kind": "person",
+      "id": "01a0a1b6-3ad4-7678-92cc-ae55e388b0a6"
+    },
+    {
+      "input": "orbit://commitment/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+      "kind": "commitment",
+      "id": "01a0a1b6-3ad4-7678-92cc-ae55e388b0a6"
+    },
+    {
+      "input": "orbit://bill/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+      "kind": "bill",
+      "id": "01a0a1b6-3ad4-7678-92cc-ae55e388b0a6"
+    },
+    {
+      "input": "orbit://note/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+      "kind": "note",
+      "id": "01a0a1b6-3ad4-7678-92cc-ae55e388b0a6"
+    },
+    {
+      "input": "orbit://review/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+      "kind": "review",
+      "id": "01a0a1b6-3ad4-7678-92cc-ae55e388b0a6"
+    },
+    {
+      "input": "orbit://task/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6/",
+      "kind": "task",
+      "id": "01a0a1b6-3ad4-7678-92cc-ae55e388b0a6"
+    },
+    {
+      "input": "orbit://task/01A0A1B6-3AD4-7678-92CC-AE55E388B0A6",
+      "kind": "task",
+      "id": "01a0a1b6-3ad4-7678-92cc-ae55e388b0a6"
+    }
+  ],
+  "reject": [
+    "",
+    "orbit://",
+    "orbit://task",
+    "orbit://task/",
+    "orbit://area/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+    "orbit://timelineBlock/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+    "orbit://capture/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+    "orbit://task/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6/extra",
+    "orbit://task/not-a-uuid",
+    "orbit://task/01a0a1b6-3ad4-9678-92cc-ae55e388b0a6",
+    "orbit://task/01a0a1b6-3ad4-7678-c2cc-ae55e388b0a6",
+    "orbit://task/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6?x=1",
+    "orbit://task/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6#frag",
+    "orbit://user:pw@task/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+    "orbit://task:80/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+    "orbit://task/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6%2Fmore",
+    "orbit://task%2F01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+    "orbit://task/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6\n",
+    "orbit://task/ 01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+    "orbit://task\\01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+    "http://task/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+    "ORBIT://task/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+    "orbit://Task/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6",
+    "orbit://task/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "javascript:alert(1)",
+    "orbit://open-data-dir/C:%5Cusers",
+    "--background",
+    "--capture",
+    "orbit.exe"
+  ]
+}

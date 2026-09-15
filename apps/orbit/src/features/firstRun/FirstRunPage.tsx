@@ -10,6 +10,7 @@ import { bumpData } from '@/data/useQuery';
 import { saveSettings } from '@/features/settings/settingsService';
 import { usePlanPrefs } from '@/features/today/planSettings';
 import { usePlatform, useRepository } from '@/platform';
+import { useAppStore } from '@/app/store';
 import { markFirstRunDone } from './firstRun';
 
 /**
@@ -93,7 +94,11 @@ export function FirstRunPage() {
       });
     }
     markFirstRunDone();
-    navigate('/today', { replace: true });
+    // An activation that arrived during onboarding (a notification click on a fresh install)
+    // is honoured now rather than lost.
+    const pending = useAppStore.getState().pendingActivation;
+    useAppStore.getState().setPendingActivation(null);
+    navigate(pending ?? '/today', { replace: true });
   };
 
   return (

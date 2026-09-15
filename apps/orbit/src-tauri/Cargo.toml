@@ -32,6 +32,11 @@ tempfile = "3"
 zip = { version = "6", default-features = false, features = ["deflate-flate2"] }
 flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
 
+# Notification activation (week 12): toasts with a protocol launch payload and an
+# immediate submission result, which the notification plugin cannot provide.
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.61", features = ["Data_Xml_Dom", "UI_Notifications", "Foundation"] }
+
 # Small, fast release binaries (DEVOPS-TASKS week 7).
 [profile.release]
 opt-level = "s"

@@ -31,10 +31,10 @@ use std::time::{Duration, Instant};
 use rusqlite::{params, Connection};
 use serde::Deserialize;
 use tauri::{AppHandle, Manager};
-use tauri_plugin_notification::NotificationExt;
 
 use crate::commands::db::{Database, Db};
 use crate::logging::{self, Level};
+use crate::notifications::{self, Toast};
 use crate::resident;
 use crate::time::now_iso;
 
@@ -213,15 +213,20 @@ pub fn tick(app: &AppHandle) -> usize {
         return 0;
     }
     let fired = deliver(&db.0, &now_iso(), |r| {
-        app.notification()
-            .builder()
-            .title(&r.title)
-            .body(&r.body)
-            .show()
-            .map_err(|e| {
-                logging::error("scheduler", "notify", &e.to_string());
-                e.to_string()
-            })
+        // The click payload names the reminder, never its content; the tag collapses a
+        // redelivered reminder into one notification-centre entry. `show` reports the
+        // immediate submission result, so a refused toast keeps the row pending.
+        notifications::show(
+            app,
+            &Toast {
+                title: r.title.clone(),
+                body: r.body.clone(),
+                launch: Some(format!("orbit://reminder/{}", r.id)),
+                tag: Some(r.id.clone()),
+                group: Some("orbit-reminders".into()),
+            },
+        )
+        .inspect_err(|e| logging::error("scheduler", "notify", e))
     });
     if fired > 0 {
         let mut fields = serde_json::Map::new();
@@ -350,7 +355,11 @@ mod tests {
             }),
             2
         );
-        assert_eq!(seen, vec!["f", "a"], "oldest fire time first: the follow-up, then the bill");
+        assert_eq!(
+            seen,
+            vec!["f", "a"],
+            "oldest fire time first: the follow-up, then the bill"
+        );
         assert_eq!(deliver(&db, now, |_| panic!("already fired")), 0);
         let guard = db.lock().unwrap();
         let conn = guard.connection.as_ref().unwrap();

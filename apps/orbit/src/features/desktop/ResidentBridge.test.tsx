@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation } from 'react-router';
+import { NoteSchema, createRecord, fixedClock } from '@orbit/core';
+import { createMemoryRepository } from '@orbit/storage';
 import { useAppStore } from '@/app/store';
+import { markFirstRunDone } from '@/features/firstRun/firstRun';
 import { useToastStore } from '@/components/ui/toastStore';
 import { useDraftStore } from '@/features/drafts/draftStore';
 import { webPlatform, type Platform } from '@/platform';
@@ -246,6 +249,105 @@ describe('DesktopSettings', () => {
     await waitFor(() => expect(quit).toHaveBeenCalledWith({ force: true }));
     void user;
     useDraftStore.setState({ drafts: {} });
+  });
+
+  it('opens the record an activation names, lands missing ones safely, and ignores bad URIs', async () => {
+    const fake = fakeResidentApi();
+    const repo = createMemoryRepository();
+    const note = await repo.notes.upsert(
+      createRecord(NoteSchema, fixedClock(new Date()), { title: 'Budget' }),
+    );
+    renderWithProviders(
+      <>
+        <ResidentBridge />
+        <Routes>
+          <Route path="*" element={<Where />} />
+        </Routes>
+      </>,
+      { platform: desktopWith(fake), repository: repo, insights: false, route: '/today' },
+    );
+    await waitFor(() => expect(fake.prefs.legacyCloseMigrated).toBe(true));
+    // During first-run onboarding the destination is held for the welcome page to finish on.
+    act(() => fake.emit('orbit:activate', `orbit://note/${note.id}`));
+    await waitFor(() => expect(useAppStore.getState().pendingActivation).toBe(`/notes/${note.id}`));
+    expect(screen.getByTestId('where')).toHaveTextContent('/today');
+    useAppStore.getState().setPendingActivation(null);
+    markFirstRunDone();
+    act(() => fake.emit('orbit:activate', `orbit://note/${note.id}`));
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent(`/notes/${note.id}`));
+    act(() => fake.emit('orbit:activate', 'orbit://task/00000000-0000-7000-8000-000000000001'));
+    await waitFor(() =>
+      expect(screen.getByTestId('where')).toHaveTextContent(
+        '/missing?type=task&id=00000000-0000-7000-8000-000000000001',
+      ),
+    );
+    act(() => fake.emit('orbit:activate', `javascript:alert(1)`));
+    act(() => fake.emit('orbit:activate', { uri: `orbit://note/${note.id}` }));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.getByTestId('where')).toHaveTextContent('/missing?type=task');
+    // Nothing was written by any of it.
+    expect(await repo.opLog.latestSeq()).toBe(1);
+  });
+
+  it('tells the shell its activation listener is attached, so a held cold activation is delivered', async () => {
+    const activationSubscribed = vi.fn(async () => {});
+    const fake = fakeResidentApi({ activationSubscribed });
+    renderWithProviders(<ResidentBridge />, {
+      platform: desktopWith(fake),
+      insights: false,
+      route: '/today',
+    });
+    // The bridge subscribes to shell events and then hands the shell the go-ahead; without
+    // this the shell would emit a cold `orbit:activate` before the listener existed (PD-001).
+    await waitFor(() => expect(activationSubscribed).toHaveBeenCalledTimes(1));
+  });
+
+  it('asks through the draft guard before an activation leaves an editor with unsaved changes', async () => {
+    const user = userEvent.setup();
+    const fake = fakeResidentApi();
+    const repo = createMemoryRepository();
+    const target = await repo.notes.upsert(
+      createRecord(NoteSchema, fixedClock(new Date()), { title: 'Target note' }),
+    );
+    markFirstRunDone();
+    renderWithProviders(
+      <>
+        <ResidentBridge />
+        <Routes>
+          <Route path="*" element={<Where />} />
+        </Routes>
+      </>,
+      { platform: desktopWith(fake), repository: repo, insights: false, route: '/notes/open' },
+    );
+    await waitFor(() => expect(fake.prefs.legacyCloseMigrated).toBe(true));
+    // An open note with unsaved input; saving it clears the draft (as the real editor does).
+    const flush = vi.fn(async () => {
+      useDraftStore.getState().update('note:open', { dirty: false });
+      return { ok: true as const };
+    });
+    useDraftStore.getState().register({
+      key: 'note:open',
+      label: 'Note “Draft”',
+      dirty: true,
+      status: 'editing',
+      error: null,
+      generation: 1,
+      flush,
+      discard: () => {},
+    });
+    await new Promise((r) => setTimeout(r, 10));
+    // Activating a different record asks first; nothing navigates until it is answered.
+    act(() => fake.emit('orbit:activate', `orbit://note/${target.id}`));
+    const guard = await screen.findByTestId('draft-guard');
+    expect(guard).toHaveTextContent('unsaved changes');
+    expect(screen.getByTestId('where')).toHaveTextContent('/notes/open');
+    // Save flushes the draft, then the activation proceeds to the named record.
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(screen.getByTestId('where')).toHaveTextContent(`/notes/${target.id}`),
+    );
+    expect(flush).toHaveBeenCalledTimes(1);
+    useDraftStore.setState({ drafts: {}, pending: null });
   });
 
   it('on the web says none of this exists', () => {

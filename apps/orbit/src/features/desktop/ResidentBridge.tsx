@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from '@/components/ui/toastStore';
 import { useAppStore } from '@/app/store';
-import { flushDrafts } from '@/features/drafts/draftStore';
+import { confirmLeave, flushDrafts } from '@/features/drafts/draftStore';
+import { isFirstRunDone } from '@/features/firstRun/firstRun';
 import { recordEvent } from '@/lib/diagnostics';
-import { usePlatform } from '@/platform';
+import { parseOrbitUri, resolveDestination } from '@/lib/destinations';
+import { usePlatform, useRepository } from '@/platform';
 import type { QuitCancelled, QuitPrepareRequest } from '@/platform/types';
 import { CloseExplanationDialog } from './CloseExplanationDialog';
 
@@ -28,9 +30,15 @@ function readLegacyClose(): string | null {
  * (week 12) it saves every registered draft and acknowledges with the
  * request and generation ids, or refuses with the reason; the shell then
  * cancels and the failure stays visible with a "discard and quit" choice.
+ * An activation (`orbit://` from a notification click or the protocol
+ * handler) is parsed again here, resolved against current data through
+ * the typed resolver, and navigated to — through the draft guard, so a
+ * dirty editor asks first. It never mutates anything; a missing record
+ * lands on the safe missing page.
  */
 export function ResidentBridge() {
   const platform = usePlatform();
+  const repo = useRepository();
   const navigate = useNavigate();
   const desktop = platform.desktop;
   const [explaining, setExplaining] = useState(false);
@@ -64,6 +72,35 @@ export function ResidentBridge() {
       await desktop.prefs.migrateLegacy(readLegacyClose()).catch(() => undefined);
       const handlers: Array<[Parameters<typeof desktop.onShellEvent>[0], (p: unknown) => void]> = [
         ['orbit:navigate', (path) => typeof path === 'string' && void navigate(path)],
+        [
+          'orbit:activate',
+          (payload) => {
+            const destination = typeof payload === 'string' ? parseOrbitUri(payload) : null;
+            if (!destination) {
+              recordEvent('warn', 'activation:rejected');
+              return;
+            }
+            recordEvent('info', 'activation:open');
+            void resolveDestination(repo, destination)
+              .then(async (resolved) => {
+                // First-run onboarding owns the screen until "Start planning": hold the
+                // destination and let the welcome page finish there.
+                if (!isFirstRunDone()) {
+                  useAppStore.getState().setPendingActivation(resolved.path);
+                  return;
+                }
+                // An activation is an imperative exit from whatever is open (a shell event,
+                // not an in-app link), so `useBlocker` does not see it; ask through the same
+                // draft guard before leaving, exactly as the PWA reload does. Only when the
+                // page actually changes — reopening the record already on screen never prompts.
+                const target = new URL(resolved.path, window.location.origin).pathname;
+                if (target !== window.location.pathname && !(await confirmLeave('open the record')))
+                  return;
+                void navigate(resolved.path);
+              })
+              .catch(() => navigate('/today'));
+          },
+        ],
         ['orbit:close-explain', () => setExplaining(true)],
         [
           'orbit:close-blocked',
@@ -133,13 +170,17 @@ export function ResidentBridge() {
         if (cancelled) off();
         else offs.push(off);
       }
+      // The `orbit:activate` listener is attached now: tell the shell it may deliver a
+      // held activation (a cold notification click races frontend readiness, so the
+      // shell waits for this rather than emitting into a window that is not yet listening).
+      if (!cancelled) await desktop.activationSubscribed().catch(() => undefined);
     };
     void subscribe();
     return () => {
       cancelled = true;
       for (const off of offs) off();
     };
-  }, [desktop, navigate, setQuitting]);
+  }, [desktop, repo, navigate, setQuitting]);
 
   if (!desktop) return null;
   return (

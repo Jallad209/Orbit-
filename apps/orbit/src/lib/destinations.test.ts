@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   BillSchema,
@@ -102,7 +104,24 @@ describe('canonical routes', () => {
   });
 });
 
+const VECTORS = JSON.parse(
+  // Tests run from the repository root (vitest.config.ts) or the app package.
+  readFileSync(
+    [
+      resolve(process.cwd(), 'tests/fixtures/behaviour/orbit-uris.json'),
+      resolve(process.cwd(), '../../tests/fixtures/behaviour/orbit-uris.json'),
+    ].find((p) => existsSync(p))!,
+    'utf8',
+  ),
+) as { accept: Array<{ input: string; kind: string; id: string }>; reject: string[] };
+
 describe('orbit:// URIs', () => {
+  it('agrees with the shared vectors the Rust parser is checked against', () => {
+    for (const c of VECTORS.accept)
+      expect(parseOrbitUri(c.input), c.input).toEqual({ type: c.kind, id: c.id });
+    for (const input of VECTORS.reject) expect(parseOrbitUri(input), input).toBeNull();
+  });
+
   it('accepts exactly the supported kinds with one UUID segment', () => {
     for (const kind of ['reminder', 'task', 'person', 'commitment', 'bill', 'note', 'review']) {
       expect(parseOrbitUri(`orbit://${kind}/${ID}`)).toEqual({ type: kind, id: ID });

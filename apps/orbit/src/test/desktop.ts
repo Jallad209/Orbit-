@@ -16,6 +16,7 @@ export function fakeResidentApi(
       | 'ackQuit'
       | 'showCaptureWindow'
       | 'captureSubscribed'
+      | 'activationSubscribed'
       | 'showMain'
       | 'hideMain'
       | 'wakeScheduler'
@@ -61,6 +62,7 @@ export function fakeResidentApi(
     ackQuit: async () => {},
     showCaptureWindow: async () => {},
     captureSubscribed: async () => {},
+    activationSubscribed: async () => {},
     showMain: async () => {},
     hideMain: async () => {},
     wakeScheduler: async () => {},

@@ -667,7 +667,11 @@ mod tests {
             let restored: i64 = conn
                 .query_row("PRAGMA user_version", [], |r| r.get(0))
                 .unwrap();
-            assert_eq!(restored, i64::from(version), "the file is the backup's version");
+            assert_eq!(
+                restored,
+                i64::from(version),
+                "the file is the backup's version"
+            );
             let tasks: i64 = conn
                 .query_row("SELECT count(*) FROM tasks", [], |r| r.get(0))
                 .unwrap();

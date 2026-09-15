@@ -18,6 +18,12 @@
 //! | tray Quit                               | orderly shutdown regardless of the preference       |
 //! | readiness never arrives (background)    | main is shown so the error is reachable             |
 //!
+//! Activation (week 12): an `orbit://` argument — from a notification click,
+//! the protocol handler, or a forwarded second launch — shows the main window
+//! whatever the launch mode and hands the frontend the validated URI to
+//! resolve behind its draft guard. It is queued until readiness, deduplicated
+//! per delivery (not per record), and never creates another database owner.
+//!
 //! Quit preparation (week 12): before the database is closed, every live
 //! window that holds drafts is asked to save or discard them and to
 //! acknowledge with the request and generation ids. A refusal, a failed
@@ -36,6 +42,7 @@ use serde_json::{json, Map};
 use tauri::{AppHandle, Emitter, Manager, Window};
 use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 
+use crate::activation::{self, Activation, Dedup};
 use crate::autostart;
 use crate::commands::capture;
 use crate::commands::db::{Database, Db};
@@ -77,13 +84,19 @@ pub enum Launch {
     Manual,
     Background,
     Capture,
+    /// Started to open a record (a notification click, the protocol handler): main shows.
+    Activate,
 }
 
 impl Launch {
-    /// Only these arguments mean anything; everything else is a manual launch.
+    /// Only these arguments mean anything; everything else is a manual launch. An
+    /// activation URI wins over `--background`: a click is an explicit request to look.
     pub fn from_args<'a>(args: impl IntoIterator<Item = &'a str>) -> Launch {
         let mut launch = Launch::Manual;
         for arg in args {
+            if activation::parse(arg).is_some() {
+                return Launch::Activate;
+            }
             if arg == autostart::BACKGROUND_ARG {
                 launch = Launch::Background;
             } else if arg == CAPTURE_ARG {
@@ -113,6 +126,13 @@ pub struct Resident {
     pub capture_subscribed: bool,
     /// The quit preparation in flight, if any.
     pub quit_request: Option<QuitRequest>,
+    /// Activations that arrived before the frontend was ready (canonical URIs).
+    pub queued_activation: Vec<String>,
+    /// The main window's bridge is listening for `orbit:activate`; an activation is
+    /// delivered only once this is true, so the emit can never precede the listener.
+    pub activation_subscribed: bool,
+    /// Collapses one click delivered through more than one API.
+    pub dedup: Dedup,
 }
 
 /// One quit preparation: which windows must answer, and what they said.
@@ -120,7 +140,7 @@ pub struct Resident {
 pub struct QuitRequest {
     pub id: u64,
     pub generation: u64,
-    pub force: bool,
+    /// Windows that must answer; empty for a forced quit.
     pub awaiting: Vec<String>,
     pub acks: HashMap<String, QuitAck>,
 }
@@ -179,7 +199,9 @@ impl QuitRequest {
 
     /// Record an answer; stale ids and unexpected windows are ignored.
     pub fn record(&mut self, window: &str, id: u64, generation: u64, ack: QuitAck) -> bool {
-        if id != self.id || generation != self.generation || !self.awaiting.iter().any(|w| w == window)
+        if id != self.id
+            || generation != self.generation
+            || !self.awaiting.iter().any(|w| w == window)
         {
             return false;
         }
@@ -202,6 +224,9 @@ impl Resident {
             window_state: false,
             capture_subscribed: false,
             quit_request: None,
+            queued_activation: Vec::new(),
+            activation_subscribed: false,
+            dedup: Dedup::default(),
         }
     }
 }
@@ -307,7 +332,8 @@ pub fn hide_main(app: &AppHandle) {
 }
 
 /// Apply the launch policy once the windows exist: manual shows, background stays hidden,
-/// capture opens the capture window over a hidden main.
+/// capture opens the capture window over a hidden main, an activation shows main and
+/// queues the record to open.
 pub fn apply_launch_policy(app: &AppHandle) {
     let launch = with_resident(app, |r| r.launch).unwrap_or(Launch::Manual);
     let mut fields = Map::new();
@@ -315,6 +341,13 @@ pub fn apply_launch_policy(app: &AppHandle) {
     logging::event(Level::Info, "resident", "launch", fields);
     match launch {
         Launch::Manual => show_main(app),
+        Launch::Activate => {
+            show_main(app);
+            let args: Vec<String> = std::env::args().skip(1).collect();
+            if let Some(a) = activation::from_args(args.iter().map(String::as_str)) {
+                activate(app, a);
+            }
+        }
         Launch::Background => {
             let handle = app.clone();
             thread::Builder::new()
@@ -337,7 +370,9 @@ pub fn apply_launch_policy(app: &AppHandle) {
 
 /// A second process started: activate what its arguments ask for, nothing else.
 /// Arbitrary URLs and commands are ignored. A duplicate login launch is left alone
-/// so it cannot steal focus from whatever the user is doing.
+/// so it cannot steal focus from whatever the user is doing. An `orbit://` argument
+/// (a notification click while Orbit runs, hidden or not) shows the main window and
+/// opens the record; the second process itself hands over and exits.
 pub fn on_second_instance(app: &AppHandle, args: &[String]) {
     let launch = Launch::from_args(args.iter().map(String::as_str));
     let mut fields = Map::new();
@@ -347,6 +382,65 @@ pub fn on_second_instance(app: &AppHandle, args: &[String]) {
         Launch::Manual => show_main(app),
         Launch::Capture => capture::show(app),
         Launch::Background => {}
+        Launch::Activate => {
+            show_main(app);
+            if let Some(a) = activation::from_args(args.iter().map(String::as_str)) {
+                activate(app, a);
+            }
+        }
+    }
+}
+
+/// Whether a queued activation may be delivered now: the database is open (so the
+/// frontend can resolve the record) and the main window's bridge has confirmed its
+/// `orbit:activate` listener is attached. Both are required, which is what removes the
+/// startup race — the emit can never precede the listener.
+pub fn can_flush(phase: Phase, activation_subscribed: bool, queued: usize) -> bool {
+    queued > 0 && activation_subscribed && matches!(phase, Phase::Ready | Phase::Degraded)
+}
+
+/// Deliver the latest queued activation to the main window if it may be delivered now,
+/// clearing the queue. The last click wins when several queued up: one record opens,
+/// not a cascade. A no-op until both readiness and subscription hold, so it is safe to
+/// call from `activate`, `mark_ready`, and the subscribe command alike.
+pub fn flush_activation(app: &AppHandle) {
+    let uri = with_resident(app, |r| {
+        if can_flush(r.phase, r.activation_subscribed, r.queued_activation.len()) {
+            let last = r.queued_activation.pop();
+            r.queued_activation.clear();
+            last
+        } else {
+            None
+        }
+    })
+    .flatten();
+    if let Some(uri) = uri {
+        let _ = app.emit_to(MAIN_WINDOW, "orbit:activate", uri);
+    }
+}
+
+/// Hold a validated activation for delivery. Only the kind is logged. A duplicate
+/// delivery of the same click is dropped; a later click on the same record goes
+/// through. It is queued and then flushed: nothing is emitted until the main window
+/// has both opened the database and confirmed its listener (see `flush_activation`).
+pub fn activate(app: &AppHandle, activation: Activation) {
+    let now = Instant::now();
+    let queued = with_resident(app, |r| {
+        if !r.dedup.accept(&activation.uri, now) {
+            return false;
+        }
+        r.queued_activation.push(activation.uri.clone());
+        true
+    })
+    .unwrap_or(false);
+    let mut fields = Map::new();
+    fields.insert("kind".into(), json!(activation.kind));
+    if queued {
+        logging::event(Level::Info, "resident", "activate", fields);
+        flush_activation(app);
+    } else {
+        fields.insert("duplicate".into(), json!(true));
+        logging::event(Level::Debug, "resident", "activate", fields);
     }
 }
 
@@ -385,21 +479,28 @@ pub fn mark_ready(app: &AppHandle, window_label: &str, generation: u64) -> Resul
             "Readiness for generation {generation} ignored: the data file is at {current}."
         ));
     }
-    let queued = with_resident(app, |r| {
+    let (queued, queued_activation) = with_resident(app, |r| {
         if r.phase == Phase::Booting {
             r.phase = Phase::Ready;
         }
         r.ready_generation = Some(generation);
-        std::mem::take(&mut r.queued_navigation)
+        (
+            std::mem::take(&mut r.queued_navigation),
+            r.queued_activation.len(),
+        )
     })
     .unwrap_or_default();
     let mut fields = Map::new();
     fields.insert("generation".into(), json!(generation));
     fields.insert("queuedNavigation".into(), json!(queued.len()));
+    fields.insert("queuedActivation".into(), json!(queued_activation));
     logging::event(Level::Info, "resident", "ready", fields);
     for path in queued {
         let _ = app.emit_to(MAIN_WINDOW, "orbit:navigate", path);
     }
+    // Readiness is one of the two gates for delivery; the last queued click is emitted
+    // here only if the main window has also subscribed (else its subscribe call does it).
+    flush_activation(app);
     scheduler::wake(app);
     Ok(())
 }
@@ -511,7 +612,6 @@ pub fn request_quit(app: &AppHandle, force: bool) {
         let request = QuitRequest {
             id,
             generation,
-            force,
             awaiting,
             acks: HashMap::new(),
         };
@@ -725,6 +825,13 @@ pub fn resident_quit_ack(
     ack_quit(&app, window.label(), request_id, generation, ok, reason);
 }
 
+/// Whether an activation is still held for readiness (the frontend need not poll: the
+/// shell emits it on readiness; this exists for Settings and tests).
+#[tauri::command]
+pub fn resident_activation_pending(app: AppHandle) -> usize {
+    with_resident(&app, |r| r.queued_activation.len()).unwrap_or(0)
+}
+
 /// The capture window's bridge is listening: quits wait for its answer from now on.
 #[tauri::command]
 pub fn resident_capture_subscribed(app: AppHandle, window: Window) -> Result<(), String> {
@@ -732,6 +839,20 @@ pub fn resident_capture_subscribed(app: AppHandle, window: Window) -> Result<(),
         return Err("Only the capture window subscribes here.".into());
     }
     with_resident(&app, |r| r.capture_subscribed = true);
+    Ok(())
+}
+
+/// The main window's bridge attached its `orbit:activate` listener: any activation held
+/// for it may now be delivered. This is the second half of the delivery gate (the first
+/// is database readiness), so an activation that arrived — or completed readiness —
+/// before the listener existed is delivered here instead of being lost.
+#[tauri::command]
+pub fn resident_activation_subscribed(app: AppHandle, window: Window) -> Result<(), String> {
+    if window.label() != MAIN_WINDOW {
+        return Err("Only the main window subscribes here.".into());
+    }
+    with_resident(&app, |r| r.activation_subscribed = true);
+    flush_activation(&app);
     Ok(())
 }
 
@@ -758,6 +879,41 @@ mod tests {
             Launch::from_args(["orbit.exe", "https://evil.example/", "cmd /c format c:"]),
             Launch::Manual
         );
+        // An activation wins over a background launch: a click is a request to look.
+        assert_eq!(
+            Launch::from_args([
+                "orbit.exe",
+                "--background",
+                "orbit://reminder/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6"
+            ]),
+            Launch::Activate
+        );
+        assert_eq!(
+            Launch::from_args([
+                "orbit.exe",
+                "orbit://evil/01a0a1b6-3ad4-7678-92cc-ae55e388b0a6"
+            ]),
+            Launch::Manual
+        );
+    }
+
+    #[test]
+    fn an_activation_is_delivered_only_when_ready_and_subscribed() {
+        // Nothing queued: never.
+        assert!(!can_flush(Phase::Ready, true, 0));
+        // Queued but a gate is missing.
+        assert!(
+            !can_flush(Phase::Booting, true, 1),
+            "database not ready yet"
+        );
+        assert!(
+            !can_flush(Phase::Ready, false, 1),
+            "listener not attached yet"
+        );
+        assert!(!can_flush(Phase::Quitting, true, 1), "shutting down");
+        // Both gates held: deliver. Degraded still shows the record.
+        assert!(can_flush(Phase::Ready, true, 1));
+        assert!(can_flush(Phase::Degraded, true, 2));
     }
 
     #[test]
@@ -798,10 +954,16 @@ mod tests {
     #[test]
     fn quit_asks_only_the_windows_that_can_hold_drafts() {
         let mut r = Resident::new(Launch::Manual);
-        assert!(windows_to_ask(&r, 1).is_empty(), "nothing loaded: nothing to save");
+        assert!(
+            windows_to_ask(&r, 1).is_empty(),
+            "nothing loaded: nothing to save"
+        );
         r.ready_generation = Some(1);
         assert_eq!(windows_to_ask(&r, 1), vec!["main"]);
-        assert!(windows_to_ask(&r, 2).is_empty(), "a stale generation holds no drafts");
+        assert!(
+            windows_to_ask(&r, 2).is_empty(),
+            "a stale generation holds no drafts"
+        );
         r.capture_subscribed = true;
         assert_eq!(windows_to_ask(&r, 1), vec!["main", "capture"]);
     }
@@ -810,7 +972,6 @@ mod tests {
         QuitRequest {
             id: 7,
             generation: 3,
-            force: false,
             awaiting: vec!["main".into(), "capture".into()],
             acks: HashMap::new(),
         }
@@ -820,9 +981,29 @@ mod tests {
     fn quit_proceeds_only_when_every_window_acknowledged() {
         let mut q = request();
         assert_eq!(q.verdict(false), None);
-        assert!(q.record("main", 7, 3, QuitAck { ok: true, reason: None }));
-        assert_eq!(q.verdict(false), None, "the capture window has not answered");
-        assert!(q.record("capture", 7, 3, QuitAck { ok: true, reason: None }));
+        assert!(q.record(
+            "main",
+            7,
+            3,
+            QuitAck {
+                ok: true,
+                reason: None
+            }
+        ));
+        assert_eq!(
+            q.verdict(false),
+            None,
+            "the capture window has not answered"
+        );
+        assert!(q.record(
+            "capture",
+            7,
+            3,
+            QuitAck {
+                ok: true,
+                reason: None
+            }
+        ));
         assert_eq!(q.verdict(false), Some(Prepared::Proceed));
     }
 
@@ -858,9 +1039,42 @@ mod tests {
     #[test]
     fn stale_or_foreign_acknowledgments_are_ignored() {
         let mut q = request();
-        assert!(!q.record("main", 6, 3, QuitAck { ok: true, reason: None }), "old request id");
-        assert!(!q.record("main", 7, 2, QuitAck { ok: true, reason: None }), "old generation");
-        assert!(!q.record("settings", 7, 3, QuitAck { ok: true, reason: None }), "unknown window");
+        assert!(
+            !q.record(
+                "main",
+                6,
+                3,
+                QuitAck {
+                    ok: true,
+                    reason: None
+                }
+            ),
+            "old request id"
+        );
+        assert!(
+            !q.record(
+                "main",
+                7,
+                2,
+                QuitAck {
+                    ok: true,
+                    reason: None
+                }
+            ),
+            "old generation"
+        );
+        assert!(
+            !q.record(
+                "settings",
+                7,
+                3,
+                QuitAck {
+                    ok: true,
+                    reason: None
+                }
+            ),
+            "unknown window"
+        );
         assert!(q.acks.is_empty());
     }
 }

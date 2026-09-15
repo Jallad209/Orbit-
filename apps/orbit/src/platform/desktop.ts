@@ -206,6 +206,10 @@ export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Pla
       const d = await ready();
       await d.invoke<void>('resident_capture_subscribed');
     },
+    async activationSubscribed() {
+      const d = await ready();
+      await d.invoke<void>('resident_activation_subscribed');
+    },
     async showMain() {
       const d = await ready();
       await d.invoke<void>('resident_show_main');

@@ -203,6 +203,25 @@ export function DesktopSettings() {
             Stops reminders until Orbit runs again, whatever the close-to-tray setting.
           </p>
         </div>
+        <div data-testid="notification-clicks">
+          <p className="text-sm font-medium text-ink">Notification clicks</p>
+          <p className="mt-1 text-[12px] text-ink-faint">
+            Clicking a reminder opens the record it names, whether Orbit is visible, hidden, or not
+            running, through the orbit:// handler the installer registers for your account. A link
+            only opens a screen; it never pays, completes, or changes anything. Windows accepting a
+            notification is not proof it was shown: Focus Assist and notification settings can hide
+            it.
+          </p>
+        </div>
+        <div data-testid="updates">
+          <p className="text-sm font-medium text-ink">Updates</p>
+          <p className="mt-1 text-[12px] text-ink-faint">
+            Updates are not configured. Orbit never checks, downloads, or installs anything on its
+            own. To update, download the newer installer from where you got this one and run it over
+            the current installation; your data folder, backups, and preferences are kept, and an
+            export beforehand (Settings → Data) is a good habit.
+          </p>
+        </div>
       </div>
     </Card>
   );
