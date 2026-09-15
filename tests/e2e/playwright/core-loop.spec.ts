@@ -5,6 +5,15 @@ import { expect, test, type Page } from '@playwright/test';
  * Planning, time blocks, and the evening review join this file as those weeks land.
  */
 
+// Pin the clock to a weekday morning so the planner always sees an open working window
+// (09:00–18:00 local). Without this the plan-size assertions depend on the time of day the
+// suite happens to run and fail every afternoon. setFixedTime fixes what `new Date()`
+// returns without faking timers, so autosave/debounce still work. 06:00Z == 09:00 in
+// Asia/Amman, the timezone pinned in playwright.config.ts.
+test.beforeEach(async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-09-14T06:00:00.000Z'));
+});
+
 async function createArea(page: Page, name: string) {
   await page.goto('/areas');
   await page.getByRole('textbox', { name: 'Area name' }).fill(name);

@@ -19,8 +19,15 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'off',
+    // Pin the timezone so a test's local wall-clock hour is deterministic across the
+    // developer's machine and CI (planning depends on the working window, 09:00–18:00 local).
+    timezoneId: 'Asia/Amman',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+  ],
   webServer: {
     command: 'pnpm --filter orbit exec vite preview --port 4517 --strictPort',
     url: 'http://localhost:4517',
