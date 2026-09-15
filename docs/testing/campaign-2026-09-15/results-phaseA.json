@@ -1,0 +1,263 @@
+[
+  {
+    "stage": "A01-lint",
+    "command": "pnpm run lint",
+    "startedAt": "2026-09-15T13:06:40.179Z",
+    "durationMs": 25008,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A01-lint.log"
+  },
+  {
+    "stage": "A02-format",
+    "command": "pnpm run format:check",
+    "startedAt": "2026-09-15T13:07:06.752Z",
+    "durationMs": 8949,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A02-format.log"
+  },
+  {
+    "stage": "A03-typecheck",
+    "command": "pnpm run type-check",
+    "startedAt": "2026-09-15T13:07:17.291Z",
+    "durationMs": 17870,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A03-typecheck.log"
+  },
+  {
+    "stage": "A02b-format-excluding-campaign",
+    "command": "pnpm exec prettier --check . \"!docs/testing/**\" \"!tests/campaign/**\"",
+    "startedAt": "2026-09-15T13:07:50.369Z",
+    "durationMs": 8335,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A02b-format-excluding-campaign.log"
+  },
+  {
+    "stage": "A04-test-coverage",
+    "command": "pnpm run test:coverage",
+    "startedAt": "2026-09-15T13:08:06.038Z",
+    "durationMs": 40610,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A04-test-coverage.log"
+  },
+  {
+    "stage": "A05-cargo-fmt",
+    "command": "cargo fmt --manifest-path apps/orbit/src-tauri/Cargo.toml --check",
+    "startedAt": "2026-09-15T13:09:15.799Z",
+    "durationMs": 451,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A05-cargo-fmt.log"
+  },
+  {
+    "stage": "A06-cargo-clippy",
+    "command": "cargo clippy --manifest-path apps/orbit/src-tauri/Cargo.toml -- -D warnings",
+    "startedAt": "2026-09-15T13:09:17.278Z",
+    "durationMs": 1375,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A06-cargo-clippy.log"
+  },
+  {
+    "stage": "A07-cargo-test",
+    "command": "cargo test --manifest-path apps/orbit/src-tauri/Cargo.toml",
+    "startedAt": "2026-09-15T13:09:19.591Z",
+    "durationMs": 33263,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A07-cargo-test.log"
+  },
+  {
+    "stage": "A08-roundtrip-50k",
+    "command": "pnpm run test:roundtrip",
+    "startedAt": "2026-09-15T13:10:08.237Z",
+    "durationMs": 13376,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A08-roundtrip-50k.log"
+  },
+  {
+    "stage": "A09-migrations",
+    "command": "pnpm run test:migrations",
+    "startedAt": "2026-09-15T13:10:23.547Z",
+    "durationMs": 2739,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A09-migrations.log"
+  },
+  {
+    "stage": "A10-verify-backup",
+    "command": "pnpm run verify:backup",
+    "startedAt": "2026-09-15T13:10:27.410Z",
+    "durationMs": 1680,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A10-verify-backup.log"
+  },
+  {
+    "stage": "A11-make-fixture",
+    "command": "pnpm run make:fixture",
+    "startedAt": "2026-09-15T13:10:38.381Z",
+    "durationMs": 3468,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A11-make-fixture.log"
+  },
+  {
+    "stage": "A12-build-web",
+    "command": "pnpm --filter orbit run build",
+    "startedAt": "2026-09-15T13:10:51.181Z",
+    "durationMs": 41804,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A12-build-web.log"
+  },
+  {
+    "stage": "A13-check-bundle",
+    "command": "pnpm run check:bundle",
+    "startedAt": "2026-09-15T13:11:34.318Z",
+    "durationMs": 758,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A13-check-bundle.log"
+  },
+  {
+    "stage": "A14-e2e-browser-chromium",
+    "command": "pnpm exec playwright test --reporter=list,json",
+    "startedAt": "2026-09-15T13:11:46.996Z",
+    "durationMs": 32729,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A14-e2e-browser-chromium.log"
+  },
+  {
+    "stage": "A15-tauri-build-bin",
+    "command": "pnpm run tauri:build:bin",
+    "startedAt": "2026-09-15T13:13:43.895Z",
+    "durationMs": 242749,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A15-tauri-build-bin.log"
+  },
+  {
+    "stage": "A16-edge-driver",
+    "command": "pnpm run edge:driver",
+    "startedAt": "2026-09-15T13:18:00.749Z",
+    "durationMs": 3370,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A16-edge-driver.log"
+  },
+  {
+    "stage": "A16b-edge-driver-after-clearing-stale",
+    "command": "pnpm run edge:driver",
+    "startedAt": "2026-09-15T13:18:29.506Z",
+    "durationMs": 3338,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A16b-edge-driver-after-clearing-stale.log"
+  },
+  {
+    "stage": "A17-e2e-desktop",
+    "command": "pnpm run e2e:desktop",
+    "startedAt": "2026-09-15T13:18:44.934Z",
+    "durationMs": 149999,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A17-e2e-desktop.log"
+  },
+  {
+    "stage": "A18-e2e-desktop-cold",
+    "command": "pnpm run e2e:desktop:cold",
+    "startedAt": "2026-09-15T13:23:46.931Z",
+    "durationMs": 44614,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A18-e2e-desktop-cold.log"
+  },
+  {
+    "stage": "A18b-cold-fixed-split-waiting-spec",
+    "command": "pnpm exec wdio run tests/campaign/desktop/wdio.cold.conf.ts",
+    "startedAt": "2026-09-15T13:25:03.735Z",
+    "durationMs": 45548,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A18b-cold-fixed-split-waiting-spec.log"
+  },
+  {
+    "stage": "A18b2-cold-fixed-split-waiting-spec-retry",
+    "command": "pnpm exec wdio run tests/campaign/desktop/wdio.cold.conf.ts",
+    "startedAt": "2026-09-15T13:26:11.359Z",
+    "durationMs": 36054,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A18b2-cold-fixed-split-waiting-spec-retry.log"
+  },
+  {
+    "stage": "A18c-cold-activation-direct-launch",
+    "command": "pnpm exec vitest run --config tests/campaign/vitest.config.ts tests/campaign/desktop/cold-activation",
+    "startedAt": "2026-09-15T13:33:27.811Z",
+    "durationMs": 15716,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A18c-cold-activation-direct-launch.log"
+  },
+  {
+    "stage": "A18d-cold-activation-direct-launch-2",
+    "command": "pnpm exec vitest run --config tests/campaign/vitest.config.ts tests/campaign/desktop/cold-activation",
+    "startedAt": "2026-09-15T13:34:34.538Z",
+    "durationMs": 32364,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A18d-cold-activation-direct-launch-2.log"
+  },
+  {
+    "stage": "A18e-cold-activation-direct-launch-3",
+    "command": "pnpm exec vitest run --config tests/campaign/vitest.config.ts tests/campaign/desktop/cold-activation",
+    "startedAt": "2026-09-15T13:35:26.639Z",
+    "durationMs": 47453,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A18e-cold-activation-direct-launch-3.log"
+  },
+  {
+    "stage": "A19-cold-activation-race-20x",
+    "command": "pnpm exec vitest run --config tests/campaign/vitest.config.ts tests/campaign/desktop/cold-activation-race",
+    "startedAt": "2026-09-15T13:37:09.603Z",
+    "durationMs": 98733,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A19-cold-activation-race-20x.log"
+  },
+  {
+    "stage": "G01-pnpm-audit",
+    "command": "pnpm audit --audit-level moderate",
+    "startedAt": "2026-09-15T14:01:27.410Z",
+    "durationMs": 2725,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/G01-pnpm-audit.log"
+  },
+  {
+    "stage": "A20-final-format-check",
+    "command": "pnpm exec prettier --check . \"!docs/testing/**\"",
+    "startedAt": "2026-09-15T14:08:01.532Z",
+    "durationMs": 8926,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A20-final-format-check.log"
+  },
+  {
+    "stage": "A21-unit-tests-recheck",
+    "command": "pnpm test",
+    "startedAt": "2026-09-15T14:08:12.044Z",
+    "durationMs": 31677,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/A21-unit-tests-recheck.log"
+  }
+]

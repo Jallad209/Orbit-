@@ -1,0 +1,200 @@
+[
+  {
+    "stage": "B01-cold-activation-e2e-functional",
+    "command": "pnpm run e2e:desktop:cold",
+    "startedAt": "2026-09-15T14:31:14.296Z",
+    "durationMs": 29562,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B01-cold-activation-e2e-functional.log"
+  },
+  {
+    "stage": "B02-cold-activation-isolated-30x",
+    "command": "pnpm exec vitest run --config tests/campaign/vitest.config.ts tests/campaign/desktop/cold-activation-isolated",
+    "startedAt": "2026-09-15T14:31:50.646Z",
+    "durationMs": 175445,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B02-cold-activation-isolated-30x.log"
+  },
+  {
+    "stage": "B03-cold-activation-race-20x",
+    "command": "pnpm exec vitest run --config tests/campaign/vitest.config.ts tests/campaign/desktop/cold-activation-race",
+    "startedAt": "2026-09-15T14:34:59.276Z",
+    "durationMs": 61009,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B03-cold-activation-race-20x.log"
+  },
+  {
+    "stage": "B04-e2e-desktop-wdio",
+    "command": "pnpm run e2e:desktop",
+    "startedAt": "2026-09-15T14:36:28.145Z",
+    "durationMs": 37819,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B04-e2e-desktop-wdio.log"
+  },
+  {
+    "stage": "B05-e2e-browser-chromium-fixedclock",
+    "command": "pnpm exec playwright test",
+    "startedAt": "2026-09-15T14:57:50.519Z",
+    "durationMs": 11880,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B05-e2e-browser-chromium-fixedclock.log"
+  },
+  {
+    "stage": "B06-e2e-crossbrowser-smoke",
+    "command": "pnpm exec playwright test tests/e2e/playwright/core-loop.spec.ts",
+    "startedAt": "2026-09-15T14:59:36.146Z",
+    "durationMs": 18873,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B06-e2e-crossbrowser-smoke.log"
+  },
+  {
+    "stage": "B07-check-bundle-after-rebaseline",
+    "command": "pnpm run check:bundle",
+    "startedAt": "2026-09-15T15:00:29.119Z",
+    "durationMs": 3017,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B07-check-bundle-after-rebaseline.log"
+  },
+  {
+    "stage": "B08-lint",
+    "command": "pnpm run lint",
+    "startedAt": "2026-09-15T15:01:37.120Z",
+    "durationMs": 75113,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B08-lint.log"
+  },
+  {
+    "stage": "B09-typecheck",
+    "command": "pnpm run type-check",
+    "startedAt": "2026-09-15T15:02:52.922Z",
+    "durationMs": 14008,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B09-typecheck.log"
+  },
+  {
+    "stage": "B10-unit-tests",
+    "command": "pnpm test",
+    "startedAt": "2026-09-15T15:03:07.608Z",
+    "durationMs": 81091,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B10-unit-tests.log"
+  },
+  {
+    "stage": "B10b-unit-tests-rerun",
+    "command": "pnpm test",
+    "startedAt": "2026-09-15T15:05:19.672Z",
+    "durationMs": 21532,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B10b-unit-tests-rerun.log"
+  },
+  {
+    "stage": "B11-e2e-desktop-after-guardfix",
+    "command": "pnpm run e2e:desktop",
+    "startedAt": "2026-09-15T16:08:23.704Z",
+    "durationMs": 125587,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B11-e2e-desktop-after-guardfix.log"
+  },
+  {
+    "stage": "B12-e2e-desktop-run1",
+    "command": "pnpm run e2e:desktop",
+    "startedAt": "2026-09-15T16:12:03.488Z",
+    "durationMs": 58660,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B12-e2e-desktop-run1.log"
+  },
+  {
+    "stage": "B13-e2e-desktop-run2",
+    "command": "pnpm run e2e:desktop",
+    "startedAt": "2026-09-15T16:13:07.252Z",
+    "durationMs": 68252,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B13-e2e-desktop-run2.log"
+  },
+  {
+    "stage": "B14-e2e-desktop-run3",
+    "command": "pnpm run e2e:desktop",
+    "startedAt": "2026-09-15T16:16:37.056Z",
+    "durationMs": 26956,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B14-e2e-desktop-run3.log"
+  },
+  {
+    "stage": "B15-e2e-desktop-run4",
+    "command": "pnpm run e2e:desktop",
+    "startedAt": "2026-09-15T16:18:13.307Z",
+    "durationMs": 60977,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B15-e2e-desktop-run4.log"
+  },
+  {
+    "stage": "B16-e2e-desktop-run5",
+    "command": "pnpm run e2e:desktop",
+    "startedAt": "2026-09-15T16:19:20.258Z",
+    "durationMs": 60917,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B16-e2e-desktop-run5.log"
+  },
+  {
+    "stage": "B17-e2e-desktop-run6",
+    "command": "pnpm run e2e:desktop",
+    "startedAt": "2026-09-15T16:20:21.899Z",
+    "durationMs": 59113,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B17-e2e-desktop-run6.log"
+  },
+  {
+    "stage": "B18-cold-e2e-after-guardfix",
+    "command": "pnpm run e2e:desktop:cold",
+    "startedAt": "2026-09-15T16:21:39.383Z",
+    "durationMs": 29760,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B18-cold-e2e-after-guardfix.log"
+  },
+  {
+    "stage": "B19-unit-full",
+    "command": "pnpm test",
+    "startedAt": "2026-09-15T19:01:38.022Z",
+    "durationMs": 28683,
+    "exitCode": 1,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B19-unit-full.log"
+  },
+  {
+    "stage": "B20-lint",
+    "command": "pnpm run lint",
+    "startedAt": "2026-09-15T19:02:08.217Z",
+    "durationMs": 39572,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B20-lint.log"
+  },
+  {
+    "stage": "B21-typecheck",
+    "command": "pnpm run type-check",
+    "startedAt": "2026-09-15T19:02:48.695Z",
+    "durationMs": 13139,
+    "exitCode": 0,
+    "signal": null,
+    "log": "docs/testing/campaign-2026-09-15/logs/B21-typecheck.log"
+  }
+]
