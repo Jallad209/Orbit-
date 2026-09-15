@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { $, browser, expect } from '@wdio/globals';
+import { dismissFirstRun } from './helpers';
 import { SESSION_DIR_FILE } from '../session';
 
 /**
@@ -34,8 +35,7 @@ async function invoke<T>(command: string, args: Record<string, unknown> = {}): P
 
 describe('quit on desktop', () => {
   it('stops in order and leaves a clean last-run marker', async () => {
-    const start = await $('button=Start planning');
-    if (await start.isExisting()) await start.click();
+    await dismissFirstRun();
     await expect($('h1')).toHaveText(/^(Today|Tomorrow)$/);
     await browser.waitUntil(
       async () => (await invoke<{ phase: string }>('resident_status')).phase === 'ready',

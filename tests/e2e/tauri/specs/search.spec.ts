@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { $, browser, expect } from '@wdio/globals';
+import { dismissFirstRun, expectTodayHeading, goto } from './helpers';
 import { betterSqliteDriver } from '@orbit/storage/test/betterSqliteDriver';
 import { SESSION_DIR_FILE } from '../session';
 
@@ -12,11 +13,6 @@ import { SESSION_DIR_FILE } from '../session';
  * session was clean, and an export writes a zip whose report holds counts
  * and versions but not the note's title.
  */
-
-async function goto(path: string) {
-  const origin = new URL(await browser.getUrl()).origin;
-  await browser.url(`${origin}${path}`);
-}
 
 async function invoke<T>(command: string, args: Record<string, unknown> = {}): Promise<T> {
   const result = await browser.execute(
@@ -45,9 +41,8 @@ const NOTE = 'Lighthouse keeper memo';
 
 describe('search and diagnostics on desktop', () => {
   it('finds a note captured in the quick-capture window, through the FTS5 index', async () => {
-    const start = await $('button=Start planning');
-    if (await start.isExisting()) await start.click();
-    await expect($('h1')).toHaveText(/^(Today|Tomorrow)$/);
+    await dismissFirstRun();
+    await expectTodayHeading();
 
     // Capture in the other webview (the system-wide capture window).
     const main = await browser.getWindowHandle();
@@ -66,7 +61,7 @@ describe('search and diagnostics on desktop', () => {
     await expect($(`[role="option"]*=${NOTE}`)).not.toBeExisting();
 
     await goto('/today');
-    await expect($('h1')).toHaveText(/^(Today|Tomorrow)$/);
+    await expectTodayHeading();
     await browser.keys(['Control', 'k']);
     const box = await $('[role="combobox"][aria-label="Command or search"]');
     await expect(box).toBeFocused();

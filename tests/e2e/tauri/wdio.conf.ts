@@ -27,6 +27,9 @@ const root = resolve(here, '../../..');
 
 const application =
   process.env.ORBIT_APP ?? join(root, 'apps/orbit/src-tauri/target/release/orbit.exe');
+// Cold activation (starting the process with an `orbit://` argument) is covered by the
+// direct-argv harness in tests/e2e/desktop (`pnpm run e2e:desktop:cold`), because Edge
+// WebDriver rewrites `tauri:options.args` as `--<arg>` and cannot pass a verbatim URI.
 const nativeDriver = process.env.EDGE_DRIVER ?? join(here, '.driver/msedgedriver.exe');
 const tauriDriverBin =
   process.env.TAURI_DRIVER ??

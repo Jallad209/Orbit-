@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { browser, expect } from '@wdio/globals';
 import { SESSION_DIR_FILE } from '../session';
+import { secondWindowHandle } from './helpers';
 
 async function invoke<T>(command: string, args: Record<string, unknown>): Promise<T> {
   const result = await browser.execute(
@@ -36,7 +37,8 @@ async function invoke<T>(command: string, args: Record<string, unknown>): Promis
 describe('database ownership across desktop windows', () => {
   it('prevents capture writes from joining a main-window transaction and resumes after rollback', async () => {
     const main = await browser.getWindowHandle();
-    const capture = (await browser.getWindowHandles()).find((handle) => handle !== main)!;
+    // The capture window's webview may not have a handle the instant the session opens.
+    const capture = await secondWindowHandle();
     expect(capture).toBeDefined();
     const dir = readFileSync(SESSION_DIR_FILE, 'utf8').trim();
     const generation = await invoke<number>('db_open', { path: join(dir, 'data', 'orbit.db') });

@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { $, browser, expect } from '@wdio/globals';
+import { dismissFirstRun } from './helpers';
 import { SESSION_DIR_FILE } from '../session';
 
 /**
@@ -74,8 +75,7 @@ async function closeMain() {
 
 describe('resident shell on desktop', () => {
   it('reaches readiness for the open generation with a tray and resolved preferences', async () => {
-    const start = await $('button=Start planning');
-    if (await start.isExisting()) await start.click();
+    await dismissFirstRun();
     await expect($('h1')).toHaveText(/^(Today|Tomorrow)$/);
 
     let status!: ResidentStatus;

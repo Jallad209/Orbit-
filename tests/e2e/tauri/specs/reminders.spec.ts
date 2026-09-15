@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { $, browser, expect } from '@wdio/globals';
+import { dismissFirstRun, expectTodayHeading, goto } from './helpers';
 import { betterSqliteDriver } from '@orbit/storage/test/betterSqliteDriver';
 import { SESSION_DIR_FILE } from '../session';
 
@@ -11,11 +12,6 @@ import { SESSION_DIR_FILE } from '../session';
  * and marks the row fired. The data file is read straight from disk through
  * a second connection — WAL lets a reader in while the app holds the file.
  */
-
-async function goto(path: string) {
-  const origin = new URL(await browser.getUrl()).origin;
-  await browser.url(`${origin}${path}`);
-}
 
 interface ReminderRow {
   status: string;
@@ -36,9 +32,8 @@ async function reminders(): Promise<ReminderRow[]> {
 
 describe('reminders on desktop', () => {
   it('a bill due tomorrow with a 3-day rule is delivered by the Rust scheduler within a minute', async () => {
-    const start = await $('button=Start planning');
-    if (await start.isExisting()) await start.click();
-    await expect($('h1')).toHaveText(/^(Today|Tomorrow)$/);
+    await dismissFirstRun();
+    await expectTodayHeading();
 
     // The rule, through Settings → Rules.
     await goto('/settings');

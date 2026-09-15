@@ -34,6 +34,7 @@
     "bench": "tsx scripts/bench.ts",
     "e2e:startup": "playwright test tests/e2e/playwright/startup.spec.ts",
     "e2e:desktop": "wdio run tests/e2e/tauri/wdio.conf.ts",
+    "e2e:desktop:cold": "vitest run --config tests/e2e/desktop/vitest.config.ts",
     "edge:driver": "tsx scripts/edge-driver.ts",
     "tauri": "pnpm --filter orbit exec tauri",
     "tauri:dev": "pnpm --filter orbit exec tauri dev",
