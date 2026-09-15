@@ -89,3 +89,6 @@ jobs:
 
       - name: Check
         run: cargo check --manifest-path apps/orbit/src-tauri/Cargo.toml
+
+      - name: Test
+        run: cargo test --manifest-path apps/orbit/src-tauri/Cargo.toml

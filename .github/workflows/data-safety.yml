@@ -137,3 +137,11 @@ jobs:
         run: pnpm run e2e:desktop
         env:
           CI: true
+
+      # Cold activation: start the real binary with an orbit:// argument (a notification
+      # click / protocol launch) and confirm it opens the record, never Today. Regression
+      # gate for PD-001. Uses the direct-argv harness, not WebDriver.
+      - name: Cold activation on desktop
+        run: pnpm run e2e:desktop:cold
+        env:
+          CI: true

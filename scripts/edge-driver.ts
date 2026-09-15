@@ -10,7 +10,7 @@
  * msedgedriver.exe. Re-running with the same version is a no-op.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { download } from 'edgedriver';
 
@@ -46,9 +46,18 @@ if (!requested) {
 mkdirSync(DRIVER_DIR, { recursive: true });
 const cached = readdirSync(DRIVER_DIR).find((f) => f.toLowerCase() === 'msedgedriver.exe');
 const versionFile = join(DRIVER_DIR, 'version.txt');
-if (cached && existsSync(versionFile) && readFileSync(versionFile, 'utf8').trim() === requested) {
+const cachedVersion = existsSync(versionFile) ? readFileSync(versionFile, 'utf8').trim() : null;
+if (cached && cachedVersion === requested) {
   console.log(join(DRIVER_DIR, cached));
   process.exit(0);
+}
+
+// A cached driver of a different version must be removed first: `edgedriver.download()`
+// returns early whenever the file merely exists (it does not compare versions), so after a
+// WebView2 update it would otherwise keep the stale driver and the session would fail to start.
+if (cached) {
+  rmSync(join(DRIVER_DIR, cached), { force: true });
+  rmSync(versionFile, { force: true });
 }
 
 console.error(`Fetching Edge WebDriver ${requested} from msedgedriver.microsoft.com …`);
