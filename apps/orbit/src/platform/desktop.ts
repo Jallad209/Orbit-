@@ -208,7 +208,11 @@ export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Pla
     },
     async activationSubscribed() {
       const d = await ready();
-      await d.invoke<void>('resident_activation_subscribed');
+      return d.invoke<number>('resident_activation_subscribed');
+    },
+    async activationUnsubscribed(subscriptionGeneration: number) {
+      const d = await ready();
+      await d.invoke<void>('resident_activation_unsubscribed', { subscriptionGeneration });
     },
     async showMain() {
       const d = await ready();

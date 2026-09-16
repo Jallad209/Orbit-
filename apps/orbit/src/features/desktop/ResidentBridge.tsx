@@ -66,6 +66,7 @@ export function ResidentBridge() {
   useEffect(() => {
     if (!desktop) return;
     let cancelled = false;
+    let activationSubscription: number | null = null;
     const offs: Array<() => void> = [];
     const subscribe = async () => {
       // The legacy flag first: close-to-tray decisions wait for it.
@@ -173,12 +174,26 @@ export function ResidentBridge() {
       // The `orbit:activate` listener is attached now: tell the shell it may deliver a
       // held activation (a cold notification click races frontend readiness, so the
       // shell waits for this rather than emitting into a window that is not yet listening).
-      if (!cancelled) await desktop.activationSubscribed().catch(() => undefined);
+      if (!cancelled) {
+        const generation = await desktop.activationSubscribed().catch(() => undefined);
+        if (generation !== undefined) {
+          if (cancelled) {
+            void desktop.activationUnsubscribed(generation).catch(() => undefined);
+          } else {
+            activationSubscription = generation;
+          }
+        }
+      }
     };
     void subscribe();
     return () => {
       cancelled = true;
       for (const off of offs) off();
+      // Native delivery must pause while this renderer has no listener. Otherwise a
+      // reload can leave the shell's one-time subscription flag stale and lose a click.
+      if (activationSubscription !== null) {
+        void desktop.activationUnsubscribed(activationSubscription).catch(() => undefined);
+      }
     };
   }, [desktop, repo, navigate, setQuitting]);
 

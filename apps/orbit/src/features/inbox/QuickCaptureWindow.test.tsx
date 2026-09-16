@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { act, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRepository } from '@orbit/storage';
 import { webPlatform, type Platform } from '@/platform';
@@ -91,15 +91,19 @@ describe('QuickCaptureWindow', () => {
     await waitFor(() => expect(captureSubscribed).toHaveBeenCalledTimes(1));
 
     // Empty: acknowledged without showing anything.
-    act(() => fake.emit('orbit:quit-prepare', { requestId: 1, generation: 1 }));
+    await act(async () => fake.emit('orbit:quit-prepare', { requestId: 1, generation: 1 }));
     await waitFor(() =>
       expect(ackQuit).toHaveBeenCalledWith({ requestId: 1, generation: 1 }, true),
     );
     expect(showCaptureWindow).not.toHaveBeenCalled();
 
     // With text: the window comes forward and nothing is converted on its own.
-    await user.type(screen.getByRole('textbox', { name: 'Capture' }), 'Call the bank');
-    act(() => fake.emit('orbit:quit-prepare', { requestId: 2, generation: 1 }));
+    // This test exercises quit coordination, not the asynchronous classifier; a direct
+    // change keeps that unrelated lazy work outside the assertion's act boundary.
+    fireEvent.change(screen.getByRole('textbox', { name: 'Capture' }), {
+      target: { value: 'Call the bank' },
+    });
+    await act(async () => fake.emit('orbit:quit-prepare', { requestId: 2, generation: 1 }));
     const prompt = await screen.findByTestId('capture-quit-prompt');
     expect(prompt).toHaveTextContent('not saved yet');
     expect(showCaptureWindow).toHaveBeenCalledTimes(1);
@@ -112,15 +116,17 @@ describe('QuickCaptureWindow', () => {
         'The quick capture window still holds text.',
       ),
     );
+    await waitFor(() => expect(screen.queryByTestId('capture-quit-prompt')).toBeNull());
     expect(screen.getByRole('textbox', { name: 'Capture' })).toHaveValue('Call the bank');
 
     // Save capture writes the record and acknowledges.
-    act(() => fake.emit('orbit:quit-prepare', { requestId: 3, generation: 1 }));
+    await act(async () => fake.emit('orbit:quit-prepare', { requestId: 3, generation: 1 }));
     await screen.findByTestId('capture-quit-prompt');
     await user.click(screen.getByRole('button', { name: 'Save capture' }));
     await waitFor(() =>
       expect(ackQuit).toHaveBeenCalledWith({ requestId: 3, generation: 1 }, true),
     );
+    await waitFor(() => expect(screen.queryByTestId('capture-quit-prompt')).toBeNull());
     expect(await repository.captures.count()).toBe(1);
     expect(screen.getByRole('textbox', { name: 'Capture' })).toHaveValue('');
   });

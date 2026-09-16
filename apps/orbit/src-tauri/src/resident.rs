@@ -131,6 +131,11 @@ pub struct Resident {
     /// The main window's bridge is listening for `orbit:activate`; an activation is
     /// delivered only once this is true, so the emit can never precede the listener.
     pub activation_subscribed: bool,
+    /// Changes whenever the renderer attaches or detaches its activation listener.
+    /// An emit may clear the queue only if the same subscription is still current.
+    pub activation_subscription_generation: u64,
+    /// Prevent two shell threads from selecting and emitting the same queued click.
+    pub activation_emitting: bool,
     /// Collapses one click delivered through more than one API.
     pub dedup: Dedup,
 }
@@ -226,6 +231,8 @@ impl Resident {
             quit_request: None,
             queued_activation: Vec::new(),
             activation_subscribed: false,
+            activation_subscription_generation: 0,
+            activation_emitting: false,
             dedup: Dedup::default(),
         }
     }
@@ -399,23 +406,100 @@ pub fn can_flush(phase: Phase, activation_subscribed: bool, queued: usize) -> bo
     queued > 0 && activation_subscribed && matches!(phase, Phase::Ready | Phase::Degraded)
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ActivationEmit {
+    uri: String,
+    queued: usize,
+    subscription_generation: u64,
+}
+
+fn begin_activation_emit(resident: &mut Resident) -> Option<ActivationEmit> {
+    if resident.activation_emitting
+        || !can_flush(
+            resident.phase,
+            resident.activation_subscribed,
+            resident.queued_activation.len(),
+        )
+    {
+        return None;
+    }
+    resident.activation_emitting = true;
+    Some(ActivationEmit {
+        uri: resident.queued_activation.last()?.clone(),
+        queued: resident.queued_activation.len(),
+        subscription_generation: resident.activation_subscription_generation,
+    })
+}
+
+/// Finish one synchronous Tauri emit. The selected queue entries are removed only when
+/// delivery succeeded and the same renderer subscription is still current. Newer clicks
+/// appended during the emit remain queued and are delivered by the next pass.
+fn finish_activation_emit(resident: &mut Resident, attempt: &ActivationEmit, delivered: bool) {
+    let same_listener = resident.activation_subscribed
+        && resident.activation_subscription_generation == attempt.subscription_generation;
+    if delivered && same_listener {
+        let delivered_entries = attempt.queued.min(resident.queued_activation.len());
+        resident.queued_activation.drain(..delivered_entries);
+    } else if !delivered
+        && resident.activation_subscription_generation == attempt.subscription_generation
+    {
+        // Require a fresh listener handshake before retrying a failed native emit.
+        resident.activation_subscribed = false;
+        resident.activation_subscription_generation =
+            resident.activation_subscription_generation.wrapping_add(1);
+    }
+    resident.activation_emitting = false;
+}
+
+/// Remove a renderer subscription only when the caller still owns the current
+/// generation. A delayed cleanup from an older renderer must not disable the
+/// listener installed by a newer reload.
+fn unsubscribe_activation(resident: &mut Resident, subscription_generation: u64) -> bool {
+    if resident.activation_subscribed
+        && resident.activation_subscription_generation == subscription_generation
+    {
+        resident.activation_subscription_generation =
+            resident.activation_subscription_generation.wrapping_add(1);
+        resident.activation_subscribed = false;
+        true
+    } else {
+        false
+    }
+}
+
 /// Deliver the latest queued activation to the main window if it may be delivered now,
 /// clearing the queue. The last click wins when several queued up: one record opens,
 /// not a cascade. A no-op until both readiness and subscription hold, so it is safe to
 /// call from `activate`, `mark_ready`, and the subscribe command alike.
 pub fn flush_activation(app: &AppHandle) {
-    let uri = with_resident(app, |r| {
-        if can_flush(r.phase, r.activation_subscribed, r.queued_activation.len()) {
-            let last = r.queued_activation.pop();
-            r.queued_activation.clear();
-            last
-        } else {
-            None
+    loop {
+        let attempt = with_resident(app, begin_activation_emit).flatten();
+        let Some(attempt) = attempt else {
+            break;
+        };
+        let delivered = app
+            .emit_to(MAIN_WINDOW, "orbit:activate", attempt.uri.clone())
+            .is_ok();
+        let retry = with_resident(app, |resident| {
+            finish_activation_emit(resident, &attempt, delivered);
+            can_flush(
+                resident.phase,
+                resident.activation_subscribed,
+                resident.queued_activation.len(),
+            )
+        })
+        .unwrap_or(false);
+        if !delivered {
+            logging::event(
+                Level::Warn,
+                "resident",
+                "activation-emit-failed",
+                Map::new(),
+            );
         }
-    })
-    .flatten();
-    if let Some(uri) = uri {
-        let _ = app.emit_to(MAIN_WINDOW, "orbit:activate", uri);
+        if !retry {
+            break;
+        }
     }
 }
 
@@ -847,12 +931,35 @@ pub fn resident_capture_subscribed(app: AppHandle, window: Window) -> Result<(),
 /// is database readiness), so an activation that arrived — or completed readiness —
 /// before the listener existed is delivered here instead of being lost.
 #[tauri::command]
-pub fn resident_activation_subscribed(app: AppHandle, window: Window) -> Result<(), String> {
+pub fn resident_activation_subscribed(app: AppHandle, window: Window) -> Result<u64, String> {
     if window.label() != MAIN_WINDOW {
         return Err("Only the main window subscribes here.".into());
     }
-    with_resident(&app, |r| r.activation_subscribed = true);
+    let subscription_generation = with_resident(&app, |r| {
+        r.activation_subscription_generation = r.activation_subscription_generation.wrapping_add(1);
+        r.activation_subscribed = true;
+        r.activation_subscription_generation
+    })
+    .ok_or_else(|| "Resident state is unavailable.".to_string())?;
     flush_activation(&app);
+    Ok(subscription_generation)
+}
+
+/// The main renderer removed its activation listener (for example during a reload). Any
+/// in-progress emit tied to that subscription stays queued and a later subscription retries it.
+#[tauri::command]
+pub fn resident_activation_unsubscribed(
+    app: AppHandle,
+    window: Window,
+    subscription_generation: u64,
+) -> Result<(), String> {
+    if window.label() != MAIN_WINDOW {
+        return Err("Only the main window unsubscribes here.".into());
+    }
+    with_resident(&app, |r| {
+        unsubscribe_activation(r, subscription_generation);
+    })
+    .ok_or_else(|| "Resident state is unavailable.".to_string())?;
     Ok(())
 }
 
@@ -914,6 +1021,76 @@ mod tests {
         // Both gates held: deliver. Degraded still shows the record.
         assert!(can_flush(Phase::Ready, true, 1));
         assert!(can_flush(Phase::Degraded, true, 2));
+    }
+
+    #[test]
+    fn activation_delivery_clears_only_the_selected_entries_after_a_success() {
+        let mut resident = Resident::new(Launch::Manual);
+        resident.phase = Phase::Ready;
+        resident.activation_subscribed = true;
+        resident.activation_subscription_generation = 7;
+        resident.queued_activation = vec!["orbit://task/one".into(), "orbit://task/two".into()];
+
+        let attempt = begin_activation_emit(&mut resident).expect("ready delivery");
+        assert_eq!(attempt.uri, "orbit://task/two");
+        assert!(resident.activation_emitting);
+        // A later click is not part of the selected batch and must survive its delivery.
+        resident.queued_activation.push("orbit://task/three".into());
+        finish_activation_emit(&mut resident, &attempt, true);
+
+        assert_eq!(resident.queued_activation, ["orbit://task/three"]);
+        assert!(!resident.activation_emitting);
+        assert!(resident.activation_subscribed);
+    }
+
+    #[test]
+    fn failed_or_stale_activation_delivery_stays_queued_for_a_fresh_listener() {
+        let mut resident = Resident::new(Launch::Manual);
+        resident.phase = Phase::Ready;
+        resident.activation_subscribed = true;
+        resident.activation_subscription_generation = 3;
+        resident.queued_activation = vec!["orbit://bill/one".into()];
+
+        let failed = begin_activation_emit(&mut resident).expect("ready delivery");
+        finish_activation_emit(&mut resident, &failed, false);
+        assert_eq!(resident.queued_activation, ["orbit://bill/one"]);
+        assert!(!resident.activation_subscribed);
+
+        resident.activation_subscribed = true;
+        resident.activation_subscription_generation += 1;
+        let stale = begin_activation_emit(&mut resident).expect("retry delivery");
+        // The renderer reloads while the native emit is in flight.
+        resident.activation_subscribed = false;
+        resident.activation_subscription_generation += 1;
+        finish_activation_emit(&mut resident, &stale, true);
+        assert_eq!(resident.queued_activation, ["orbit://bill/one"]);
+        assert!(!resident.activation_emitting);
+
+        resident.activation_subscribed = true;
+        let superseded = begin_activation_emit(&mut resident).expect("new delivery");
+        resident.activation_subscription_generation += 1;
+        resident.activation_subscribed = true;
+        finish_activation_emit(&mut resident, &superseded, false);
+        assert!(
+            resident.activation_subscribed,
+            "do not disable the newer listener"
+        );
+        assert_eq!(resident.queued_activation, ["orbit://bill/one"]);
+    }
+
+    #[test]
+    fn delayed_unsubscribe_cannot_disable_a_newer_activation_listener() {
+        let mut resident = Resident::new(Launch::Manual);
+        resident.activation_subscribed = true;
+        resident.activation_subscription_generation = 12;
+
+        assert!(!unsubscribe_activation(&mut resident, 11));
+        assert!(resident.activation_subscribed);
+        assert_eq!(resident.activation_subscription_generation, 12);
+
+        assert!(unsubscribe_activation(&mut resident, 12));
+        assert!(!resident.activation_subscribed);
+        assert_eq!(resident.activation_subscription_generation, 13);
     }
 
     #[test]

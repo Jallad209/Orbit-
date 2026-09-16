@@ -64,6 +64,7 @@ function App(props: EditorProps) {
 
 afterEach(() => {
   useDraftStore.setState({ drafts: {}, pending: null });
+  vi.restoreAllMocks();
 });
 
 describe('draft coordinator', () => {
@@ -82,6 +83,7 @@ describe('draft coordinator', () => {
   });
 
   it('blocks navigation with Save / Discard / Stay and saves before proceeding', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     const flush = vi.fn(async () => ({ ok: true as const }));
     renderWithProviders(<App flush={flush} />, {
       route: '/notes/1',
@@ -104,9 +106,11 @@ describe('draft coordinator', () => {
     await screen.findByRole('heading', { name: 'Today' });
     expect(flush).toHaveBeenCalledTimes(1);
     expect(hasDirtyDrafts()).toBe(false);
+    expect(consoleError).not.toHaveBeenCalled();
   });
 
   it('keeps the draft and shows the reason when the save fails; Discard proceeds without saving', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     const flush = vi.fn(async () => ({ ok: false as const, reason: 'The data file is busy.' }));
     renderWithProviders(<App flush={flush} />, {
       route: '/notes/1',
@@ -122,6 +126,7 @@ describe('draft coordinator', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Discard' }));
     await screen.findByRole('heading', { name: 'Today' });
     expect(flush).toHaveBeenCalledTimes(1);
+    expect(consoleError).not.toHaveBeenCalled();
   });
 
   it('an invalid draft cannot be saved by the guard: the reason is shown and nothing is written', async () => {
@@ -149,19 +154,26 @@ describe('draft coordinator', () => {
     expect(await confirmLeave('reload Orbit')).toBe(true);
     await userEvent.type(screen.getByLabelText('Body'), 'hello');
     let outcome: Promise<boolean>;
-    act(() => {
+    await act(async () => {
       outcome = confirmLeave('reload Orbit');
     });
     const dialog = await screen.findByTestId('draft-guard');
     expect(dialog).toHaveTextContent('before you reload Orbit');
     await userEvent.click(screen.getByRole('button', { name: 'Stay' }));
-    expect(await outcome!).toBe(false);
-    act(() => {
+    let answer: boolean | undefined;
+    await act(async () => {
+      answer = await outcome!;
+    });
+    expect(answer).toBe(false);
+    await act(async () => {
       outcome = confirmLeave('reload Orbit');
     });
     await screen.findByTestId('draft-guard');
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
-    expect(await outcome!).toBe(true);
+    await act(async () => {
+      answer = await outcome!;
+    });
+    expect(answer).toBe(true);
     expect(flush).toHaveBeenCalledTimes(1);
   });
 

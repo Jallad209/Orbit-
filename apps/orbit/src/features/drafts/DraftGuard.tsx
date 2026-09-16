@@ -63,7 +63,9 @@ export function DraftGuard() {
     setSaveError(null);
     if (blocker.state === 'blocked') {
       for (const d of dirtyDrafts()) d.discard();
-      blocker.proceed();
+      // Discarding updates the registered drafts to clean; the effect above releases
+      // this navigation. Keeping one release path avoids the same double-proceed race
+      // as saving.
     } else answer('discard');
   };
   const save = async () => {
@@ -72,8 +74,11 @@ export function DraftGuard() {
     try {
       if (blocker.state === 'blocked') {
         const result = await flushDrafts();
-        if (result.ok) blocker.proceed();
-        else setSaveError(result.reason);
+        // A successful flush updates the registered drafts to clean. The effect above
+        // owns releasing the blocked navigation once that state reaches this component.
+        // Calling `proceed` here as well races the effect and can ask React Router to
+        // proceed a blocker that it has already returned to `unblocked`.
+        if (!result.ok) setSaveError(result.reason);
       } else {
         // `confirmLeave` flushes after the answer; its caller sees the outcome.
         answer('save');

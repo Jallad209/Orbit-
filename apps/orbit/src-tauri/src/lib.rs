@@ -226,6 +226,7 @@ pub fn run() {
             resident::resident_capture_subscribed,
             resident::resident_activation_pending,
             resident::resident_activation_subscribed,
+            resident::resident_activation_unsubscribed,
             scheduler::scheduler_wake,
         ])
         .build(tauri::generate_context!())

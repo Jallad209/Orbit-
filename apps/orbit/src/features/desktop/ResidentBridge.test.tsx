@@ -290,9 +290,10 @@ describe('DesktopSettings', () => {
   });
 
   it('tells the shell its activation listener is attached, so a held cold activation is delivered', async () => {
-    const activationSubscribed = vi.fn(async () => {});
-    const fake = fakeResidentApi({ activationSubscribed });
-    renderWithProviders(<ResidentBridge />, {
+    const activationSubscribed = vi.fn(async () => 17);
+    const activationUnsubscribed = vi.fn(async (_subscriptionGeneration: number) => {});
+    const fake = fakeResidentApi({ activationSubscribed, activationUnsubscribed });
+    const view = renderWithProviders(<ResidentBridge />, {
       platform: desktopWith(fake),
       insights: false,
       route: '/today',
@@ -300,6 +301,8 @@ describe('DesktopSettings', () => {
     // The bridge subscribes to shell events and then hands the shell the go-ahead; without
     // this the shell would emit a cold `orbit:activate` before the listener existed (PD-001).
     await waitFor(() => expect(activationSubscribed).toHaveBeenCalledTimes(1));
+    view.unmount();
+    await waitFor(() => expect(activationUnsubscribed).toHaveBeenCalledWith(17));
   });
 
   it('asks through the draft guard before an activation leaves an editor with unsaved changes', async () => {

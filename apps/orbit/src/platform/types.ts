@@ -161,7 +161,9 @@ export interface DesktopApi {
   /** The capture window's bridge is listening; Quit waits for its acknowledgment. */
   captureSubscribed(): Promise<void>;
   /** The main window's bridge is listening for activations; a held one is delivered now. */
-  activationSubscribed(): Promise<void>;
+  activationSubscribed(): Promise<number>;
+  /** The main window removed its activation listener; native delivery pauses until it returns. */
+  activationUnsubscribed(subscriptionGeneration: number): Promise<void>;
   showMain(): Promise<void>;
   /** Hide the main window (after the close explanation was acknowledged). */
   hideMain(): Promise<void>;
