@@ -73,13 +73,22 @@ function launchField(orbit: LaunchedOrbit): string[] {
   return orbit.shellLog(/^launch$/).map((l) => (l['fields'] as { launch: string }).launch);
 }
 
+async function waitForLaunchField(orbit: LaunchedOrbit, expected: string): Promise<string[]> {
+  const deadline = Date.now() + 5_000;
+  for (;;) {
+    const fields = launchField(orbit);
+    if (fields.includes(expected) || Date.now() > deadline) return fields;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+}
+
 describeWindows('cold activation (direct launch)', () => {
   it('a missing record on a fresh install lands on the missing page once first run is finished', async () => {
     const id = '00000000-0000-7000-8000-0000000000e2';
     live = await launchOrbit({ args: [`orbit://task/${id}`] });
     sessions.push(live.sessionDir);
     await live.page.getByRole('heading', { name: 'Welcome to Orbit' }).waitFor({ timeout: 30_000 });
-    expect(launchField(live)).toEqual(['activate']);
+    expect(await waitForLaunchField(live, 'activate')).toEqual(['activate']);
     await finishFirstRun(live);
     expect(await settleOn(live, `/missing?type=task&id=${id}`)).toBe(`/missing?type=task&id=${id}`);
     await pw(live.page.getByText(/no longer exists/)).toBeVisible();

@@ -8,11 +8,11 @@
  * fake autostart file; single-instance and window-state are skipped by the
  * shell under ORBIT_DATA_DIR, so it never touches the real install.
  */
-import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve, sep } from 'node:path';
 import { chromium, type Browser, type Page } from '@playwright/test';
 
 export const ORBIT_EXE =
@@ -43,6 +43,53 @@ async function freePort(): Promise<number> {
     });
     srv.on('error', rej);
   });
+}
+
+function waitForExit(child: ChildProcess, timeoutMs: number): Promise<boolean> {
+  if (child.exitCode !== null) return Promise.resolve(true);
+  return new Promise((resolveExit) => {
+    let settled = false;
+    const finish = (exited: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      child.off('exit', onExit);
+      resolveExit(exited);
+    };
+    const onExit = () => finish(true);
+    const timer = setTimeout(() => finish(child.exitCode !== null), timeoutMs);
+    child.once('exit', onExit);
+  });
+}
+
+async function terminateOrbit(child: ChildProcess): Promise<void> {
+  if (child.exitCode !== null) return;
+  child.kill();
+  if (!(await waitForExit(child, 2_000)) && child.pid) {
+    await new Promise<void>((resolveKill, rejectKill) => {
+      const killer = spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], {
+        stdio: 'ignore',
+      });
+      const timer = setTimeout(() => {
+        killer.kill();
+        rejectKill(new Error(`taskkill timed out for Orbit process ${child.pid}`));
+      }, 15_000);
+      killer.once('error', (error) => {
+        clearTimeout(timer);
+        rejectKill(error);
+      });
+      killer.once('exit', (code) => {
+        clearTimeout(timer);
+        if (code === 0 || child.exitCode !== null) resolveKill();
+        else rejectKill(new Error(`taskkill exited ${code} for Orbit process ${child.pid}`));
+      });
+    });
+    if (!(await waitForExit(child, 15_000))) {
+      throw new Error(`Orbit process ${child.pid} did not exit after taskkill`);
+    }
+  }
+  // WebView2 child processes release their profile shortly after the client exits.
+  await new Promise((r) => setTimeout(r, 1_000));
 }
 
 export interface LaunchOptions {
@@ -79,118 +126,97 @@ export async function launchOrbit(options: LaunchOptions = {}): Promise<Launched
   const stderr: string[] = [];
   child.stderr?.on('data', (d) => stderr.push(String(d)));
 
-  const deadline = Date.now() + (options.attachTimeoutMs ?? 30_000);
   let browser: Browser | null = null;
-  while (!browser) {
-    if (child.exitCode !== null)
-      throw new Error(`orbit exited early (${child.exitCode}): ${stderr.join('')}`);
-    try {
-      browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { timeout: 2_000 });
-    } catch {
-      if (Date.now() > deadline)
-        throw new Error(`could not attach over CDP within timeout; stderr: ${stderr.join('')}`);
-      await new Promise((r) => setTimeout(r, 100));
-    }
-  }
-  const spawnToCdpMs = Date.now() - t0;
-  let page: Page | null = null;
-  while (!page) {
-    for (const ctx of browser.contexts()) {
-      for (const p of ctx.pages()) {
-        const url = p.url();
-        if (url.startsWith('http://tauri.localhost') && !url.includes('/capture')) page = p;
-      }
-    }
-    if (!page) {
-      if (Date.now() > deadline) throw new Error('main page never appeared over CDP');
-      await new Promise((r) => setTimeout(r, 50));
-    }
-  }
-  const spawnToMainPageMs = Date.now() - t0;
-
-  const shellLog = (ops?: RegExp) => {
-    const logs = join(sessionDir, 'logs');
-    if (!existsSync(logs)) return [];
-    return readdirSync(logs)
-      .filter((f) => f.endsWith('.log'))
-      .sort()
-      .flatMap((f) => readFileSync(join(logs, f), 'utf8').split('\n'))
-      .filter(Boolean)
-      .map((l) => {
-        try {
-          return JSON.parse(l) as Record<string, unknown>;
-        } catch {
-          return { raw: l };
-        }
-      })
-      .filter((o) => !ops || ops.test(String(o['op'] ?? '')));
-  };
-
-  return {
-    child,
-    browser,
-    page,
-    sessionDir,
-    dataDir,
-    dbPath,
-    shellLog,
-    timings: { spawnToCdpMs, spawnToMainPageMs },
-    async close() {
+  try {
+    const deadline = Date.now() + (options.attachTimeoutMs ?? 30_000);
+    while (!browser) {
+      if (child.exitCode !== null)
+        throw new Error(`orbit exited early (${child.exitCode}): ${stderr.join('')}`);
       try {
-        await browser?.close();
+        browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { timeout: 2_000 });
       } catch {
-        /* already gone */
+        if (Date.now() > deadline)
+          throw new Error(`could not attach over CDP within timeout; stderr: ${stderr.join('')}`);
+        await new Promise((r) => setTimeout(r, 100));
       }
-      if (child.exitCode === null) {
-        child.kill();
-        await new Promise((r) => setTimeout(r, 500));
-        if (child.exitCode === null) {
-          try {
-            spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
-          } catch {
-            /* ignore */
-          }
+    }
+    const spawnToCdpMs = Date.now() - t0;
+    let page: Page | null = null;
+    const observedPageUrls = new Set<string>();
+    while (!page) {
+      for (const ctx of browser.contexts()) {
+        for (const p of ctx.pages()) {
+          const url = p.url();
+          observedPageUrls.add(url);
+          if (url.startsWith('http://tauri.localhost') && !url.includes('/capture')) page = p;
         }
       }
-      // With ORBIT_WAIT_FOR_EXIT set, block until this launch's orbit.exe (by PID) and any
-      // WebView2 host it started are gone, so a relaunch never shares a lingering WebView2
-      // host bound to the same profile folder.
-      if (process.env.ORBIT_WAIT_FOR_EXIT && child.pid) {
-        const deadline = Date.now() + 15_000;
-        for (;;) {
-          const still = spawnSync(
-            'powershell',
-            [
-              '-NoProfile',
-              '-Command',
-              `@(Get-Process -Id ${child.pid} -ErrorAction SilentlyContinue).Count`,
-            ],
-            { encoding: 'utf8' },
+      if (!page) {
+        if (Date.now() > deadline) {
+          throw new Error(
+            `main page never appeared over CDP; observed: ${[...observedPageUrls].join(', ') || '(none)'}; stderr: ${stderr.join('')}`,
           );
-          if ((still.stdout ?? '').trim() === '0' || Date.now() > deadline) break;
-          await new Promise((r) => setTimeout(r, 200));
         }
-        // WebView2's msedgewebview2.exe host lingers a beat after its client exits.
-        await new Promise((r) => setTimeout(r, 800));
+        await new Promise((r) => setTimeout(r, 50));
       }
-      await new Promise((r) => setTimeout(r, 500));
-    },
-  };
+    }
+    const spawnToMainPageMs = Date.now() - t0;
+
+    const shellLog = (ops?: RegExp) => {
+      const logs = join(sessionDir, 'logs');
+      if (!existsSync(logs)) return [];
+      return readdirSync(logs)
+        .filter((f) => f.endsWith('.log'))
+        .sort()
+        .flatMap((f) => readFileSync(join(logs, f), 'utf8').split('\n'))
+        .filter(Boolean)
+        .map((l) => {
+          try {
+            return JSON.parse(l) as Record<string, unknown>;
+          } catch {
+            return { raw: l };
+          }
+        })
+        .filter((o) => !ops || ops.test(String(o['op'] ?? '')));
+    };
+
+    return {
+      child,
+      browser,
+      page,
+      sessionDir,
+      dataDir,
+      dbPath,
+      shellLog,
+      timings: { spawnToCdpMs, spawnToMainPageMs },
+      async close() {
+        try {
+          await browser?.close();
+        } catch {
+          /* already gone */
+        }
+        await terminateOrbit(child);
+      },
+    };
+  } catch (error) {
+    try {
+      await browser?.close();
+    } catch {
+      /* preserve the launch error */
+    }
+    await terminateOrbit(child).catch(() => undefined);
+    throw error;
+  }
 }
 
 export function removeSession(sessionDir: string) {
-  // WebView2 releases its profile a moment after the process exits.
-  for (let attempt = 0; attempt < 10; attempt++) {
-    try {
-      rmSync(sessionDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
-      return;
-    } catch {
-      const until = Date.now() + 300;
-      while (Date.now() < until) {
-        /* spin briefly; rmSync has no async form here */
-      }
-    }
+  const target = resolve(sessionDir);
+  const tempRoot = resolve(tmpdir()) + sep;
+  if (!target.startsWith(tempRoot) || !basename(target).startsWith('orbit-campaign-')) {
+    throw new Error(`refusing to remove a non-campaign directory: ${target}`);
   }
+  rmSync(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 250 });
+  if (existsSync(target)) throw new Error(`campaign directory is still in use: ${target}`);
 }
 
 /** Wait until the page URL (path + search) satisfies a predicate. */
