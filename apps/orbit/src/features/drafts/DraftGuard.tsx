@@ -32,9 +32,17 @@ export function DraftGuard() {
       hasDirtyDrafts() && currentLocation.pathname !== nextLocation.pathname,
   );
 
+  // The blocked navigation this guard has already released. React Router applies a
+  // blocker's state change inside a transition, while a draft-store update re-renders
+  // synchronously; a save writes several store updates in a row, so this component can
+  // render again with the same `blocked` object before the router has moved on. Releasing
+  // it twice throws ("Invalid blocker state transition"), so each object is released once.
+  const released = useRef<unknown>(null);
   useEffect(() => {
     // A draft that is no longer dirty releases a blocked navigation on its own.
-    if (blocker.state === 'blocked' && !hasDirtyDrafts()) blocker.proceed();
+    if (blocker.state !== 'blocked' || hasDirtyDrafts() || released.current === blocker) return;
+    released.current = blocker;
+    blocker.proceed();
   }, [blocker, drafts]);
 
   useEffect(() => {
