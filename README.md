@@ -8,12 +8,14 @@ Capture → Plan → Do → Review. One loop, one connected system.
 
 ## Status
 
-Week 1 of 13. See the task tracks:
+Weeks 1–12 of 13 complete (the installed-Windows passes for weeks 11 and 12 are recorded as NOT RUN in [docs/RESIDENT-BEHAVIOUR.md](docs/RESIDENT-BEHAVIOUR.md); the optional week-12 updater was not selected). See the task tracks:
 
 - [docs/ORBIT-SPEC.md](docs/ORBIT-SPEC.md) — product and technical spec
 - [docs/BACKEND-TASKS.md](docs/BACKEND-TASKS.md) — core engine and local data layer
 - [docs/FRONTEND-TASKS.md](docs/FRONTEND-TASKS.md) — interface
 - [docs/DEVOPS-TASKS.md](docs/DEVOPS-TASKS.md) — builds, CI, releases
+
+Feature behaviour and limits: [Insights](docs/INSIGHTS.md), [Weekly review](docs/WEEKLY-REVIEW.md), [People and commitments](docs/PEOPLE-AND-COMMITMENTS.md), [Bills](docs/BILLS.md), [Notes](docs/NOTES.md), [Deep links](docs/DEEP-LINKS.md), [Resident behaviour (desktop)](docs/RESIDENT-BEHAVIOUR.md), [Release process](docs/RELEASE.md), [Hosting the PWA](docs/HOSTING.md).
 
 ## Quick start
 

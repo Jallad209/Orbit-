@@ -3,7 +3,7 @@
 **Tech Stack:** React 18 + Vite + TypeScript + Tailwind CSS + Radix UI Primitives + Framer Motion + Zustand + Vite PWA + Tauri 2 API (from week 7) + Vitest + Testing Library
 **Repository:** `C:\Orbit`
 **Packages Owned:** `apps/orbit/src`
-**Current Status:** Weeks 1-11 ✅ COMPLETE
+**Current Status:** Weeks 1-12 ✅ COMPLETE (week 12's installed-build activation pass is recorded as NOT RUN in `docs/RESIDENT-BEHAVIOUR.md`)
 
 > The frontend talks only to `@orbit/core` services, the `Repository` interface, and a `Platform` interface. It never issues SQL, never imports Tauri APIs outside `src/platform/`, and never calls the network. All fonts and assets are bundled. Weeks 1–6 run in a plain browser; the desktop shell is integrated in week 7.
 
@@ -700,7 +700,7 @@ pnpm exec playwright test tests/e2e/playwright/insights.spec.ts
 
 ---
 
-## Week 12: Weekly Review, People, Bills & Notes
+## Week 12: Weekly Review, People, Bills & Notes ✅ COMPLETE (installed-build activation pending)
 
 **Description:** This week you will build the guided weekly review and the thin list screens for people, bills, and notes. The weekly review walks through inbox zero, overdue cleanup, every active project, goal updates, bills, and next-week capacity, and can be paused and resumed. People show commitments and follow-ups; bills show due dates with reminder status; notes have a Markdown editor with links. On desktop, tray menu actions ("Plan my day") route into the app.
 
@@ -729,18 +729,40 @@ pnpm exec playwright test tests/e2e/playwright/insights.spec.ts
 - Notes editor saves on blur and renders preview
 - Deep link `orbit://task/<id>` opens the task editor
 
+**What was done** (built from `docs/WEEK-12-PLAN.md`; feature semantics in `docs/WEEKLY-REVIEW.md`, `docs/PEOPLE-AND-COMMITMENTS.md`, `docs/BILLS.md`, `docs/NOTES.md`, `docs/DEEP-LINKS.md`):
+
+- **Router and drafts first** (`refactor(app)` 6d3d405): `App.tsx` moved to `createBrowserRouter`/`RouterProvider` (tests to `createMemoryRouter` in `test/render.tsx`) so React Router's blocker works; one `DraftGuard` (Save / Discard / Stay) covers Back/Forward, the nav rail, the palette, links, the PWA "Reload" action, native activations, and Quit through `draftStore` (`useDraftRegistration`, `flushDrafts`, `confirmLeave`); "Saved" means the commit succeeded, a failed save keeps the draft with Retry. A post-review fix (9354769) releases each blocked navigation exactly once — the effect-only release still raced React Router's transition under load
+- **Canonical routes** (`lib/destinations.ts`): `/people/:id`, `/people/:personId?commitment=`, `/bills/:id`, `/notes/:id`, `/tasks/:id` (`TaskPage` wrapper around `TaskEditor`), `/review/weekly?review=`, plus the existing project/goal/timeline routes; `routeFor`/`resolveDestination` are the one resolver behind search `?open=`, linked panels, insight evidence, Markdown links, reminders, commands, and activations; a missing record lands on `/missing`, never on another record. `parseOrbitUri` is checked against the 39 shared vectors the Rust parser uses
+- **Weekly review** (`features/reviews/WeeklyFlow.tsx`, `weekly/{Inbox,Overdue,Projects,Goals,Bills,Capacity}Step.tsx`, `StepFrame`, `weeklyService.ts`): landing with Start this week / Resume (fixed dates, older-period warning) / completed summaries / Review again; the URL starts nothing; six steps with acknowledge/defer, fingerprints that invalidate later steps when earlier data changes, a bounded step draft saved on Pause and restored for explicit Apply, receipts by action id (replay returns the stored result, a stale revision is refused with inputs kept), and Finish that rechecks every fingerprint before freezing the summary. Capacity compares booked work and area targets against the frozen target week separately
+- **People** (`features/people/{PeoplePage,PersonPage}.tsx`, `peopleService.ts`): alphabetical list with "I owe" / "Owed to me" counts and the Week 11 ≥ 3 badge from the same insight; detail with both directions, `?commitment=` highlight, "Record reply/contact" that moves `lastContactAt` only and restarts follow-ups in the same transaction (never completes a promise; backwards times reported, same time a no-op); Mark done / Drop / Reopen as separate controls; confirmed soft delete with the affected count, Restore, missing state
+- **Bills** (`features/bills/{BillsPage,BillPage,BillForm}.tsx`, `billsService.ts`): overdue / due soon (fixed 3-date rule, labelled apart from reminder lead) / upcoming / paid / deleted with per-currency totals and "currency not set"; Mark paid is one atomic, idempotent operation showing the one successor; deadline edits move only this occurrence; Stop repeating on the latest unpaid only; one-off unpay correction; confirmed delete that explains what stops; explicit legacy "Create next occurrence"
+- **Notes** (`features/notes/{NotesPage,NotePage,NotePreview}.tsx`, `notesService.ts`, `markdownLinks.ts`): list newest-first with title/area/project filters; textarea editor with patch saves on blur, Ctrl+S, and Save, Editing/Saving/Saved/Failed/Conflict states, serialized writes, no overwrite by a background refresh, conflict keeps both texts (reload / copy / save as new), deleted-elsewhere refusal; lazy `react-markdown` preview with `skipHtml`, alt-text-only images, and `classifyHref` (http/https/mailto after a click, `orbit://` through the resolver, everything else plain text); parent policy derives the area from the project and blocks archived/missing parents
+- **Native activation in the main window** (`features/desktop/ResidentBridge.tsx`): parses the `orbit:activate` URI again, resolves it, and navigates through the draft guard; tells the shell when its listener is attached and unsubscribes on unmount (post-review fix cf24c85, so a cold click cannot be emitted into a window that is not listening); before Quit saves every registered draft and acknowledges with request + generation ids, or refuses with the reason and offers discard-and-quit. `QuickCaptureWindow` answers a quit at once when empty and offers Save capture / Discard / Cancel quit when it holds text
+- **Settings → Updates** says "Updates are not configured" — the optional updater track was not selected
+- Tests: 13 in `features/reviews/` (WeeklyFlow 5, weeklyService 8), 13 in `features/people/`, 12 in `features/bills/`, 15 in `features/notes/`, 7 in `features/drafts/` (incl. the deterministic double-release regression), 11 `ResidentBridge` + 2 `QuickCaptureWindow`, 5 `lib/destinations`; Playwright `weekly-review`, `people`, `bills`, `notes` specs (Chromium 17/17, Firefox 17/17, WebKit 16/17 — see `docs/testing/campaign-2026-09-15/FIXES.md` for the WebKit startup observation); desktop `activation.spec` (warm) and `tests/e2e/desktop/cold-activation.e2e.ts` (cold, against the real binary)
+
+**Files created:**
+
+- `apps/orbit/src/features/reviews/{WeeklyFlow.tsx,weeklyService.ts,weekly/*}`, `apps/orbit/src/features/people/*`, `apps/orbit/src/features/bills/*`, `apps/orbit/src/features/notes/*` ✅
+- `apps/orbit/src/features/drafts/{DraftGuard.tsx,draftStore.ts}`, `apps/orbit/src/lib/destinations.ts`, `apps/orbit/src/features/structure/TaskPage.tsx`, `apps/orbit/src/pages/MissingRecordPage.tsx` ✅
+- `tests/e2e/playwright/{weekly-review,people,bills,notes}.spec.ts`, `tests/e2e/tauri/specs/activation.spec.ts`, `tests/e2e/desktop/{cold-activation.e2e.ts,coldLaunch.ts}` ✅
+
 **Deliverables:**
 
-- [ ] `apps/orbit/src/features/reviews/WeeklyFlow.tsx`
-- [ ] `apps/orbit/src/features/{people,bills,notes}/*`
-- [ ] `apps/orbit/src/platform/deepLinks.ts`
-- [ ] Unit tests written and passing
+- [x] `apps/orbit/src/features/reviews/WeeklyFlow.tsx`
+- [x] `apps/orbit/src/features/{people,bills,notes}/*`
+- [x] `apps/orbit/src/platform/deepLinks.ts` — implemented as `apps/orbit/src/lib/destinations.ts` (typed resolver + `orbit://` parser); the native side is `src-tauri/src/activation.rs`
+- [x] Unit tests written and passing
+
+**Still pending (recorded, not ticked):** notification-click activation with Orbit visible, hidden, and exited on an **installed** build, and the installer's protocol registration/upgrade/uninstall — no VM was available; the list is in `docs/RESIDENT-BEHAVIOUR.md` → Verification record. The Week 12 plan's §14 page-level performance measurements (review snapshot load, note save/preview at 50k) were not added.
 
 **Verification:**
 
 ```bash
-pnpm run tauri dev
-# Run the weekly review end to end; pause mid-way, reopen, resume; click a reminder toast
+pnpm exec vitest run --project orbit reviews people bills notes drafts desktop destinations
+pnpm exec playwright test tests/e2e/playwright/weekly-review.spec.ts tests/e2e/playwright/people.spec.ts tests/e2e/playwright/bills.spec.ts tests/e2e/playwright/notes.spec.ts
+pnpm run e2e:desktop          # warm activation, drafts, quit
+pnpm run e2e:desktop:cold     # cold activation against the release binary
 ```
 
 ---

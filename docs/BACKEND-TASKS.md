@@ -3,7 +3,7 @@
 **Tech Stack:** TypeScript (strict) + Zod + Vitest + Dexie (IndexedDB) + SQLite (Tauri SQL plugin, from week 7) + MiniSearch / FTS5 + Tauri 2 Rust commands (from week 7)
 **Repository:** `C:\Orbit`
 **Packages Owned:** `packages/core`, `packages/storage`, `apps/orbit/src-tauri` (from week 7)
-**Current Status:** Weeks 1-11 ✅ COMPLETE
+**Current Status:** Weeks 1-12 ✅ COMPLETE (week 12's installed-build activation pass is recorded as NOT RUN in `docs/RESIDENT-BEHAVIOUR.md`)
 
 > In Orbit there is no server. "Backend" means the pure domain engine (`packages/core`), the storage layer (`packages/storage`), and, from week 7, the Rust shell commands. Weeks 1–6 run entirely in the browser against IndexedDB. Everything here must run with the network cable unplugged.
 
@@ -697,7 +697,7 @@ See `docs/INSIGHTS.md` for the exact formulas, evidence, suppression, and limita
 
 ---
 
-## Week 12: Weekly Review, People, Bills & Tray
+## Week 12: Weekly Review, People, Bills & Tray ✅ COMPLETE (installed-build activation pending)
 
 **Description:** This week you will build the data services behind the weekly review and complete the people/commitments and bills flows. The weekly review processes the inbox, cleans overdue tasks, inspects every active project, updates goals, reviews bills, and prepares next week's capacity check. The Rust shell gains tray presence and autostart so reminders work while the window is closed.
 
@@ -727,17 +727,36 @@ See `docs/INSIGHTS.md` for the exact formulas, evidence, suppression, and limita
 - Recurring bill generates the next due after paid
 - Follow-up cleared when reply marked
 
+**What was done** (built from `docs/WEEK-12-PLAN.md`; semantics in `docs/WEEKLY-REVIEW.md`, `docs/PEOPLE-AND-COMMITMENTS.md`, `docs/BILLS.md`, `docs/DEEP-LINKS.md`, `docs/RESIDENT-BEHAVIOUR.md`):
+
+- **Schema and storage** (`feat(storage)` ad83a81): `WeeklyReview` (frozen `reviewWeekStart`/`targetWeekStart`, `flowVersion`, `revision`, status, stable `currentStep`, step outcomes with fingerprints, a bounded versioned `stepDraft`, a compact `summary`) and the `WeeklyReviewAction` receipt store keyed by action UUID; `Bill` gained `seriesId`, `recurrenceAnchor`, `occurrenceIndex`, `scheduledFor`, `paidAt`, `nextBillId`, `repeatStopped` with read-normalizers that treat old recurring rows as roots anchored at their own `dueAt` (never generating, back-dating, or paying anything). SQLite migration 3, IndexedDB version 4, export schema 5; migrations 1/2 untouched; fixtures for every version kept side by side (`tests/fixtures/{sqlite,idb,export,db}`); older exports load with the two stores empty; a newer schema is still refused. The native restore verifier judges a backup by its **own** schema version (`table_expected_at` in `commands/data_dir.rs`) and is tested against the real old `.db` fixtures, so schema-1/2 backups still restore and migrate. Reviews are excluded from search and from generic command undo
+- **Pure rules in core** (`services/weeklyReview.ts`, `services/people.ts`, `services/bills.ts`, `services/hierarchy.ts` note-parent policy): review weeks, step transitions, acknowledgement fingerprints, `invalidateSteps`, `canonicalActiveReview` for imported duplicates, `weekCapacity` over an explicit week through the shared `computeDayLoad`; one definition each of open-commitment counts and the follow-up baseline (later of creation and last contact); `recordContact` (last contact only, past allowed, future/backwards refused unless an explicit correction); bill grouping with the fixed 3-date due-soon rule, per-currency totals, first-date/rule agreement, `successorPlan`/`buildSuccessor` from `scheduledFor` and position under the original anchor (late payments generate the missed installment, COUNT/UNTIL end the series), `payBill`/`unpayBill`/`stopRepeating`/`advanceLegacy`/`editBill`. The Week 6 recurrence engine's weekly ordering was corrected first (Sunday+Monday, duplicate weekdays, 31st clamping, intervals, COUNT from the rule, inclusive UNTIL)
+- **Transaction-safe application services** (`refactor(app)` 6d3d405 and the feature commits): every mutation re-reads the current row inside its owned transaction, applies a core rule, reconciles reminder rows in the same transaction, and lets an enclosing weekly review append its receipt through `…Within(tx)` before the commit. `submitAction` stores the receipt under the client-generated action id and bumps the review revision atomically; the same id replays, a different payload or review is refused, a stale revision is refused before anything runs, a failed transaction leaves neither result nor receipt. Payment is one atomic operation (paid row, at most one successor, reminder cancel/prepare, receipt)
+- **Rust shell** (`feat(desktop)` 573c36f + post-review fixes cf24c85/f1c5e2c): `notifications.rs` builds the WinRT toast with `launch="orbit://reminder/<id>" activationType="protocol"`, a reminder-derived tag/group, and returns the submission result ("fired" = accepted by Windows); `activation.rs` is the strict `orbit://` parser mirrored in TypeScript and checked against 39 shared vectors; `resident.rs` queues an activation until readiness **and** listener subscription, delivers with per-attempt acknowledgment (queue drained only after a successful emit to the same subscription; failed or stale emits stay queued), deduplicates deliveries within 1.5 s, and runs quit preparation (bounded draft flush with request + generation ids from every live window; refusal cancels the quit); `scheduler.rs` validates owed-to-me follow-ups against a live person and unchanged open commitment immediately before delivery. Tray and autostart shipped in week 11 as noted above
+- **NSIS** (`windows/hooks.nsh`): registers `orbit://` for the current user only when no foreign handler owns it, keeps both registrations across an in-place upgrade, and removes only its own on uninstall. The app never registers the scheme at runtime
+- Tests: core `services/{weeklyReview 12, people 7, bills 14}` + `recurrence/next` 10; storage `weeklyReviews` 7, migration matrix (IndexedDB 1–3→4, SQLite 1–2→3, export 1–4→5, roundtrip); Rust **54** (`resident`, `activation`, `notifications`, `scheduler`, `data_dir` incl. real old-backup restore); desktop `activation.spec` warm, cold suite 3/3 against the release binary, isolated-install stress 30/30 and reused-session race 20/20 after the delivery fix (`docs/testing/campaign-2026-09-15/FIXES.md`)
+
+**Files created:**
+
+- `packages/core/src/services/{weeklyReview,people,bills}.ts`, `packages/core/src/schema/entities.ts` (WeeklyReview, WeeklyReviewAction, Bill fields) ✅
+- `packages/storage/src/sqlite/migrations.ts` (0003_weekly_reviews), `packages/storage/src/indexeddb/index.ts` (v4), `packages/storage/src/export/json.ts` (schema 5), `tests/fixtures/{sqlite/v3.sql,idb/v4.json,export/v5.json,db/v3.db}` ✅
+- `apps/orbit/src-tauri/src/{notifications,activation}.rs`, `apps/orbit/src-tauri/windows/hooks.nsh` (protocol), `tests/fixtures/behaviour/orbit-uris.json` ✅
+
 **Deliverables:**
 
-- [ ] `packages/core/src/services/{weeklyReview,people,bills}.ts`
-- [ ] `apps/orbit/src-tauri/src/{tray,autostart}.rs`
-- [ ] Unit tests written and passing
+- [x] `packages/core/src/services/{weeklyReview,people,bills}.ts`
+- [x] `apps/orbit/src-tauri/src/{tray,autostart}.rs` — shipped in week 11 (`docs/RESIDENT-BEHAVIOUR.md`); week 12 added `notifications.rs` and `activation.rs`
+- [x] Unit tests written and passing
+
+**Still pending (recorded, not ticked):** the installed-build proof of notification activation (visible / hidden / exited), production protocol registration through the installer, and an immediate native display failure leaving a retryable pending row — no VM was available (`docs/RESIDENT-BEHAVIOUR.md` → Verification record). Page-level performance measurements for review snapshot loading and receipt lookup at 50k (plan §14) were not added; only the pure engine budgets are benchmarked.
 
 **Verification:**
 
 ```bash
-pnpm run test --filter @orbit/core -- weeklyReview people bills
-pnpm run tauri dev   # close window, confirm tray icon, reminder still fires
+pnpm exec vitest run --project core services recurrence
+pnpm exec vitest run --project storage weeklyReviews migrations roundtrip
+cargo test --manifest-path apps/orbit/src-tauri/Cargo.toml
+pnpm run e2e:desktop && pnpm run e2e:desktop:cold
 ```
 
 ---

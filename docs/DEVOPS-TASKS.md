@@ -3,7 +3,7 @@
 **Tech Stack:** pnpm + GitHub Actions + Vitest + Playwright + Vite PWA + Lighthouse + Rust toolchain & Tauri CLI (from week 7) + tauri-driver/WebdriverIO + NSIS/MSI + Tauri Updater (manual check)
 **Repository:** `C:\Orbit`
 **Owned:** `.github/`, `scripts/`, `apps/orbit/src-tauri/tauri.conf.json` (build/security sections, from week 7), release process
-**Current Status:** Weeks 1-11 ✅ COMPLETE (branch protection pending: needs `gh auth login` or the GitHub UI; week 11's installed-Windows pass is recorded as NOT RUN in `docs/RESIDENT-BEHAVIOUR.md`)
+**Current Status:** Weeks 1-11 ✅ COMPLETE; week 12 (optional updater) ⏸ NOT SELECTED (branch protection pending: needs `gh auth login` or the GitHub UI; the installed-Windows passes for weeks 11 and 12 are recorded as NOT RUN in `docs/RESIDENT-BEHAVIOUR.md`)
 
 > There are no servers to run. DevOps for Orbit means: reproducible builds, CI that guards the engine, a static PWA build, data-safety verification, signed desktop installers, and a release process. Weeks 1–6 need no Rust. Nothing here may introduce a network dependency into the app itself.
 
@@ -588,7 +588,7 @@ pnpm --filter orbit exec tauri build --bundles nsis   # then the clean-VM proced
 
 ---
 
-## Week 12: Optional Updater (Manual Check)
+## Week 12: Optional Updater (Manual Check) ⏸ NOT SELECTED
 
 **Description:** This week you will add a desktop updater that never phones home on its own. Users can click "Check for updates" in Settings; the app fetches a signed manifest, verifies the signature, and offers to download and install. Fully offline users are unaffected. The PWA updates through its service worker only when the user opens a newer bundle they host themselves.
 
@@ -607,16 +607,34 @@ pnpm --filter orbit exec tauri build --bundles nsis   # then the clean-VM proced
 4. **Policy Enforcement** — No check on launch; documented in Settings copy and `docs/PRIVACY.md`
 5. **Rollback Note** — Keep previous installer link in release notes
 
+**Decision (week 12):** the optional updater track was **not selected** by the owner. No
+keypair was generated, no secret stored, no `latest.json` is published, and the release
+workflow does not sign update artifacts. Settings → Updates states that updates are not
+configured and that Orbit never checks, downloads, or installs anything on its own; the
+PWA updates only through its service worker when the user opens a newer bundle they host.
+The items below stay open, not failed; when the track is selected, the gates in
+`docs/WEEK-12-PLAN.md` §12 (hosting/privacy/channel/key decisions, no embedded credentials,
+signature and HTTPS feed verification, no automatic check, A → B on a disposable installed
+build) apply before any of them is ticked.
+
+**What landed in this track during week 12 instead** (from the testing campaign,
+`docs/testing/campaign-2026-09-15/FIXES.md`): `cargo test` added to CI (26771f1), Firefox and
+WebKit Playwright projects installed and run in `e2e.yml` (b63a027), the Edge WebDriver
+refreshed when its version drifts from WebView2, the bundle baseline rebased with a written
+justification (react-markdown lands only in the lazy note-preview chunk), and the direct-argv
+cold-activation suite (`e2e:desktop:cold`) promoted to `tests/e2e/desktop/` with a Windows
+CI job.
+
 **Deliverables:**
 
-- [ ] Updater configured; `latest.json` published per release
-- [ ] Manual check UI verified from a prior version
-- [ ] `docs/PRIVACY.md`
+- [ ] Updater configured; `latest.json` published per release — not selected
+- [ ] Manual check UI verified from a prior version — not selected
+- [ ] `docs/PRIVACY.md` — not selected (today the only privacy statement is the Settings → Updates copy)
 
 **Verification:**
 
 ```bash
-# Install v0.1.0-beta.1, publish beta.2, click Check for updates, install, confirm version
+# When selected: install v0.1.0-beta.1, publish beta.2, click Check for updates, install, confirm version
 ```
 
 ---

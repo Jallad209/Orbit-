@@ -2,8 +2,10 @@
 
 Since week 11 the desktop shell stays available after the main window is closed: one
 process, one tray icon, reliable manual launch, opt-in launch at login, and an explicit
-Quit. This page records the policy, who owns each setting, how recovery works, and what was
-and was not verified. The shell code is `apps/orbit/src-tauri/src/{resident,tray,prefs,autostart,scheduler}.rs`;
+Quit. Week 12 added notification activation and the `orbit://` protocol, and made Quit
+wait for unsaved drafts. This page records the policy, who owns each setting, how recovery
+works, and what was and was not verified. The shell code is
+`apps/orbit/src-tauri/src/{resident,tray,prefs,autostart,scheduler,notifications,activation}.rs`;
 the main window's side is `apps/orbit/src/features/desktop/`.
 
 ## Lifecycle policy
@@ -59,7 +61,17 @@ after a Quit that could not finish it says "needs attention" with the reason.
 
 ## Shutdown
 
-Quit runs off the event loop:
+Before the sequence below starts, Quit asks (week 12): every live window that holds drafts
+is asked to save or discard them and to acknowledge with the request id and the database
+generation id. The main window saves every registered draft through the same guard that
+protects in-app navigation; a hidden capture window with text comes forward and offers
+Save capture, Discard, or Cancel quit — its text is never silently turned into a record. A
+refusal, a failed save, a stale acknowledgment, or no acknowledgment cancels the quit and
+the app stays reachable with the reason and a "discard and quit" choice. An OS kill cannot
+be made transactional with an unsaved textarea: only acknowledged saves survive forced
+termination.
+
+Quit then runs off the event loop:
 
 1. enter Quitting; the shell refuses new independent writes with "Orbit is quitting; this
    change was not saved" (a transaction that already owns the connection may finish);
@@ -97,6 +109,43 @@ can hide it, and Settings says so.
 Nothing is delivered while the computer sleeps or Orbit is not running; due rows catch up
 when it can run again, subject to the per-pass cap.
 
+Since week 12 a delivered toast carries a launch payload. The notification plugin forwards
+title and body only and cannot report whether Windows accepted the toast, so on Windows
+`notifications.rs` talks to the WinRT toast API directly: the toast XML carries
+`launch="orbit://reminder/<id>" activationType="protocol"` and the reminder id as its tag inside the
+`orbit-reminders` group (so a re-prepared reminder replaces its notification-center entry
+rather than adding one), and `show` returns the immediate submission result. A submission failure
+leaves the row pending for the next pass; "fired" means Windows accepted the toast, never
+that the user saw it. Other platforms fall back to the plugin without a payload.
+
+## Activation (`orbit://`)
+
+An `orbit://<kind>/<uuid>` argument reaches the process from a notification click, the
+protocol handler, or a second launch forwarded through single instance. The contract and
+the resolver are documented in `docs/DEEP-LINKS.md`; the shell's part is:
+
+- validate the argument with the strict Rust parser (`activation.rs`); anything else is
+  ignored and only the kind is logged, never the id;
+- show the main window whatever the launch mode (`--background` included) and queue the
+  URI until the frontend has acknowledged readiness for the current database generation
+  **and** the main window's `orbit:activate` listener has subscribed — a cold notification
+  click races frontend readiness, and the shell waits rather than emitting into a window
+  that is not yet listening;
+- deliver with acknowledgment: each attempt is bracketed with the listener's subscription
+  generation; the queue entry is dropped only after a successful emit to that same
+  subscription, a failed emit drops the stale subscription so the entry waits for the next
+  listener, and a renderer that unmounts or reloads explicitly unsubscribes so no click is
+  lost into a dead window;
+- collapse duplicate deliveries of one activation through more than one API within 1.5 s,
+  while a later deliberate click counts again;
+- never create another database owner: a forwarded launch hands the URI to the running
+  process and exits.
+
+The frontend parses the URI again, resolves it against current data, and navigates
+through the draft guard; a dirty editor asks first, reopening the record already on
+screen never prompts, a missing record lands on `/missing`, and first-run onboarding holds
+the destination until "Start planning". An activation only navigates.
+
 ## Preferences and who owns them
 
 Machine-local preferences live in `desktop-preferences.json` beside the shell's
@@ -130,11 +179,21 @@ pointing at a missing file.
 
 - after install: if the Run value exists and names `Orbit.exe`, rewrite it to the executable
   just installed;
+- after install (week 12): register the `orbit://` protocol for this user under
+  `HKCU\Software\Classes\orbit` (`URL Protocol`, the icon, and
+  `shell\open\command = "<exe>" "%1"`, quoted). If a command already exists there and does
+  not name `Orbit.exe`, another program owns the scheme and it is left alone; the app then
+  reports the missing handler instead of hijacking it;
 - after uninstall: if the uninstaller is running in place (`$EXEPATH == $INSTDIR\uninstall.exe`,
-  which is how an upgrade invokes the previous version's uninstaller) keep the value;
-  otherwise delete the value only if it points at this installation, plus its
-  StartupApproved counterpart. The Run key itself, the data folder, exports, backups, and
+  which is how an upgrade invokes the previous version's uninstaller) keep both
+  registrations for the new version; otherwise delete the Run value and the protocol
+  command only if they point at this installation. The Run key itself, another
+  application's `orbit` handler, the data folder, exports, backups, and
   `desktop-preferences.json` are never removed.
+
+The app itself never writes the protocol registration; only the installer does. Automated
+desktop tests run the binary, not the installer, and hand it `orbit://` arguments directly,
+so they never touch the developer's registry (see Test isolation).
 
 The MSI channel is separate. This hook is NSIS-only and is no evidence for MSI; MSI cleanup is
 an explicit gate for a stable release (see verification).
@@ -172,9 +231,30 @@ Automated (this repository, run on the developer machine, Windows 11 Pro 10.0.26
 | Legacy close flag, tray navigation, explanation, quit failure notices | PASS — vitest ResidentBridge                |
 | Settings shows real state, refuses an optimistic toggle on OS failure | PASS — vitest DesktopSettings               |
 
-Installed build (clean VM procedure in `docs/WEEK-11` plan §14.6): **NOT RUN** in this pass.
-No VM or disposable account was available. Until it is, the following remain pending and
-resident delivery is not marked complete on an installed build:
+Week 12 (activation, protocol, quit preparation), automated on the same machine:
+
+| Check                                                                                                           | Result                                                                                                                                                                             |
+| --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `orbit://` parser: 39 shared vectors accepted/rejected identically in Rust and TypeScript                       | PASS — `cargo test` (activation), vitest `lib/destinations`                                                                                                                        |
+| Toast XML carries the launch payload, tag, and group; submission result returned                                | PASS — `cargo test` (notifications)                                                                                                                                                |
+| Activation queued until readiness + listener; acknowledged delivery; failed/stale emit stays queued             | PASS — `cargo test` (resident: 54 tests incl. failed-emission, stale subscription, delayed cleanup, newer-click retention)                                                         |
+| Warm activation opens the current record, deleted lands on `/missing`, bad URI ignored, waits on a dirty editor | PASS — `e2e:desktop` activation.spec                                                                                                                                               |
+| Cold activation against the real release binary: task / bill / commitment / deleted / malformed, first run      | PASS — `e2e:desktop:cold` 3/3; isolated-install stress 30/30; reused-session race 20/20 (was ~8–17 % lost before the post-review fix, `docs/testing/campaign-2026-09-15/FIXES.md`) |
+| Quit saves registered drafts and acknowledges with request + generation ids; refusal keeps the app up           | PASS — vitest ResidentBridge (mocked shell); not exercised end-to-end against the binary                                                                                           |
+| Hidden capture with text offers Save capture / Discard / Cancel quit                                            | PASS — vitest QuickCaptureWindow                                                                                                                                                   |
+| Scheduler pre-delivery validation: paid bill, completed/deleted commitment, deleted person, watermark           | PASS — `cargo test` (scheduler)                                                                                                                                                    |
+
+Installed build (clean VM procedure in `docs/WEEK-11` plan §14.6 and `docs/WEEK-12-PLAN.md`
+§11.1/§11.5): **NOT RUN** in either pass. No VM or disposable account was available. Until
+it is, the following remain pending and neither resident delivery nor notification
+activation is marked complete on an installed build:
+
+- notification body click with Orbit visible, hidden, and fully exited (notification-center
+  item after exit) opening the exact current record in one process;
+- production `orbit://` registration by the NSIS installer: ownership check against a
+  foreign handler, quoting, upgrade keeping the handler and executable target, uninstall
+  removing only Orbit's registration;
+- immediate native display failure leaving a retryable pending row on an installed build;
 
 - installed Orbit name and icon on notifications; Focus Assist behaviour;
 - install → enable login launch → reboot → hidden initialization → reminder delivery;
