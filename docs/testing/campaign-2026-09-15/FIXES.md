@@ -1,8 +1,45 @@
 # Orbit — fixes applied for the campaign findings
 
-Follow-up to `FINDINGS.md`. Each finding below was fixed and re-verified against the real
-binary/build where applicable. The desktop binary was rebuilt after the PD-001 change
-(`orbit.exe` sha256 `9ee63d73…07ff43fc`). Nothing was committed, pushed, or published.
+Follow-up to the historical baseline in `FINDINGS.md` and `REPORT.md`. The original application
+and harness fixes are commits `573c36f` through `26771f1`; the report commit `98bcb50` remains
+local to `main` unless that branch is pushed. Raw `.log` files remain intentionally ignored;
+the structured results and selected reproducible evidence are kept here.
+
+## Post-review correction — 2026-09-16
+
+An independent review found two false-green paths and one native delivery gap. They are now
+fixed in the working tree and verified against an exact-source release build:
+
+- `DraftGuard` no longer calls React Router's `proceed()` from both its state effect and its
+  Save/Discard handlers. Regression tests fail on unexpected console errors, and the previous
+  `Invalid blocker state transition: unblocked -> proceeding` error is gone.
+- The direct cold-launch harness waits for Orbit's process tree to exit, awaits forced cleanup,
+  cleans up a child even when CDP attachment fails, validates recursive-deletion targets, and
+  waits for the launch log instead of racing it. Campaign stress tests reuse this one harness.
+- Native activation emission is single-flight. Selected queue entries are removed only after a
+  successful emit to the same live renderer subscription; failed or stale emissions stay queued
+  for the next subscription. Renderer unmount/reload explicitly pauses native delivery, and its
+  generation token prevents delayed cleanup from disabling a newer renderer's listener.
+
+**Exact verification source:** `98bcb50` plus the reviewed working-tree changes. **Release binary
+SHA-256:** `12d34aedaa1f9d676a475000378b236e321723956c8a9a1b989a7ebadfa8000a`.
+
+- Unit/component/storage: **726/726** passed, without the Router exception or async `act` warnings.
+- Rust: **54/54** passed, including failed-emission, stale-subscription, delayed-cleanup, and
+  newer-click retention.
+- Cold functional suite: **3/3** against the final release artifact.
+- Cold stress: **30/30** isolated installs and **20/20** reused-session launches; zero losses.
+- Desktop WDIO: **7/7 spec files, 12/12 scenarios**.
+- Chromium browser E2E: **17/17 scenarios**.
+- Firefox browser E2E: **17/17 scenarios** (run 2026-09-16, after the Playwright browser cache was
+  moved out of `AppData` — see TI-006; the earlier "not run" was an environment gap, now closed).
+- WebKit browser E2E: **16/17**. `startup.spec.ts` (cold start with 7.5k seeded records) fails
+  deterministically in WebKit — recorded under TI-006 as an open observation, not a pass.
+- Lint, formatting, TypeScript (app/desktop/campaign), Cargo fmt/check/Clippy, production PWA
+  build, and the bundle budget passed.
+
+`results-phaseB.json` remains the original chronological campaign record. Its intermediate and
+final non-zero exits—including B19—are historical observations, not the post-review gate above.
 
 ## PD-001 — Cold `orbit://` activation dropped (product) · FIXED
 
@@ -100,23 +137,35 @@ version (B06 log: "Downloading Edgedriver …", no early return).
 - `.github/workflows/e2e.yml`: installs chromium + firefox + webkit. `data-safety.yml` stays
   Chromium-only (its checks are storage-engine specific).
 
-**Verified locally:** chromium ✓ and webkit ✓ pass the full `core-loop` suite (12/12 across the
-two engines, including the fixed-clock planning tests), so cross-engine compatibility holds.
+**Verified locally (2026-09-16), full suite per engine:** chromium **17/17**, firefox **17/17**
+(two consecutive parallel runs plus serial repeats), webkit **16/17**.
 
-**Firefox — local launch blocked by a machine Windows issue, not the repo.** Playwright's
-Firefox fails to launch on this dev machine with `browserType.launch: spawn UNKNOWN`; the
-Windows event log shows the real error: _"side-by-side configuration is incorrect … Dependent
-Assembly mozglue … could not be found."_ Diagnosed and ruled out: `mozglue.dll` is present next
-to `firefox.exe`; a clean 122 MB re-download reproduces it; VC++ 2012/2013/2022 redistributables
-are all installed and every imported DLL resolves; Smart App Control is OFF, Controlled Folder
-Access is OFF, and there are no WDAC/CodeIntegrity block events for firefox/mozglue. It is a
-Windows SxS activation-context resolution failure specific to this machine — remediable only by
-an elevated system repair (`sxstrace` → `sfc /scannow` / `DISM /RestoreHealth`), which is a
-system-level change left to the user. The repo change is complete and correct: Firefox is wired
-into `playwright.config.ts` and installed in CI (`e2e.yml`, Linux runner with `--with-deps`,
-where it launches normally), and WebKit locally already proves the cross-engine setup works.
+**Firefox — the earlier "machine SxS fault" diagnosis was wrong.** The `spawn UNKNOWN` /
+_"Dependent Assembly mozglue … could not be found"_ failure was caused by **MSIX filesystem
+virtualization of the Claude desktop app**, not by Windows. `playwright install` had been run from
+inside Claude Code, whose `AppData\Local` writes are redirected to
+`%LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Local\`. Inside that app the merged view
+shows `…\AppData\Local\ms-playwright\firefox-1543\…`, but the real path is empty — and Firefox's
+manifest makes `csrss.exe` (a system process outside the package) probe the real path for the
+`mozglue` private assembly, which is why Chromium/WebKit launched and Firefox alone did not.
+Confirmed by: identical bytes copied outside `AppData` launch fine (`Mozilla Firefox 155.0`); a
+junction into the folder still fails; ACL, EFS, case-sensitivity, AppCompat, and IFEO were ruled
+out; `sfc`/`DISM` would not have helped. Fix applied: `PLAYWRIGHT_BROWSERS_PATH` set (in the
+user's own shell, so it lands in the real `HKCU`) to `C:\Users\User\pw-browsers` and the
+browsers installed there; all three engines launch from any context. CI (`e2e.yml`, Linux) was
+never affected. The same mechanism explains "'pnpm' is not recognized" in the user's own
+terminals: the global install lived in the package's `LocalCache\Roaming\npm`.
 
-## Q-001 — Bundle budget red (quality) · FIXED (documented rebaseline)
+**WebKit — open observation (not a product defect until investigated).** `startup.spec.ts`
+("cold start to interactive stays inside the budget with 5k tasks") fails deterministically in
+WebKit (3/3 serial): after seeding 7,544 records, `/today` renders the shell (heading, plan-for
+and energy controls) but the `focus` and `plan-panel` regions never appear; in the parallel run
+`page.goto('/today')` did not reach `load` within 120 s. Chromium and Firefox reach interactive
+in ~1.0–1.05 s on the same fixture. Candidates: a WebKit-specific IndexedDB/read-path stall in
+the app, or a Playwright-WebKit-on-Windows performance artifact. Needs a profile before
+classifying; the other 16 WebKit scenarios pass.
+
+## Q-001 — Bundle budget red (quality) · ACCEPTED (documented rebaseline)
 
 - `bench/bundle-baseline.json` rebased from **340,047 → 452,602 B** JS gzip (442.0 KB) via
   `node scripts/check-bundle.mjs --update`.
@@ -137,9 +186,8 @@ forcing overrides on the others risks breaking the WDIO/mocha toolchain that the
 depends on. Per the plan's fallback, these are accepted as dev-only risk and tracked here rather
 than force-overridden. Re-check when the upstream tools ship fixes.
 
-## Regression sweep
+## Original regression sweep
 
-`pnpm run lint`, `pnpm run type-check`, `pnpm test` (725), `pnpm run format:check`, the campaign
-and e2e-desktop `tsc` projects, and `cargo fmt/clippy/test` all pass (B08–B10, phase-A data-
-safety suites unchanged). Two unit tests flaked once under machine load (lazy `NotePreview`
-import timeout) and passed on isolated re-run and a clean full re-run (B10b, 725/725).
+The initial campaign produced both passing and failing reruns, recorded chronologically in
+`results-phaseB.json`. In particular, B19 was non-zero and was not a valid final green gate.
+The authoritative post-review verification is the dated section at the top of this document.

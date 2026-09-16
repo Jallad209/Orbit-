@@ -3,163 +3,163 @@
   "outcomes": [
     {
       "run": 1,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
       "shellLaunch": "activate",
       "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 174,
-      "spawnToMainPageMs": 373
+      "msReadyAfterStart": 168,
+      "spawnToMainPageMs": 342
     },
     {
       "run": 2,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
-      "shellLaunch": "activate",
-      "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 182,
-      "spawnToMainPageMs": 389
-    },
-    {
-      "run": 3,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
-      "shellLaunch": "activate",
-      "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 152,
-      "spawnToMainPageMs": 399
-    },
-    {
-      "run": 4,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
-      "shellLaunch": "activate",
-      "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 159,
-      "spawnToMainPageMs": 383
-    },
-    {
-      "run": 5,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
-      "shellLaunch": "activate",
-      "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 155,
-      "spawnToMainPageMs": 422
-    },
-    {
-      "run": 6,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
-      "shellLaunch": "activate",
-      "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 159,
-      "spawnToMainPageMs": 397
-    },
-    {
-      "run": 7,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
-      "shellLaunch": "activate",
-      "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 151,
-      "spawnToMainPageMs": 378
-    },
-    {
-      "run": 8,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
-      "shellLaunch": "activate",
-      "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 149,
-      "spawnToMainPageMs": 416
-    },
-    {
-      "run": 9,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
       "shellLaunch": "activate",
       "shellReadyQueuedActivation": 1,
       "msReadyAfterStart": 157,
-      "spawnToMainPageMs": 397
+      "spawnToMainPageMs": 350
+    },
+    {
+      "run": 3,
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
+      "shellLaunch": "activate",
+      "shellReadyQueuedActivation": 1,
+      "msReadyAfterStart": 157,
+      "spawnToMainPageMs": 348
+    },
+    {
+      "run": 4,
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
+      "shellLaunch": "activate",
+      "shellReadyQueuedActivation": 1,
+      "msReadyAfterStart": 130,
+      "spawnToMainPageMs": 366
+    },
+    {
+      "run": 5,
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
+      "shellLaunch": "activate",
+      "shellReadyQueuedActivation": 1,
+      "msReadyAfterStart": 149,
+      "spawnToMainPageMs": 379
+    },
+    {
+      "run": 6,
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
+      "shellLaunch": "activate",
+      "shellReadyQueuedActivation": 1,
+      "msReadyAfterStart": 123,
+      "spawnToMainPageMs": 365
+    },
+    {
+      "run": 7,
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
+      "shellLaunch": "activate",
+      "shellReadyQueuedActivation": 1,
+      "msReadyAfterStart": 144,
+      "spawnToMainPageMs": 368
+    },
+    {
+      "run": 8,
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
+      "shellLaunch": "activate",
+      "shellReadyQueuedActivation": 1,
+      "msReadyAfterStart": 141,
+      "spawnToMainPageMs": 358
+    },
+    {
+      "run": 9,
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
+      "shellLaunch": "activate",
+      "shellReadyQueuedActivation": 1,
+      "msReadyAfterStart": 140,
+      "spawnToMainPageMs": 359
     },
     {
       "run": 10,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
       "shellLaunch": "activate",
       "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 155,
-      "spawnToMainPageMs": 377
+      "msReadyAfterStart": 150,
+      "spawnToMainPageMs": 368
     },
     {
       "run": 11,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
       "shellLaunch": "activate",
       "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 167,
-      "spawnToMainPageMs": 377
+      "msReadyAfterStart": 151,
+      "spawnToMainPageMs": 352
     },
     {
       "run": 12,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
       "shellLaunch": "activate",
       "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 167,
-      "spawnToMainPageMs": 390
+      "msReadyAfterStart": 136,
+      "spawnToMainPageMs": 362
     },
     {
       "run": 13,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
       "shellLaunch": "activate",
       "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 145,
-      "spawnToMainPageMs": 416
+      "msReadyAfterStart": 148,
+      "spawnToMainPageMs": 358
     },
     {
       "run": 14,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
       "shellLaunch": "activate",
       "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 167,
-      "spawnToMainPageMs": 402
+      "msReadyAfterStart": 149,
+      "spawnToMainPageMs": 370
     },
     {
       "run": 15,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
       "shellLaunch": "activate",
       "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 161,
-      "spawnToMainPageMs": 402
+      "msReadyAfterStart": 147,
+      "spawnToMainPageMs": 364
     },
     {
       "run": 16,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
       "shellLaunch": "activate",
       "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 166,
-      "spawnToMainPageMs": 391
+      "msReadyAfterStart": 143,
+      "spawnToMainPageMs": 364
     },
     {
       "run": 17,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
       "shellLaunch": "activate",
       "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 155,
-      "spawnToMainPageMs": 382
+      "msReadyAfterStart": 154,
+      "spawnToMainPageMs": 357
     },
     {
       "run": 18,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
       "shellLaunch": "activate",
       "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 160,
-      "spawnToMainPageMs": 385
+      "msReadyAfterStart": 124,
+      "spawnToMainPageMs": 374
     },
     {
       "run": 19,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
       "shellLaunch": "activate",
       "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 166,
-      "spawnToMainPageMs": 406
+      "msReadyAfterStart": 130,
+      "spawnToMainPageMs": 368
     },
     {
       "run": 20,
-      "finalPath": "/bills/01a0a57e-1dad-7628-9e53-610c275c0995",
+      "finalPath": "/bills/01a0a73c-6970-7334-95ad-c674601be794",
       "shellLaunch": "activate",
       "shellReadyQueuedActivation": 1,
-      "msReadyAfterStart": 173,
-      "spawnToMainPageMs": 398
+      "msReadyAfterStart": 157,
+      "spawnToMainPageMs": 363
     }
   ]
 }

@@ -1,5 +1,8 @@
 # Orbit — Current-state testing campaign: findings register
 
+> **Historical baseline:** statuses below describe the initial campaign. Current fixes,
+> corrections, and verification evidence are recorded in `FIXES.md`.
+
 Report-first campaign per `PLAN (4).md`. Source under test: **HEAD `68982ff`** plus the
 uncommitted Week-12 native-activation work in the working tree (18 modified, 7 untracked
 files). Source-tree digest `a475ad08…5f5bfb` (`snapshot-pre.json`). Desktop binary
