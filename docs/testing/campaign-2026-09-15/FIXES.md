@@ -13,6 +13,13 @@ fixed in the working tree and verified against an exact-source release build:
 - `DraftGuard` no longer calls React Router's `proceed()` from both its state effect and its
   Save/Discard handlers. Regression tests fail on unexpected console errors, and the previous
   `Invalid blocker state transition: unblocked -> proceeding` error is gone.
+  - **Follow-up (same day):** the single-effect version still raced under load — 4 of the same
+    errors in one loaded run of `drafts.test.tsx`. React Router applies the blocker's state change
+    in a transition while a save produces a burst of synchronous draft-store updates, so the guard
+    re-renders with the stale `blocked` object and the effect released it again. The effect now
+    releases each blocker object at most once (ref-guarded). `DraftGuard.release.test.tsx` models
+    the stale window deterministically (fails on the previous code with 3 calls, passes with 1);
+    8 further loaded iterations of the drafts tests produced 0 blocker errors.
 - The direct cold-launch harness waits for Orbit's process tree to exit, awaits forced cleanup,
   cleans up a child even when CDP attachment fails, validates recursive-deletion targets, and
   waits for the launch log instead of racing it. Campaign stress tests reuse this one harness.
