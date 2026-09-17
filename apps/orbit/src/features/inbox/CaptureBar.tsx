@@ -1,6 +1,6 @@
 import { parseCapture, reclassify, systemClock } from '@orbit/core';
 import type { CaptureResult, CaptureToken, Clock, TokenKind } from '@orbit/core';
-import { X } from 'lucide-react';
+import { UserPlus, X } from 'lucide-react';
 import {
   useImperativeHandle,
   useMemo,
@@ -15,6 +15,8 @@ import { Input } from '@/components/ui/Input';
 import { Kbd } from '@/components/ui/Kbd';
 import { TypeBadge } from '@/components/ui/Badge';
 import { cn } from '@/lib/cn';
+import { createPerson } from '@/features/people/peopleService';
+import { toast } from '@/components/ui/toastStore';
 import { contextFor, loadCaptureNames, saveCapture } from './inboxService';
 
 const TOKEN_STYLES: Record<TokenKind, string> = {
@@ -82,6 +84,8 @@ export function CaptureBar({
   const [text, setTextState] = useState('');
   const [altIndex, setAltIndex] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [creatingPerson, setCreatingPerson] = useState<string | null>(null);
+  const savingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const setText = (next: string) => {
     setTextState(next);
@@ -111,7 +115,8 @@ export function CaptureBar({
   };
 
   const submit = async () => {
-    if (!result || saving) return;
+    if (!result || savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
     try {
       await saveCapture(repo, result, clock);
@@ -119,6 +124,7 @@ export function CaptureBar({
       setAltIndex(0);
       onSaved?.(result);
     } finally {
+      savingRef.current = false;
       setSaving(false);
       inputRef.current?.focus();
     }
@@ -155,6 +161,9 @@ export function CaptureBar({
         (a, b) => TOKEN_ORDER.indexOf(a.kind) - TOKEN_ORDER.indexOf(b.kind) || a.start - b.start,
       )
     : [];
+  const unknownPeople = (result?.fields.people ?? []).filter(
+    (person) => !names?.people.some((known) => known.toLowerCase() === person.toLowerCase()),
+  );
 
   return (
     <div className={cn('flex flex-col gap-2', className)} data-testid="capture-bar">
@@ -169,7 +178,8 @@ export function CaptureBar({
           setAltIndex(0);
         }}
         onKeyDown={onKeyDown}
-        disabled={saving}
+        readOnly={saving}
+        aria-busy={saving || undefined}
         className="h-11 text-base"
         autoComplete="off"
         spellCheck={false}
@@ -181,7 +191,7 @@ export function CaptureBar({
               type="button"
               onClick={() => cycle(1)}
               title="Change type (Tab)"
-              className="rounded-full focus-visible:outline-2 focus-visible:outline-lime-2"
+              className="rounded-full focus-visible:outline-2 focus-visible:outline-ink"
               data-testid="capture-type"
               data-confidence={result.confidence}
             >
@@ -210,15 +220,38 @@ export function CaptureBar({
                 </button>
               </span>
             ))}
+            {unknownPeople.map((person) => (
+              <button
+                key={person}
+                type="button"
+                disabled={creatingPerson === person}
+                onClick={() => {
+                  setCreatingPerson(person);
+                  void createPerson(repo, { name: person }, clock)
+                    .then(() => toast.success('Person added', person))
+                    .catch((error: unknown) =>
+                      toast.warning(
+                        'Could not add person',
+                        error instanceof Error ? error.message : String(error),
+                      ),
+                    )
+                    .finally(() => setCreatingPerson(null));
+                }}
+                className="inline-flex h-6 items-center gap-1 rounded-full border border-line px-2 text-[11px] font-medium text-ink hover:bg-surface-2 disabled:opacity-50"
+              >
+                <UserPlus className="size-3" aria-hidden="true" />
+                Create {person}?
+              </button>
+            ))}
             <span className="ml-auto flex items-center gap-1">
               <Kbd>Tab</Kbd> type <Kbd>Enter</Kbd> capture
             </span>
           </>
         ) : (
           <span>
-            Type anything. Prefixes force a type: <Kbd>t:</Kbd> <Kbd>n:</Kbd> <Kbd>e:</Kbd>{' '}
-            <Kbd>g:</Kbd> <Kbd>r:</Kbd> <Kbd>b:</Kbd> <Kbd>c:</Kbd>, <Kbd>@person</Kbd>{' '}
-            <Kbd>#project</Kbd>
+            Type anything. <Kbd>t:</Kbd> task · <Kbd>n:</Kbd> note · <Kbd>e:</Kbd> event ·{' '}
+            <Kbd>g:</Kbd> goal · <Kbd>r:</Kbd> routine · <Kbd>b:</Kbd> bill · <Kbd>c:</Kbd>{' '}
+            commitment · <Kbd>@person</Kbd> · <Kbd>#project</Kbd>
           </span>
         )}
       </div>

@@ -207,7 +207,7 @@ describe('InsightsPage', () => {
     render(repo);
     expect(await screen.findByText('No observations from the current data')).toBeInTheDocument();
     const coverage = screen.getByTestId('insights-coverage');
-    expect(coverage).toHaveTextContent('Estimate bias needs 5 completed tasks');
+    expect(coverage).toHaveTextContent('finish 5 estimated tasks in one area');
     expect(coverage).toHaveTextContent('Weekly targets: no area has a weekly hours target yet.');
     expect(coverage).toHaveTextContent('Stale projects: there are no active projects.');
     expect(screen.queryByText(/healthy/i)).not.toBeInTheDocument();

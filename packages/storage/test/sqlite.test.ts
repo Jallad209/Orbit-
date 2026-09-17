@@ -156,7 +156,7 @@ describe('SQLite migrations', () => {
     expect(first).toEqual({
       from: 0,
       to: SQLITE_SCHEMA_VERSION,
-      applied: ['0001_init', '0002_reminders', '0003_weekly_reviews'],
+      applied: ['0001_init', '0002_reminders', '0003_weekly_reviews', '0004_daily_reviews'],
     });
     const again = await migrate(driver);
     expect(again.applied).toEqual([]);
@@ -177,20 +177,25 @@ describe('SQLite migrations', () => {
 
     // The real 0002 and 0003 plus a hypothetical next migration: an extra index. Existing data must survive.
     const next = {
-      version: 4,
-      name: '0004_task_energy_index',
+      version: 5,
+      name: '0005_task_energy_index',
       sql: `ALTER TABLE tasks ADD COLUMN energy TEXT GENERATED ALWAYS AS (json_extract(data, '$.energy')) VIRTUAL;
 CREATE INDEX IF NOT EXISTS idx_tasks_energy ON tasks(energy);`,
     };
     const report = await migrate(driver, [...MIGRATIONS, next]);
     expect(report).toEqual({
       from: 1,
-      to: 4,
-      applied: ['0002_reminders', '0003_weekly_reviews', '0004_task_energy_index'],
+      to: 5,
+      applied: [
+        '0002_reminders',
+        '0003_weekly_reviews',
+        '0004_daily_reviews',
+        '0005_task_energy_index',
+      ],
     });
     const after = (await driver.select<{ c: number }>('SELECT count(*) AS c FROM tasks'))[0]!.c;
     expect(after).toBe(before);
-    expect(await currentVersion(driver)).toBe(4);
+    expect(await currentVersion(driver)).toBe(5);
     const repo = await createSqliteRepository({ driver, skipMigrations: true });
     expect(await repo.tasks.count({ includeDeleted: true })).toBe(before);
     await repo.close();

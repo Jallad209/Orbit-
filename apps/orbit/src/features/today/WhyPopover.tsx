@@ -19,8 +19,9 @@ export function WhyPopover({ title, why }: { title: string; why: Why }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button size="icon-sm" variant="ghost" aria-label={`Why ${title}`}>
+        <Button size="sm" variant="ghost" aria-label={`Why ${title}`}>
           <HelpCircle className="size-4" aria-hidden="true" />
+          Why
         </Button>
       </PopoverTrigger>
       <PopoverContent aria-label={`Why ${title}`} className="w-72" data-testid="why-popover">

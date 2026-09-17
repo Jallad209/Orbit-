@@ -42,6 +42,8 @@ import type {
   Capture,
   Commitment,
   DayCommitment,
+  DailyReflection,
+  DailyReviewDraft,
   Energy,
   Event,
   Goal,
@@ -108,6 +110,8 @@ export interface SeedWorld {
   appSettings: AppSettings[];
   weeklyReviews: WeeklyReview[];
   weeklyReviewActions: WeeklyReviewAction[];
+  dailyReviewDrafts: DailyReviewDraft[];
+  dailyReflections: DailyReflection[];
   links: Link[];
 }
 
@@ -659,6 +663,8 @@ export function seedWorld(options: SeedOptions = {}): SeedWorld {
     reminders: [],
     weeklyReviews,
     weeklyReviewActions,
+    dailyReviewDrafts: [],
+    dailyReflections: [],
     // The settings document keeps its fixed id so every adapter can `get` it.
     appSettings: [
       createRecord(AppSettingsSchema, ago(sizes.days), {

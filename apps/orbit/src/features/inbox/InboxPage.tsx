@@ -18,6 +18,7 @@ import { toast } from '@/components/ui/toastStore';
 import { useRepoQuery } from '@/data/useQuery';
 import { useHotkey } from '@/lib/hotkeys';
 import { useRepository } from '@/platform';
+import { createArea } from '@/features/structure/structureService';
 import { CaptureBar } from './CaptureBar';
 import { TriageActions } from './TriageActions';
 import {
@@ -26,8 +27,10 @@ import {
   convertCapture,
   listInbox,
   loadCaptureNames,
+  restoreArchivedCapture,
   setCaptureDate,
   setCaptureType,
+  undoCaptureConversion,
 } from './inboxService';
 
 const GROUP_LABELS: Record<CaptureType, string> = {
@@ -79,41 +82,115 @@ export function InboxPage({ clock = systemClock }: InboxPageProps) {
     async (r) => r.projects.query((p) => p.status === 'active'),
     [],
   );
+  const { data: areas } = useRepoQuery(async (r) => r.areas.list(), []);
   const [chosenId, setSelectedId] = useState<string | null>(null);
-  const [popover, setPopover] = useState<'date' | 'project' | null>(null);
-  // Fall back to the first item when the chosen one leaves the inbox.
-  const selectedId =
-    chosenId && items?.some((c) => c.id === chosenId) ? chosenId : (items?.[0]?.id ?? null);
+  const [popover, setPopover] = useState<'date' | 'project' | 'area' | null>(null);
+  const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(() => new Set());
+
+  const visibleItems = useMemo(
+    () => (items ?? []).filter((item) => !pendingIds.has(item.id)),
+    [items, pendingIds],
+  );
 
   const grouped = useMemo(() => {
     const map = new Map<CaptureType, Capture[]>();
     for (const t of CAPTURE_TYPES) map.set(t, []);
-    for (const c of items ?? []) map.get(c.type)!.push(c);
+    for (const c of visibleItems) map.get(c.type)!.push(c);
     return CAPTURE_TYPES.map((t) => [t, map.get(t)!] as const).filter(([, rows]) => rows.length);
-  }, [items]);
+  }, [visibleItems]);
 
-  const selected = items?.find((c) => c.id === selectedId) ?? null;
+  const displayOrder = useMemo(() => grouped.flatMap(([, rows]) => rows), [grouped]);
+  // Fall back to the first item in visual (grouped) order when the chosen row leaves.
+  const selectedId =
+    chosenId && visibleItems.some((c) => c.id === chosenId)
+      ? chosenId
+      : (displayOrder[0]?.id ?? null);
+
+  const selected = visibleItems.find((c) => c.id === selectedId) ?? null;
+
+  const setPending = (id: string, pending: boolean) => {
+    setPendingIds((previous) => {
+      const next = new Set(previous);
+      if (pending) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const beginPending = (capture: Capture): boolean => {
+    if (pendingIds.has(capture.id)) return false;
+    const index = displayOrder.findIndex((item) => item.id === capture.id);
+    const neighbour = displayOrder[index + 1] ?? displayOrder[index - 1] ?? null;
+    setSelectedId(neighbour?.id ?? null);
+    setPending(capture.id, true);
+    return true;
+  };
 
   const withSelected = (fn: (c: Capture) => Promise<void> | void) => () => {
     if (selected) void fn(selected);
   };
 
   const accept = withSelected(async (c) => {
+    if (!beginPending(c)) return;
     try {
-      const primary = await convertCapture(repo, c, {}, clock);
-      toast.success(`Captured as ${ENTITY_LABELS[c.type].toLowerCase()}`, captureFields(c).title);
-      void primary;
+      const conversion = await convertCapture(repo, c, {}, clock);
+      if (!conversion.replayed) {
+        toast({
+          title: `Added ${ENTITY_LABELS[c.type].toLowerCase()}`,
+          description: captureFields(c).title,
+          variant: 'success',
+          durationMs: 8000,
+          action: {
+            label: 'Undo',
+            onClick: () => {
+              void undoCaptureConversion(repo, c.id, conversion)
+                .then(() => {
+                  setPending(c.id, false);
+                  setSelectedId(c.id);
+                })
+                .catch((error: unknown) =>
+                  toast.warning(
+                    'Could not undo',
+                    error instanceof Error ? error.message : String(error),
+                  ),
+                );
+            },
+          },
+        });
+      }
     } catch (e) {
+      setPending(c.id, false);
+      setSelectedId(c.id);
       if (e instanceof MaterializeError) {
         toast.warning('Needs one more thing', e.message);
-        if (e.code === 'needs-area') setPopover('project');
+        if (e.code === 'needs-area') setPopover('area');
       } else throw e;
     }
   });
 
   const archive = withSelected(async (c) => {
-    await archiveCapture(repo, c);
-    toast({ title: 'Archived', description: captureFields(c).title });
+    if (!beginPending(c)) return;
+    try {
+      await archiveCapture(repo, c);
+      toast({
+        title: 'Archived',
+        description: captureFields(c).title,
+        durationMs: 8000,
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            void restoreArchivedCapture(repo, c.id).then(() => {
+              setPending(c.id, false);
+              setSelectedId(c.id);
+            });
+          },
+        },
+      });
+    } catch (error) {
+      setPending(c.id, false);
+      setSelectedId(c.id);
+      throw error;
+    }
   });
 
   const cycleType = withSelected(async (c) => {
@@ -124,15 +201,63 @@ export function InboxPage({ clock = systemClock }: InboxPageProps) {
 
   const assignProject = async (projectId: string) => {
     if (!selected) return;
+    const capture = selected;
+    if (!beginPending(capture)) return;
     setPopover(null);
-    const type: CaptureType = selected.type === 'note' ? 'note' : 'task';
+    const type: CaptureType = capture.type === 'note' ? 'note' : 'task';
     try {
-      await convertCapture(repo, selected, { projectId, type }, clock);
+      const conversion = await convertCapture(repo, capture, { projectId, type }, clock);
       const project = projects?.find((p) => p.id === projectId);
-      toast.success(`Added to ${project?.title ?? 'project'}`, captureFields(selected).title);
+      toast({
+        title: `Added to ${project?.title ?? 'project'}`,
+        description: captureFields(capture).title,
+        variant: 'success',
+        durationMs: 8000,
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            void undoCaptureConversion(repo, capture.id, conversion).then(() => {
+              setPending(capture.id, false);
+              setSelectedId(capture.id);
+            });
+          },
+        },
+      });
     } catch (e) {
+      setPending(capture.id, false);
+      setSelectedId(capture.id);
       if (e instanceof MaterializeError) toast.warning('Needs one more thing', e.message);
       else throw e;
+    }
+  };
+
+  const assignArea = async (areaId: string) => {
+    if (!selected) return;
+    const capture = selected;
+    if (!beginPending(capture)) return;
+    setPopover(null);
+    try {
+      const conversion = await convertCapture(repo, capture, { areaId }, clock);
+      const area = areas?.find((a) => a.id === areaId);
+      toast({
+        title: `Added goal to ${area?.name ?? 'area'}`,
+        description: captureFields(capture).title,
+        variant: 'success',
+        durationMs: 8000,
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            void undoCaptureConversion(repo, capture.id, conversion).then(() => {
+              setPending(capture.id, false);
+              setSelectedId(capture.id);
+            });
+          },
+        },
+      });
+    } catch (error) {
+      setPending(capture.id, false);
+      setSelectedId(capture.id);
+      throw error;
     }
   };
 
@@ -157,20 +282,27 @@ export function InboxPage({ clock = systemClock }: InboxPageProps) {
 
       <CaptureBar clock={clock} />
 
-      {selected && projects ? (
+      {selected && projects && areas ? (
         <TriageActions
           capture={selected}
           projects={projects}
+          areas={areas}
           onSetType={(t) => void setCaptureType(repo, selected, t, names, clock)}
           onSetDate={(d) => {
             setPopover(null);
             void setCaptureDate(repo, selected, d);
           }}
           onAssignProject={(id) => void assignProject(id)}
+          onAssignArea={(id) => void assignArea(id)}
+          onCreateArea={async (name) => {
+            const area = await createArea(repo, { name }, clock);
+            await assignArea(area.id);
+          }}
           onAccept={accept}
           onArchive={archive}
           openPopover={popover}
           onOpenPopover={setPopover}
+          pending={pendingIds.has(selected.id)}
           clock={clock}
         />
       ) : null}

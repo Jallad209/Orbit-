@@ -62,7 +62,9 @@ export function BillsStep({
               <span className="tnum">
                 {bill.amount} {bill.currency || '(currency not set)'}
               </span>
-              <Badge tone={bill.dueAt < today ? 'danger' : 'outline'}>due {bill.dueAt}</Badge>
+              <Badge tone={bill.dueAt !== null && bill.dueAt < today ? 'danger' : 'outline'}>
+                {bill.dueAt ? `due ${bill.dueAt}` : 'no due date'}
+              </Badge>
               {bill.recurrence ? (
                 <Badge tone="outline">
                   {describeRecurrence(bill.recurrence, bill.recurrenceAnchor)}

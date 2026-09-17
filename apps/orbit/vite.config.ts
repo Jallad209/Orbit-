@@ -61,6 +61,11 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    watch: {
+      // Tauri watches Rust sources itself. Letting Vite descend into the 16 GiB
+      // Cargo target tree makes startup slower and can fail on locked DLLs.
+      ignored: ['**/src-tauri/**'],
+    },
   },
   test: {
     name: 'orbit',

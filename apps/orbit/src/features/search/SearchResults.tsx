@@ -126,7 +126,7 @@ export function SearchResults({ hits, query, loading, error, hasQuery, busyId, o
             <button
               type="button"
               data-row
-              className="min-w-0 flex-1 rounded-sm text-left focus-visible:outline-2 focus-visible:outline-lime-2"
+              className="min-w-0 flex-1 rounded-sm text-left focus-visible:outline-2 focus-visible:outline-ink"
               aria-label={`${ACTION_LABEL[primary]} ${hit.title}`}
               onClick={() => onAction(hit, primary)}
             >

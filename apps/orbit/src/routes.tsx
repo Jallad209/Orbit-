@@ -23,6 +23,7 @@ import { QuickCaptureWindow } from '@/features/inbox/QuickCaptureWindow';
 import { EveningFlow } from '@/features/reviews/EveningFlow';
 import { MorningFlow } from '@/features/reviews/MorningFlow';
 import { WeeklyFlow } from '@/features/reviews/WeeklyFlow';
+import { ReviewDashboard } from '@/features/reviews/ReviewDashboard';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { usePlatform } from '@/platform';
 
@@ -85,6 +86,7 @@ export function AppRoutes() {
         <Route path="/tasks/:id" element={<TaskPage />} />
         <Route path="/review/morning" element={<MorningFlow />} />
         <Route path="/review/evening" element={<EveningFlow />} />
+        <Route path="/review" element={<ReviewDashboard />} />
         <Route path="/review/weekly" element={<WeeklyFlow />} />
         <Route
           path="/search"

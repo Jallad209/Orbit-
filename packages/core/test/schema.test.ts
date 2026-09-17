@@ -72,7 +72,7 @@ const cases: Array<[string, z.ZodTypeAny, Record<string, unknown>, string[]]> = 
     'Bill',
     BillSchema,
     { ...base(), title: 'Electricity', amount: 120, dueAt: '2026-10-01' },
-    ['title', 'amount', 'dueAt'],
+    ['title', 'amount'],
   ],
   [
     'Block',

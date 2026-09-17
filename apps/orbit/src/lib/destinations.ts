@@ -117,6 +117,7 @@ export async function resolveDestination(
     case 'reminder': {
       const reminder = await repo.reminders.get(destination.id);
       if (!reminder) return missing();
+      if (reminder.destination) return route(reminder.destination);
       const source: Destination =
         reminder.entityType === 'bill'
           ? { type: 'bill', id: reminder.entityId }

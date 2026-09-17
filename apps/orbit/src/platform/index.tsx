@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { Repository } from '@orbit/storage';
 import { desktopPlatform } from './desktop';
 import { isTauri, repositoryKindFor } from './select';
@@ -34,6 +42,12 @@ interface PlatformProviderProps {
   children: ReactNode;
 }
 
+interface OwnedRepository {
+  platform: Platform;
+  promise: Promise<Repository>;
+  closeTimer: ReturnType<typeof setTimeout> | null;
+}
+
 /**
  * Selects the runtime and opens its repository once. Everything below reads
  * `usePlatform()` and `useRepository()`; nothing imports Tauri or Dexie directly.
@@ -46,27 +60,46 @@ export function PlatformProvider({
 }: PlatformProviderProps) {
   const [opened, setOpened] = useState<Repository | null>(null);
   const [error, setError] = useState<Error | null>(null);
+  const owned = useRef<OwnedRepository | null>(null);
 
   useEffect(() => {
     if (repository) return; // caller owns the repository's lifecycle
-    let cancelled = false;
-    let mine: Repository | null = null;
-    platform
-      .createRepository()
+    let active = true;
+    let resource = owned.current;
+    if (!resource || resource.platform !== platform) {
+      resource = {
+        platform,
+        promise: platform.createRepository(),
+        closeTimer: null,
+      };
+      owned.current = resource;
+      setOpened(null);
+      setError(null);
+    }
+    if (resource.closeTimer !== null) {
+      clearTimeout(resource.closeTimer);
+      resource.closeTimer = null;
+    }
+    resource.promise
       .then((r) => {
-        if (cancelled) {
-          void r.close();
-          return;
-        }
-        mine = r;
-        setOpened(r);
+        if (active) setOpened(r);
       })
       .catch((e: unknown) => {
-        if (!cancelled) setError(e instanceof Error ? e : new Error(String(e)));
+        if (active) setError(e instanceof Error ? e : new Error(String(e)));
       });
     return () => {
-      cancelled = true;
-      if (mine) void mine.close();
+      active = false;
+      // Strict Mode immediately replays effects in development. Deferring disposal
+      // lets that replay reclaim the same in-flight open instead of closing under it.
+      resource.closeTimer = setTimeout(() => {
+        resource.closeTimer = null;
+        // SQLite belongs to the resident Tauri process and is shared by both
+        // webviews. Rust closes it during the existing orderly shutdown path.
+        if (resource.platform.name !== 'desktop') {
+          void resource.promise.then((r) => r.close()).catch(() => undefined);
+        }
+        if (owned.current === resource) owned.current = null;
+      }, 0);
     };
   }, [platform, repository]);
 

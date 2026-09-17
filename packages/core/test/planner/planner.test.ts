@@ -12,7 +12,7 @@ import {
 } from '../../src';
 import { aBlock, aRoutine, aTask, aWorld, anEvent, testClock } from '../builders';
 import { createRecord } from '../../src/records';
-import { RoutineInstanceSchema, RuleSchema } from '../../src/schema';
+import { RoutineInstanceSchema, RuleSchema, TaskSchema } from '../../src/schema';
 
 const DATE = '2026-09-14'; // Monday; the clock is Saturday 12 Sep, so nothing is "past".
 const clock = testClock();
@@ -232,6 +232,28 @@ describe('planDay', () => {
     expect(block).toMatchObject({ kind: 'routine', startMin: 600, endMin: 645 });
     expect(p.explanations[inst.id]!.reasons[0]).toBe('Routine due today');
     expect(p.commitment.acceptedTaskIds).not.toContain(inst.id);
+  });
+
+  it('places a task at its optional preferred start on the selected day', () => {
+    const task = createRecord(TaskSchema, clock, {
+      title: 'Quiet planning',
+      status: 'open',
+      estimateMin: 45,
+      preferredDate: DATE,
+      preferredStartMin: 14 * 60,
+    });
+    const p = planDay({ areas: [], goals: [], projects: [], tasks: [task] }, DATE, {}, clock);
+    expect(p.blocks.find((block) => block.taskId === task.id)).toMatchObject({
+      startMin: 14 * 60,
+      endMin: 14 * 60 + 45,
+    });
+    const tomorrow = planDay(
+      { areas: [], goals: [], projects: [], tasks: [task] },
+      '2026-09-15',
+      {},
+      clock,
+    );
+    expect(tomorrow.blocks.some((block) => block.taskId === task.id)).toBe(false);
   });
 
   it('explains next actions, goals, priority, staleness, and energy in plain words', () => {

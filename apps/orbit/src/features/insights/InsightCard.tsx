@@ -61,7 +61,7 @@ export function InsightCard({
       data-severity={insight.severity}
       tabIndex={-1}
       className={cn(
-        'rounded-lg border px-3 py-2.5 outline-none focus-visible:outline-2 focus-visible:outline-lime-2',
+        'rounded-lg border px-3 py-2.5 outline-none focus-visible:outline-2 focus-visible:outline-ink',
         tone === 'danger'
           ? 'border-danger/30 bg-danger-soft/40'
           : tone === 'gold'

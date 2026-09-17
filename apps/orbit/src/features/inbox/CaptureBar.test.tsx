@@ -50,6 +50,8 @@ describe('CaptureBar', () => {
 
     await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
     expect(input).toHaveValue('');
+    expect(input).toHaveFocus();
+    expect(input).not.toBeDisabled();
     const captures = await repository.captures.list();
     expect(captures).toHaveLength(1);
     expect(captures[0]?.type).toBe('bill');
@@ -80,5 +82,18 @@ describe('CaptureBar', () => {
     await user.keyboard('{Enter}');
     await waitFor(async () => expect(await repository.captures.count()).toBe(1));
     expect((await repository.captures.list())[0]?.type).toBe(chosen);
+  });
+
+  it('offers to create a person named by an unknown mention', async () => {
+    const user = userEvent.setup();
+    const { repository } = renderWithProviders(<CaptureBar clock={clock} />);
+    await user.type(screen.getByRole('textbox', { name: 'Capture' }), 'Call @Sarah tomorrow');
+
+    await user.click(screen.getByRole('button', { name: 'Create Sarah?' }));
+    await waitFor(async () => expect(await repository.people.count()).toBe(1));
+    expect((await repository.people.list())[0]?.name).toBe('Sarah');
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Create Sarah?' })).not.toBeInTheDocument(),
+    );
   });
 });

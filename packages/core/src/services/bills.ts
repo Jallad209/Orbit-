@@ -24,14 +24,16 @@ export type BillGroup = 'overdue' | 'due-soon' | 'upcoming' | 'paid' | 'deleted'
 export function billGroup(bill: Bill, today: LocalDate): BillGroup {
   if (bill.deletedAt !== null) return 'deleted';
   if (bill.paid) return 'paid';
-  if (bill.dueAt < today) return 'overdue';
-  if (bill.dueAt <= addDays(today, DUE_SOON_DAYS)) return 'due-soon';
+  if (bill.dueAt !== null && bill.dueAt < today) return 'overdue';
+  if (bill.dueAt !== null && bill.dueAt <= addDays(today, DUE_SOON_DAYS)) return 'due-soon';
   return 'upcoming';
 }
 
 /** Due date first, then id, so identical dates keep a stable order. */
 export function compareBills(a: Bill, b: Bill): number {
-  return a.dueAt < b.dueAt ? -1 : a.dueAt > b.dueAt ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  const ad = a.dueAt ?? '9999-12-31';
+  const bd = b.dueAt ?? '9999-12-31';
+  return ad < bd ? -1 : ad > bd ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 }
 
 export interface BillGroups {
@@ -139,16 +141,17 @@ export interface BillFieldErrors {
 export function validateBillFields(fields: {
   title: string;
   amount: number;
-  dueAt: string;
+  dueAt: string | null;
   recurrence: Recurrence | null;
 }): BillFieldErrors {
   const errors: BillFieldErrors = {};
   if (!fields.title.trim()) errors.title = 'A title is required.';
   if (!Number.isFinite(fields.amount) || fields.amount < 0)
     errors.amount = 'Enter an amount of zero or more.';
-  if (!isValidLocalDate(fields.dueAt)) errors.dueAt = 'Enter a real date.';
+  if (fields.dueAt !== null && !isValidLocalDate(fields.dueAt)) errors.dueAt = 'Enter a real date.';
   const r = fields.recurrence;
-  if (r && isValidLocalDate(fields.dueAt)) {
+  if (r && fields.dueAt === null) errors.dueAt = 'A repeating bill needs a first due date.';
+  if (r && fields.dueAt !== null && isValidLocalDate(fields.dueAt)) {
     if (!Number.isInteger(r.interval) || r.interval < 1 || r.interval > 1000)
       errors.recurrence = 'The interval must be between 1 and 1000.';
     else if (r.freq === 'weekly' && r.byDay.length) {
@@ -199,6 +202,7 @@ export function successorPlan(bill: Bill): SuccessorPlan {
   if (bill.recurrence === null || bill.seriesId === null) return { kind: 'one-off' };
   if (bill.repeatStopped) return { kind: 'stopped' };
   const anchor = bill.recurrenceAnchor ?? bill.scheduledFor ?? bill.dueAt;
+  if (anchor === null) return { kind: 'invalid', message: 'A repeating bill needs a due date.' };
   const next = nextOccurrence(bill.recurrence, anchor, bill.occurrenceIndex);
   if (next.kind === 'exhausted') return { kind: 'finished', reason: next.reason };
   if (next.kind === 'invalid') return { kind: 'invalid', message: next.message };
@@ -217,10 +221,11 @@ export function buildSuccessor(
     amount: paid.amount,
     currency: paid.currency,
     dueAt: plan.date,
+    dueTime: paid.dueTime,
     recurrence: paid.recurrence,
     paid: false,
     seriesId: paid.seriesId,
-    recurrenceAnchor: paid.recurrenceAnchor ?? paid.scheduledFor ?? paid.dueAt,
+    recurrenceAnchor: paid.recurrenceAnchor ?? paid.scheduledFor ?? paid.dueAt ?? plan.date,
     occurrenceIndex: plan.index,
     scheduledFor: plan.date,
     paidAt: null,
@@ -322,7 +327,7 @@ export function advanceLegacy(bill: Bill, clock: Clock): PaymentResult {
 }
 
 /** Field edits an unpaid occurrence accepts; the schedule is not among them. */
-export type BillPatch = Partial<Pick<Bill, 'title' | 'amount' | 'currency' | 'dueAt'>>;
+export type BillPatch = Partial<Pick<Bill, 'title' | 'amount' | 'currency' | 'dueAt' | 'dueTime'>>;
 
 /**
  * Apply a field edit to an occurrence. A due-date edit moves only this

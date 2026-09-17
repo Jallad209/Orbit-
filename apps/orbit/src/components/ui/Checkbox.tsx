@@ -18,7 +18,7 @@ export function Checkbox({ className, label, description, id, ...props }: Checkb
         'grid size-[18px] shrink-0 place-items-center rounded-[5px] border border-ink-faint bg-white/60',
         'transition-colors duration-(--duration-fast)',
         'data-[state=checked]:border-lime-ink data-[state=checked]:bg-lime-ink data-[state=checked]:text-lime',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-2',
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink',
         'disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}
@@ -57,7 +57,7 @@ export function Toggle({ className, label, description, id, ...props }: TogglePr
       className={cn(
         'relative h-5 w-9 shrink-0 rounded-full bg-ink-faint/60 transition-colors duration-(--duration-base)',
         'data-[state=checked]:bg-lime-ink',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-2',
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink',
         'disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}

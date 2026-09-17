@@ -6,6 +6,7 @@ import { createMemoryRepository } from '@orbit/storage';
 import type { Repository } from '@orbit/storage';
 import { AppRoutes } from '@/routes';
 import { renderWithProviders } from '@/test/render';
+import { useToastStore } from '@/components/ui/toastStore';
 import { InboxPage } from './InboxPage';
 import { saveCapture } from './inboxService';
 
@@ -97,6 +98,43 @@ describe('InboxPage', () => {
     await user.keyboard('{Enter}');
     await waitFor(async () => expect(await repo.notes.count()).toBe(1));
     expect(screen.queryByRole('option', { name: /an app that plans/i })).not.toBeInTheDocument();
+  });
+
+  it('advances to the next row in visual order after accept and can undo it', async () => {
+    const user = userEvent.setup();
+    const repo = await seed();
+    useToastStore.getState().clear();
+    renderWithProviders(<InboxPage clock={clock} />, { repository: repo, route: '/inbox' });
+
+    await user.click(await screen.findByRole('option', { name: /Buy milk/ }));
+    await user.keyboard('{Enter}');
+
+    const next = await screen.findByRole('option', { name: /Submit my report/ });
+    expect(next).toHaveAttribute('aria-selected', 'true');
+    const added = useToastStore.getState().toasts.find((entry) => entry.title === 'Added task');
+    expect(added?.action?.label).toBe('Undo');
+    added?.action?.onClick();
+    await waitFor(async () => {
+      expect((await repo.captures.list()).find((c) => c.text === 'Buy milk')?.status).toBe('inbox');
+      expect(await repo.tasks.count()).toBe(0);
+    });
+  });
+
+  it('opens an area picker for a goal and can create the area inline', async () => {
+    const user = userEvent.setup();
+    const repo = createMemoryRepository({ clock });
+    await saveCapture(repo, parseCapture('g: Run a half marathon', ctx), clock);
+    renderWithProviders(<InboxPage clock={clock} />, { repository: repo, route: '/inbox' });
+
+    await user.click(await screen.findByRole('option', { name: /Run a half marathon/ }));
+    await user.keyboard('{Enter}');
+    const picker = await screen.findByRole('dialog', { name: 'Choose area' });
+    await user.type(within(picker).getByRole('textbox'), 'Health');
+    await user.click(within(picker).getByRole('button', { name: 'Create “Health”' }));
+
+    await waitFor(async () => expect(await repo.goals.count()).toBe(1));
+    expect((await repo.areas.list())[0]?.name).toBe('Health');
+    expect((await repo.goals.list())[0]?.areaId).toBe((await repo.areas.list())[0]?.id);
   });
 
   it('t cycles the type of the selected capture', async () => {

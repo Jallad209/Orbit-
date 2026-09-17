@@ -1,5 +1,13 @@
-import { computeReminders, dueReminders, systemClock, toReminderRecords } from '@orbit/core';
-import type { Clock, Reminder } from '@orbit/core';
+import {
+  ReminderSchema,
+  computeReminders,
+  createRecord,
+  dueReminders,
+  newId,
+  systemClock,
+  toReminderRecords,
+} from '@orbit/core';
+import type { Clock, EntityType, Id, Reminder } from '@orbit/core';
 import type { Repository } from '@orbit/storage';
 import { bumpData } from '@/data/useQuery';
 
@@ -37,6 +45,7 @@ export function reconcileReminderQueue(
         a.createdAt.localeCompare(b.createdAt) ||
         a.id.localeCompare(b.id),
     )) {
+      if (r.source !== 'rule') continue;
       if (byKey.has(r.key)) {
         if (r.deletedAt === null) await tx.reminders.softDelete(r.id);
       } else byKey.set(r.key, r);
@@ -116,4 +125,34 @@ export async function markReminder(
   });
   if (options.bump ?? true) bumpData();
   return next;
+}
+
+export async function createDirectReminder(
+  repo: Repository,
+  input: {
+    key: string;
+    source: 'review-step' | 'person-follow-up' | 'monthly-spending';
+    entityType: EntityType;
+    entityId: Id;
+    fireAt: string;
+    title: string;
+    body?: string;
+    destination: string;
+  },
+  clock: Clock = systemClock,
+): Promise<Reminder> {
+  const existing = (await repo.reminders.query((item) => item.key === input.key)).sort((a, b) =>
+    b.updatedAt.localeCompare(a.updatedAt),
+  )[0];
+  const record = existing
+    ? { ...existing, ...input, ruleId: null, status: 'pending' as const, deletedAt: null }
+    : createRecord(ReminderSchema, clock, {
+        id: newId(),
+        ...input,
+        ruleId: null,
+        status: 'pending',
+      });
+  const saved = await repo.reminders.upsert(record);
+  bumpData();
+  return saved;
 }

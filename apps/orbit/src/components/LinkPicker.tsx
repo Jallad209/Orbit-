@@ -104,7 +104,7 @@ export function LinkPicker({
               aria-selected={kind === k.type}
               onClick={() => setKind(k.type)}
               className={cn(
-                'h-7 rounded-full px-2.5 text-[12px] font-medium focus-visible:outline-2 focus-visible:outline-lime-2',
+                'h-7 rounded-full px-2.5 text-[12px] font-medium focus-visible:outline-2 focus-visible:outline-ink',
                 kind === k.type
                   ? 'bg-nav text-nav-fg'
                   : 'bg-surface-2 text-ink-muted hover:bg-surface-3',
@@ -134,7 +134,7 @@ export function LinkPicker({
               <button
                 type="button"
                 onClick={() => void pick(c)}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-lime-2"
+                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-ink"
               >
                 <TypeBadge kind={c.type as EntityKind} />
                 <span className="min-w-0 flex-1 truncate">{c.label}</span>

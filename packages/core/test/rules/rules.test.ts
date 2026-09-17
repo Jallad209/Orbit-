@@ -154,10 +154,17 @@ describe('reminder rules', () => {
   const bills = rule('reminder', { kind: 'billDueWithin', days: 3 }, { name: 'Bills' });
 
   it('every unpaid bill gets one row, future ones prepared ahead with a date-stable title', () => {
-    const rent = aBill({ title: 'Rent', amount: 900, currency: 'EUR', dueAt: '2026-09-20' }, clock);
+    const rent = aBill(
+      { title: 'Rent', amount: 900, currency: 'EUR', dueAt: '2026-09-20', dueTime: 14 * 60 },
+      clock,
+    );
     const later = aBill({ title: 'Gym', dueAt: '2026-09-30' }, clock);
     const paid = aBill({ title: 'Paid', dueAt: '2026-09-19', paid: true }, clock);
-    const all = computeReminders({ rules: [bills], bills: [rent, later, paid] }, clock.now());
+    const undated = aBill({ title: 'Someday', dueAt: null }, clock);
+    const all = computeReminders(
+      { rules: [bills], bills: [rent, later, paid, undated] },
+      clock.now(),
+    );
     expect(all).toHaveLength(2);
     const first = all.filter((d) => d.entityId === rent.id);
     expect(first[0]).toMatchObject({
@@ -167,8 +174,8 @@ describe('reminder rules', () => {
       title: 'Rent due 2026-09-20',
       body: '900 EUR',
     });
-    // Fires 09:00 local on the day it enters the window (due − 3 days = the 17th).
-    expect(new Date(first[0]!.fireAt).getHours()).toBe(9);
+    // Honors the optional due time on the day it enters the window (due − 3 days = the 17th).
+    expect(new Date(first[0]!.fireAt).getHours()).toBe(14);
     expect(toLocalDate(new Date(first[0]!.fireAt))).toBe('2026-09-17');
     // The gym bill is known now, so its row waits in the queue with its real future fire time.
     const gym = all.find((d) => d.entityId === later.id)!;

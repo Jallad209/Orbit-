@@ -76,11 +76,19 @@ const INDEXED_V3: Record<(typeof V3_STORES)[number], string[]> = {
   weeklyReviewActions: ['reviewId', 'at'],
 };
 
+/** Stores added in 0004: daily review continuity and reflections. */
+const V4_STORES = ['dailyReviewDrafts', 'dailyReflections'] as const satisfies readonly StoreName[];
+const INDEXED_V4: Record<(typeof V4_STORES)[number], string[]> = {
+  dailyReviewDrafts: ['date', 'kind'],
+  dailyReflections: ['date'],
+};
+
 /** Which tables a file at `version` holds: what a restore verifier may expect of it. */
 export function tablesAtVersion(version: number): StoreName[] {
   const out: StoreName[] = [...V1_STORES];
   if (version >= 2) out.push(...V2_STORES);
   if (version >= 3) out.push(...V3_STORES);
+  if (version >= 4) out.push(...V4_STORES);
   return out;
 }
 
@@ -128,10 +136,16 @@ const WEEKLY_REVIEWS = [
   ...V3_STORES.map((n) => table(n, INDEXED_V3[n])),
 ].join('\n\n');
 
+const DAILY_REVIEWS = [
+  '-- 0004_daily_reviews: resumable daily briefings and structured reflections.',
+  ...V4_STORES.map((n) => table(n, INDEXED_V4[n])),
+].join('\n\n');
+
 export const MIGRATIONS: readonly Migration[] = [
   { version: 1, name: '0001_init', sql: INIT },
   { version: 2, name: '0002_reminders', sql: REMINDERS },
   { version: 3, name: '0003_weekly_reviews', sql: WEEKLY_REVIEWS },
+  { version: 4, name: '0004_daily_reviews', sql: DAILY_REVIEWS },
 ];
 
 export const SQLITE_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

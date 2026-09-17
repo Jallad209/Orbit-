@@ -19,6 +19,7 @@ import { GoalsStep } from './weekly/GoalsStep';
 import { InboxStep } from './weekly/InboxStep';
 import { OverdueStep, toDraft, type OverdueChoices } from './weekly/OverdueStep';
 import { ProjectsStep } from './weekly/ProjectsStep';
+import { PatternsStep } from './weekly/PatternsStep';
 import {
   WeeklyReviewError,
   finishReview,
@@ -37,7 +38,7 @@ function report(title: string, e: unknown): void {
 
 /**
  * `/review/weekly`: the landing (start, resume, history, review again)
- * and, with `?review=`, the six-step flow. Opening a URL never starts a
+ * and, with `?review=`, the seven-step flow. Opening a URL never starts a
  * review or submits anything; Start and Resume are the user's explicit
  * intent. A completed review opens read-only with its frozen summary.
  */
@@ -79,8 +80,8 @@ function WeeklyLanding({ clock }: { clock: Clock }) {
       <div>
         <h1 className="text-display font-semibold tracking-tight text-ink">Weekly review</h1>
         <p className="mt-1 text-ink-muted">
-          Six steps — inbox, overdue work, projects, goals and targets, bills, next week — with
-          every decision recorded. Pause any time; resume where you left off.
+          Seven steps — inbox, overdue work, projects, goals and targets, bills, patterns, and next
+          week — with every decision recorded. Pause any time; resume where you left off.
         </p>
       </div>
       {active ? (
@@ -409,6 +410,7 @@ function ReviewSteps({
         {step === 'projects' ? <ProjectsStep session={session} clock={clock} /> : null}
         {step === 'goals' ? <GoalsStep session={session} clock={clock} /> : null}
         {step === 'bills' ? <BillsStep session={session} clock={clock} /> : null}
+        {step === 'patterns' ? <PatternsStep session={session} /> : null}
         {step === 'capacity' ? <CapacityStep session={session} clock={clock} /> : null}
       </section>
 

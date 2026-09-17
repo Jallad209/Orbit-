@@ -120,7 +120,7 @@ export function materializeCapture(
     case 'note': {
       const note = createRecord(NoteSchema, clock, {
         title: fields.title,
-        body: fields.body ?? '',
+        body: fields.body === fields.title ? '' : (fields.body ?? ''),
         projectId,
         areaId,
       });
@@ -172,6 +172,7 @@ export function materializeCapture(
         amount: fields.amount ?? 0,
         currency: fields.currency ?? '',
         dueAt: fields.dueDate ?? addDays(today, 7),
+        dueTime: fields.dueTime ?? null,
         recurrence: fields.recurrence ?? null,
       });
       return {

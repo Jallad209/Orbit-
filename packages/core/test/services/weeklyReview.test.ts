@@ -62,13 +62,14 @@ describe('review periods and steps', () => {
     });
   });
 
-  it('walks the six steps by identifier', () => {
+  it('walks the seven steps by identifier', () => {
     expect(WEEKLY_REVIEW_STEPS).toEqual([
       'inbox',
       'overdue',
       'projects',
       'goals',
       'bills',
+      'patterns',
       'capacity',
     ]);
     expect(nextStep('inbox')).toBe('overdue');
@@ -145,7 +146,7 @@ describe('acknowledging, pausing, resuming, finishing', () => {
     const done = completeReview(review, summaryFor(review), clock);
     expect(done).toMatchObject({ status: 'completed', currentStep: 'capacity', stepDraft: null });
     expect(done.completedAt).toBe(clock.now().toISOString());
-    expect(done.summary?.steps).toHaveLength(6);
+    expect(done.summary?.steps).toHaveLength(7);
     expect(completeReview(done, summaryFor(done), clock)).toBe(done);
     expect(() => acknowledgeStep(done, outcome, clock)).toThrow(/read-only/);
     expect(() => goToStep(done, 'inbox', clock)).toThrow(/read-only/);

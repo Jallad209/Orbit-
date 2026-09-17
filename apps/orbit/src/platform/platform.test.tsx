@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { StrictMode } from 'react';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import type { Platform } from './types';
 import { PlatformProvider, usePlatform, useRepository, webPlatform } from './index';
 
 function Probe() {
@@ -36,6 +38,32 @@ describe('web platform', () => {
     await waitFor(() => expect(screen.getByTestId('has-repo')).toHaveTextContent('true'));
     expect(screen.getByTestId('name')).toHaveTextContent('web');
     expect(screen.getByTestId('reminders')).toHaveTextContent('false');
+  });
+
+  it('reuses an in-flight open during Strict Mode and leaves desktop closure to Rust', async () => {
+    const repository = await webPlatform.createRepository();
+    const close = vi.spyOn(repository, 'close');
+    const createRepository = vi.fn(async () => repository);
+    const platform: Platform = {
+      ...webPlatform,
+      name: 'desktop',
+      createRepository,
+    };
+
+    const view = render(
+      <StrictMode>
+        <PlatformProvider platform={platform} fallback={<p>loading</p>}>
+          <Probe />
+        </PlatformProvider>
+      </StrictMode>,
+    );
+    await waitFor(() => expect(screen.getByTestId('has-repo')).toHaveTextContent('true'));
+    expect(createRepository).toHaveBeenCalledTimes(1);
+
+    view.unmount();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(close).not.toHaveBeenCalled();
+    await repository.close();
   });
 
   it('reports storage status without throwing when APIs are missing', async () => {

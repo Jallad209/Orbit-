@@ -39,7 +39,7 @@ export function ReviewLaunchers({
       {showMorning ? (
         <Link
           to={`/review/morning?date=${date}`}
-          className={buttonVariants({ variant: 'gold', size: 'md' })}
+          className={buttonVariants({ variant: 'secondary', size: 'md' })}
           data-testid="launch-morning"
         >
           <Sunrise className="size-4" aria-hidden="true" />

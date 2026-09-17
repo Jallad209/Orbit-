@@ -36,9 +36,11 @@ const KIND_LABEL = {
 function coverageNote(c: DetectorCoverage): string | null {
   if (c.available) return null;
   if (c.kind === 'estimate-bias') {
-    return `Estimate bias needs ${c.requiredSamples} completed tasks with an estimate and a recorded actual in one area; ${
-      c.largestSample ? `the most any area has is ${c.largestSample}` : 'there are none yet'
-    }.`;
+    return `To compare planned and actual time, finish ${c.requiredSamples} estimated tasks in one area and record the time spent. ${
+      c.largestSample
+        ? `The closest area has ${c.largestSample} so far.`
+        : 'No area has enough finished tasks yet.'
+    }`;
   }
   switch (c.unavailableReason) {
     case 'no-targets':

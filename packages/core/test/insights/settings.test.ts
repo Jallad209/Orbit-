@@ -6,7 +6,12 @@ import {
   insightInputsFor,
   validateInsightSettings,
 } from '../../src/insights';
-import { APP_SETTINGS_ID, AppSettingsSchema, normalizeAppSettings } from '../../src/schema';
+import {
+  APP_SETTINGS_ID,
+  AppSettingsSchema,
+  DEFAULT_REVIEW_SETTINGS,
+  normalizeAppSettings,
+} from '../../src/schema';
 import { defaultAppSettings } from '../../src/settings';
 
 const BASE = {
@@ -72,7 +77,11 @@ describe('insight settings', () => {
     };
     const { record, repairs } = normalizeAppSettings(old);
     expect(repairs).toEqual([]);
-    expect(record).toEqual({ ...old, insights: DEFAULT_INSIGHT_SETTINGS });
+    expect(record).toEqual({
+      ...old,
+      insights: DEFAULT_INSIGHT_SETTINGS,
+      reviews: DEFAULT_REVIEW_SETTINGS,
+    });
   });
 
   it('repairs malformed present values field by field and reports them', () => {

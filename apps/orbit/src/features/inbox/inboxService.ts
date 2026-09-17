@@ -114,11 +114,49 @@ export async function archiveCapture(repo: Repository, capture: Capture): Promis
   bumpData();
 }
 
+/** Put an archived capture back in the inbox. Used by the triage Undo action. */
+export async function restoreArchivedCapture(repo: Repository, captureId: Id): Promise<void> {
+  const capture = await repo.captures.get(captureId);
+  if (!capture || capture.status !== 'archived') return;
+  await repo.captures.upsert({ ...capture, status: 'inbox' });
+  bumpData();
+}
+
 export interface ConvertOptions {
   projectId?: Id | null;
   areaId?: Id | null;
   /** Override the stored type at conversion time. */
   type?: CaptureType;
+}
+
+export interface ConvertedRecordRef {
+  type: string;
+  id: Id;
+  updatedAt: string;
+}
+
+export interface ConversionResult {
+  type: string;
+  id: Id;
+  /** Records actually created by this call. Empty when a repeated accept replays the result. */
+  created: ConvertedRecordRef[];
+  replayed: boolean;
+}
+
+function storeForType(repo: Repository, type: string): EntityStore<BaseRecord> {
+  const stores: Record<string, EntityStore<BaseRecord>> = {
+    task: repo.tasks as unknown as EntityStore<BaseRecord>,
+    event: repo.events as unknown as EntityStore<BaseRecord>,
+    note: repo.notes as unknown as EntityStore<BaseRecord>,
+    goal: repo.goals as unknown as EntityStore<BaseRecord>,
+    routine: repo.routines as unknown as EntityStore<BaseRecord>,
+    bill: repo.bills as unknown as EntityStore<BaseRecord>,
+    person: repo.people as unknown as EntityStore<BaseRecord>,
+    commitment: repo.commitments as unknown as EntityStore<BaseRecord>,
+  };
+  const store = stores[type];
+  if (!store) throw new Error(`Cannot resolve store for ${type}`);
+  return store;
 }
 
 /**
@@ -131,7 +169,7 @@ export async function convertCapture(
   capture: Capture,
   options: ConvertOptions = {},
   clock: Clock = systemClock,
-): Promise<{ type: string; id: Id }> {
+): Promise<ConversionResult> {
   const type = options.type ?? capture.type;
   const fields = captureFields(capture);
   const people = await repo.people.list();
@@ -145,19 +183,69 @@ export async function convertCapture(
     people,
   });
 
-  await repo.transaction(async (tx) => {
+  const result = await repo.transaction(async (tx): Promise<ConversionResult> => {
+    const current = await tx.captures.get(capture.id);
+    if (current?.status === 'processed' && current.processedType && current.processedId) {
+      return {
+        type: current.processedType,
+        id: current.processedId,
+        created: [],
+        replayed: true,
+      };
+    }
+    if (!current || current.status !== 'inbox') {
+      throw new Error('This capture is no longer available to accept.');
+    }
+
+    const created: ConvertedRecordRef[] = [];
     for (const r of records) {
       const store = tx[r.store] as unknown as EntityStore<BaseRecord>;
-      await store.upsert(r.record);
+      const saved = await store.upsert(r.record);
+      created.push({
+        type: r.store === 'people' ? 'person' : r.store.slice(0, -1),
+        id: saved.id,
+        updatedAt: saved.updatedAt,
+      });
     }
     await tx.captures.upsert({
-      ...capture,
+      ...current,
       type,
       status: 'processed',
       processedType: primary.type,
       processedId: primary.id,
     });
+    return { ...primary, created, replayed: false };
+  });
+  if (!result.replayed) bumpData();
+  return result;
+}
+
+/** Reverse one Inbox conversion when none of its new records have changed since creation. */
+export async function undoCaptureConversion(
+  repo: Repository,
+  captureId: Id,
+  conversion: ConversionResult,
+): Promise<void> {
+  if (conversion.replayed) return;
+  await repo.transaction(async (tx) => {
+    const capture = await tx.captures.get(captureId);
+    if (!capture || capture.status !== 'processed' || capture.processedId !== conversion.id) {
+      throw new Error('This capture has changed and cannot be restored.');
+    }
+    for (const ref of [...conversion.created].reverse()) {
+      const store = storeForType(tx, ref.type);
+      const current = await store.get(ref.id);
+      if (!current || current.updatedAt !== ref.updatedAt) {
+        throw new Error('The added item has changed and cannot be safely undone.');
+      }
+      await store.softDelete(ref.id);
+    }
+    await tx.captures.upsert({
+      ...capture,
+      status: 'inbox',
+      processedType: null,
+      processedId: null,
+    });
   });
   bumpData();
-  return primary;
 }

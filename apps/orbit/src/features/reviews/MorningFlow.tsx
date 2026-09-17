@@ -1,10 +1,21 @@
-import type { Clock, Energy, Id, LocalDate, PlanProposal } from '@orbit/core';
-import { formatDuration, systemClock, toLocalDate } from '@orbit/core';
-import { useCallback, useMemo, useState } from 'react';
+import type {
+  Clock,
+  DailyReviewStep,
+  Energy,
+  Id,
+  LocalDate,
+  PlanProposal,
+  ReviewQuestionId,
+  ReviewRef,
+} from '@orbit/core';
+import { formatDuration, systemClock, toInstant, toLocalDate } from '@orbit/core';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import type { Repository } from '@orbit/storage';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Badge } from '@/components/ui/Badge';
-import { Card, Skeleton } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Card, SectionHeader, Skeleton } from '@/components/ui/Card';
+import { Input, Label, Select } from '@/components/ui/Input';
 import { toast } from '@/components/ui/toastStore';
 import { useRepoQuery } from '@/data/useQuery';
 import { useHotkey } from '@/lib/hotkeys';
@@ -14,18 +25,42 @@ import { PlanPanel, type PlanDiff } from '@/features/today/PlanPanel';
 import { settingsFor, usePlanPrefs } from '@/features/today/planSettings';
 import { acceptPlan } from '@/features/today/todayService';
 import { diffProposals } from '@/features/today/TodayPage';
+import { createTask } from '@/features/structure/structureService';
+import { createDirectReminder } from '@/features/reminders/reminderService';
+import { readSettings } from '@/features/settings/settingsService';
+import {
+  BillCheckIn,
+  EMPTY_CHECK_INS,
+  PeopleCheckIn,
+  ProjectCheckIn,
+  type CheckInFormState,
+} from './MorningCheckIn';
+import {
+  clearDailyReviewDraft,
+  loadDailyReviewDraft,
+  saveDailyReviewDraft,
+} from './dailyReviewService';
 import { loadMorning, type MorningData } from './reviewService';
 import { FlowShell } from './Stepper';
 
-const STEPS = ['Energy', 'At risk', 'Plan', 'Accept'] as const;
+const STEP_LABEL: Record<DailyReviewStep, string> = {
+  project: 'Projects',
+  bill: 'Bills',
+  person: 'People',
+  energy: 'Energy',
+  'at-risk': 'At risk',
+  plan: 'Plan',
+  accept: 'Accept',
+};
+const DEFAULT_QUESTIONS: ReviewQuestionId[] = ['project', 'bill', 'person'];
 
 interface Props {
   clock?: Clock;
 }
 
 /**
- * The morning briefing: pick today's energy, see what is slipping and what
- * is due, look over the proposal, accept. Four steps, keyboard-only capable.
+ * The morning briefing: capture new structure one question at a time, pick
+ * today's energy, review risk and the proposed plan, then accept.
  */
 export function MorningFlow({ clock = systemClock }: Props) {
   const repo = useRepository();
@@ -34,10 +69,45 @@ export function MorningFlow({ clock = systemClock }: Props) {
   const prefs = usePlanPrefs();
   const date: LocalDate = params.get('date') ?? toLocalDate(clock.now());
   const energy: Energy = prefs.energyByDate[date] ?? 'medium';
-  const [step, setStep] = useState(0);
+  const requestedStep = params.get('step') as DailyReviewStep | null;
+  const [stepId, setStepId] = useState<DailyReviewStep>('project');
   const [excluded, setExcluded] = useState<readonly Id[]>([]);
   const [previous, setPrevious] = useState<PlanProposal | null>(null);
   const [busy, setBusy] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskProjectId, setTaskProjectId] = useState('');
+  const [taskDate, setTaskDate] = useState<LocalDate>(date);
+  const [taskTime, setTaskTime] = useState('');
+  const [taskEstimate, setTaskEstimate] = useState('');
+  const [captureBusy, setCaptureBusy] = useState(false);
+  const [checkIns, setCheckIns] = useState<Record<ReviewQuestionId, CheckInFormState>>(() =>
+    structuredClone(EMPTY_CHECK_INS),
+  );
+  const [checkInReady, setCheckInReady] = useState<Record<ReviewQuestionId, boolean>>({
+    project: false,
+    bill: false,
+    person: false,
+  });
+  const [createdRefs, setCreatedRefs] = useState<ReviewRef[]>([]);
+  const [deferredQuestions, setDeferredQuestions] = useState<ReviewQuestionId[]>([]);
+  const hydrated = useRef(false);
+
+  const { data: reviewPrefs } = useRepoQuery((r) => readSettings(r, clock), [clock]);
+  const questionOrder = reviewPrefs?.reviews.questionOrder ?? DEFAULT_QUESTIONS;
+  const enabledQuestions = reviewPrefs?.reviews.enabledQuestions ?? questionOrder;
+  const flowSteps = useMemo<DailyReviewStep[]>(
+    () => [
+      ...questionOrder.filter((id) => enabledQuestions.includes(id)),
+      'energy',
+      'at-risk',
+      'plan',
+      'accept',
+    ],
+    [questionOrder, enabledQuestions],
+  );
+  const step = Math.max(0, flowSteps.indexOf(stepId));
+  const setStep = (index: number) => setStepId(flowSteps[index] ?? flowSteps[0]!);
 
   const settings = useMemo(() => settingsFor(prefs, date, excluded), [prefs, date, excluded]);
   const query = useCallback(
@@ -46,10 +116,104 @@ export function MorningFlow({ clock = systemClock }: Props) {
   );
   const { data, refresh } = useRepoQuery(query, [query]);
 
+  const draftQuery = useCallback(
+    (r: Repository) => loadDailyReviewDraft(r, date, 'morning'),
+    [date],
+  );
+  const { data: draft, loading: draftLoading } = useRepoQuery(draftQuery, [draftQuery]);
+  useEffect(() => {
+    if (draftLoading || hydrated.current) return;
+    hydrated.current = true;
+    queueMicrotask(() => {
+      if (!draft) {
+        setStepId(
+          requestedStep && flowSteps.includes(requestedStep) ? requestedStep : flowSteps[0]!,
+        );
+        return;
+      }
+      const form = draft.formState;
+      if (form.checkIns && typeof form.checkIns === 'object') {
+        const restored = form.checkIns as Record<ReviewQuestionId, CheckInFormState>;
+        setCheckIns({
+          project: { ...EMPTY_CHECK_INS.project, ...restored.project },
+          bill: { ...EMPTY_CHECK_INS.bill, ...restored.bill },
+          person: { ...EMPTY_CHECK_INS.person, ...restored.person },
+        });
+        setCheckInReady(
+          Object.fromEntries(
+            (['project', 'bill', 'person'] as ReviewQuestionId[]).map((id) => [
+              id,
+              restored[id]?.answer === 'no' ||
+                restored[id]?.savedLabel === 'scheduled' ||
+                (!!restored[id]?.savedLabel && restored[id]?.answer === 'yes'),
+            ]),
+          ) as Record<ReviewQuestionId, boolean>,
+        );
+      }
+      if (Array.isArray(form.excluded))
+        setExcluded(form.excluded.filter((id): id is Id => typeof id === 'string'));
+      if (typeof form.taskTitle === 'string') setTaskTitle(form.taskTitle);
+      if (typeof form.taskProjectId === 'string') setTaskProjectId(form.taskProjectId);
+      if (typeof form.taskDate === 'string') setTaskDate(form.taskDate);
+      if (typeof form.taskTime === 'string') setTaskTime(form.taskTime);
+      if (typeof form.taskEstimate === 'string') setTaskEstimate(form.taskEstimate);
+      if (typeof form.capturing === 'boolean') setCapturing(form.capturing);
+      setCreatedRefs(draft.createdRefs);
+      setDeferredQuestions(draft.deferredQuestions);
+      const target =
+        requestedStep && flowSteps.includes(requestedStep) ? requestedStep : draft.step;
+      setStepId(flowSteps.includes(target) ? target : flowSteps[0]!);
+    });
+  }, [draft, draftLoading, flowSteps, requestedStep]);
+
+  useEffect(() => {
+    if (!hydrated.current) return;
+    const timer = setTimeout(() => {
+      void saveDailyReviewDraft(
+        repo,
+        date,
+        'morning',
+        {
+          step: stepId,
+          formState: {
+            checkIns,
+            excluded,
+            taskTitle,
+            taskProjectId,
+            taskDate,
+            taskTime,
+            taskEstimate,
+            capturing,
+          },
+          createdRefs,
+          deferredQuestions,
+          reminderTime: null,
+        },
+        clock,
+      );
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [
+    repo,
+    date,
+    stepId,
+    checkIns,
+    excluded,
+    taskTitle,
+    taskProjectId,
+    taskDate,
+    taskTime,
+    taskEstimate,
+    capturing,
+    createdRefs,
+    deferredQuestions,
+    clock,
+  ]);
+
   const setEnergy = (e: Energy) => prefs.setEnergy(date, e);
-  // 1 / 2 / 3 pick the energy on the first step only.
+  // 1 / 2 / 3 pick the energy on the energy step only.
   const energyKey = (i: number) => () => {
-    if (step === 0) setEnergy(ENERGIES[i]!);
+    if (stepId === 'energy') setEnergy(ENERGIES[i]!);
   };
   useHotkey('1', energyKey(0), { description: 'Low energy', group: 'Morning briefing' });
   useHotkey('2', energyKey(1), { description: 'Medium energy', group: 'Morning briefing' });
@@ -65,6 +229,7 @@ export function MorningFlow({ clock = systemClock }: Props) {
     setBusy(true);
     try {
       await acceptPlan(repo, data.proposal, clock);
+      await clearDailyReviewDraft(repo, date, 'morning');
       toast({
         title: 'Plan committed',
         description: `${data.proposal.commitment.acceptedTaskIds.length} tasks at ${energy} energy`,
@@ -76,9 +241,120 @@ export function MorningFlow({ clock = systemClock }: Props) {
     }
   };
 
+  const activeProjects = data
+    ? [...data.projectById.values()]
+        .filter((project) => project.status === 'active' && project.deletedAt === null)
+        .sort((a, b) => a.title.localeCompare(b.title))
+    : [];
+
+  const openCapture = () => {
+    setTaskProjectId(activeProjects[0]?.id ?? '');
+    setCapturing(true);
+  };
+
+  const addTask = async (event: FormEvent) => {
+    event.preventDefault();
+    const title = taskTitle.trim();
+    if (!title || !data) return;
+    const estimateMin = taskEstimate === '' ? undefined : Number(taskEstimate);
+    if (
+      estimateMin !== undefined &&
+      (!Number.isInteger(estimateMin) || estimateMin < 5 || estimateMin > 480)
+    )
+      return;
+    const preferredStartMin = taskTime
+      ? taskTime
+          .split(':')
+          .map(Number)
+          .reduce((hours, minutes) => hours * 60 + minutes)
+      : null;
+    setCaptureBusy(true);
+    setPrevious(data.proposal);
+    try {
+      const task = await createTask(
+        repo,
+        {
+          title,
+          projectId: taskProjectId || null,
+          status: 'open',
+          estimateMin,
+          preferredDate: taskDate || (taskTime ? date : null),
+          preferredStartMin,
+        },
+        clock,
+      );
+      setCreatedRefs((refs) => [...refs, { type: 'task', id: task.id }]);
+      setTaskTitle('');
+      setTaskTime('');
+      setTaskEstimate('');
+      refresh();
+      toast({
+        title: 'Task added',
+        description: 'Your morning plan has been refreshed.',
+        variant: 'success',
+      });
+    } finally {
+      setCaptureBusy(false);
+    }
+  };
+
   const next = () => {
-    if (step === STEPS.length - 1) void accept();
-    else setStep((s) => s + 1);
+    if (step === flowSteps.length - 1) void accept();
+    else setStep(step + 1);
+  };
+
+  const updateCheckIn = (id: ReviewQuestionId, patch: Partial<CheckInFormState>) =>
+    setCheckIns((current) => ({ ...current, [id]: { ...current[id], ...patch } }));
+
+  const scheduleLater = async (id: ReviewQuestionId) => {
+    const time = checkIns[id].laterTime;
+    const [hour, minute] = time.split(':').map(Number) as [number, number];
+    const reminderTime = hour * 60 + minute;
+    const nextDeferred = [...new Set([...deferredQuestions, id])];
+    const savedDraft = await saveDailyReviewDraft(
+      repo,
+      date,
+      'morning',
+      {
+        step: id,
+        formState: {
+          checkIns,
+          excluded,
+          taskTitle,
+          taskProjectId,
+          taskDate,
+          taskTime,
+          taskEstimate,
+          capturing,
+        },
+        createdRefs,
+        deferredQuestions: nextDeferred,
+        reminderTime,
+      },
+      clock,
+    );
+    await createDirectReminder(
+      repo,
+      {
+        key: `review-step:${date}:${id}`,
+        source: 'review-step',
+        entityType: 'dailyReviewDraft',
+        entityId: savedDraft.id,
+        fireAt: toInstant(date, reminderTime).toISOString(),
+        title: `Morning briefing · ${STEP_LABEL[id]}`,
+        body: 'Continue the question you set aside.',
+        destination: `/review/morning?date=${date}&step=${id}`,
+      },
+      clock,
+    );
+    updateCheckIn(id, { savedLabel: 'scheduled' });
+    setDeferredQuestions(nextDeferred);
+    setCheckInReady((current) => ({ ...current, [id]: true }));
+    toast({
+      title: 'Reminder scheduled',
+      description: `Return to ${STEP_LABEL[id]} at ${time}.`,
+      variant: 'success',
+    });
   };
 
   const proposedTasks = data
@@ -97,13 +373,18 @@ export function MorningFlow({ clock = systemClock }: Props) {
           ) : null}
         </>
       }
-      steps={STEPS}
+      steps={flowSteps.map((id) => STEP_LABEL[id])}
       current={step}
       onSelect={setStep}
-      onBack={() => setStep((s) => Math.max(0, s - 1))}
+      onBack={() => setStep(Math.max(0, step - 1))}
       onNext={next}
       finishLabel="Accept plan"
-      nextDisabled={!data || (step === STEPS.length - 1 && proposedTasks.length === 0)}
+      nextDisabled={
+        !data ||
+        draftLoading ||
+        ((stepId === 'project' || stepId === 'bill' || stepId === 'person') &&
+          !checkInReady[stepId])
+      }
       busy={busy}
     >
       {!data ? (
@@ -111,11 +392,51 @@ export function MorningFlow({ clock = systemClock }: Props) {
           <Skeleton className="h-12" />
           <Skeleton className="h-40" />
         </div>
-      ) : step === 0 ? (
+      ) : stepId === 'project' ? (
+        <ProjectCheckIn
+          data={data}
+          clock={clock}
+          state={checkIns.project}
+          onChange={(patch) => updateCheckIn('project', patch)}
+          templates={reviewPrefs?.reviews.templates ?? []}
+          onReady={(ready) => setCheckInReady((current) => ({ ...current, project: ready }))}
+          onCreated={(ref) => {
+            setCreatedRefs((refs) => [...refs, ref]);
+            refresh();
+          }}
+          onLater={() => void scheduleLater('project')}
+        />
+      ) : stepId === 'bill' ? (
+        <BillCheckIn
+          clock={clock}
+          state={checkIns.bill}
+          onChange={(patch) => updateCheckIn('bill', patch)}
+          templates={reviewPrefs?.reviews.templates ?? []}
+          onReady={(ready) => setCheckInReady((current) => ({ ...current, bill: ready }))}
+          onCreated={(ref) => {
+            setCreatedRefs((refs) => [...refs, ref]);
+            refresh();
+          }}
+          onLater={() => void scheduleLater('bill')}
+        />
+      ) : stepId === 'person' ? (
+        <PeopleCheckIn
+          clock={clock}
+          state={checkIns.person}
+          onChange={(patch) => updateCheckIn('person', patch)}
+          templates={reviewPrefs?.reviews.templates ?? []}
+          onReady={(ready) => setCheckInReady((current) => ({ ...current, person: ready }))}
+          onCreated={(ref) => {
+            setCreatedRefs((refs) => [...refs, ref]);
+            refresh();
+          }}
+          onLater={() => void scheduleLater('person')}
+        />
+      ) : stepId === 'energy' ? (
         <EnergyStep energy={energy} onChange={setEnergy} />
-      ) : step === 1 ? (
+      ) : stepId === 'at-risk' ? (
         <AtRiskStep data={data} />
-      ) : step === 2 ? (
+      ) : stepId === 'plan' ? (
         <div data-testid="morning-plan" data-energy={data.energy}>
           <PlanPanel
             proposal={data.proposal}
@@ -125,16 +446,133 @@ export function MorningFlow({ clock = systemClock }: Props) {
             busy={busy}
             onRemove={(id) => setExcluded((xs) => [...xs, id])}
             onRestore={(id) => setExcluded((xs) => xs.filter((x) => x !== id))}
-            onAccept={accept}
+            onAccept={() => setStep(flowSteps.indexOf('accept'))}
+            acceptLabel="Continue"
+            allowEmpty
             onRegenerate={() => {
               setPrevious(data.proposal);
               refresh();
             }}
             onReplan={() => undefined}
+            onCaptureTask={openCapture}
           />
+          {capturing ? (
+            <Card className="mt-3 border-lime/40 bg-lime/5" aria-label="Add a task">
+              <SectionHeader
+                title="Add a task"
+                meta="Stays in this briefing"
+                actions={
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setCapturing(false);
+                      setTaskTitle('');
+                    }}
+                  >
+                    Done
+                  </Button>
+                }
+              />
+              <form className="grid items-end gap-3 md:grid-cols-2" onSubmit={addTask}>
+                <div className="md:col-span-2">
+                  <Label htmlFor="morning-task-title">Task</Label>
+                  <Input
+                    id="morning-task-title"
+                    value={taskTitle}
+                    onChange={(event) => setTaskTitle(event.target.value)}
+                    placeholder="What needs to get done?"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="morning-task-project" hint="optional">
+                    Project
+                  </Label>
+                  <Select
+                    id="morning-task-project"
+                    value={taskProjectId}
+                    onChange={(event) => setTaskProjectId(event.target.value)}
+                  >
+                    <option value="">No project</option>
+                    {activeProjects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.title}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="morning-task-date" hint="optional">
+                    Plan date
+                  </Label>
+                  <Input
+                    id="morning-task-date"
+                    type="date"
+                    value={taskDate}
+                    onChange={(event) => setTaskDate(event.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="morning-task-time" hint="optional">
+                    Start time
+                  </Label>
+                  <Input
+                    id="morning-task-time"
+                    type="time"
+                    value={taskTime}
+                    onChange={(event) => setTaskTime(event.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="morning-task-estimate"
+                    hint={`optional · default ${reviewPrefs?.defaultEstimateMin ?? 30} min`}
+                  >
+                    Duration in minutes
+                  </Label>
+                  <Input
+                    id="morning-task-estimate"
+                    type="number"
+                    min={5}
+                    max={480}
+                    step={5}
+                    value={taskEstimate}
+                    onChange={(event) => setTaskEstimate(event.target.value)}
+                    placeholder={String(reviewPrefs?.defaultEstimateMin ?? 30)}
+                  />
+                </div>
+                <p className="text-[12px] text-ink-faint md:col-span-2">
+                  Date, time, and duration are optional. A start time guides this plan; Orbit moves
+                  it only when another fixed item conflicts.
+                </p>
+                <div className="flex justify-end md:col-span-2">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    loading={captureBusy}
+                    disabled={
+                      !taskTitle.trim() ||
+                      (taskEstimate !== '' &&
+                        (!Number.isInteger(Number(taskEstimate)) ||
+                          Number(taskEstimate) < 5 ||
+                          Number(taskEstimate) > 480))
+                    }
+                  >
+                    Add task
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          ) : null}
         </div>
       ) : (
-        <AcceptStep data={data} energy={energy} count={proposedTasks.length} />
+        <AcceptStep
+          data={data}
+          energy={energy}
+          count={proposedTasks.length}
+          createdRefs={createdRefs}
+        />
       )}
     </FlowShell>
   );
@@ -210,7 +648,9 @@ function AtRiskStep({ data }: { data: MorningData }) {
         <ul className="flex flex-col gap-1 text-sm" aria-label="Bills due">
           {data.billsDue.map((b) => (
             <li key={b.id} className="flex items-center gap-2">
-              <Badge tone={b.dueAt < data.date ? 'danger' : 'gold'}>{b.dueAt}</Badge>
+              <Badge tone={b.dueAt !== null && b.dueAt < data.date ? 'danger' : 'gold'}>
+                {b.dueAt ?? 'No date'}
+              </Badge>
               <span className="min-w-0 flex-1 truncate">{b.title}</span>
               <span className="text-[12px] text-ink-faint tnum">
                 {b.amount} {b.currency}
@@ -223,9 +663,30 @@ function AtRiskStep({ data }: { data: MorningData }) {
   );
 }
 
-function AcceptStep({ data, energy, count }: { data: MorningData; energy: Energy; count: number }) {
+function AcceptStep({
+  data,
+  energy,
+  count,
+  createdRefs,
+}: {
+  data: MorningData;
+  energy: Energy;
+  count: number;
+  createdRefs: ReviewRef[];
+}) {
+  const unique = [...new Map(createdRefs.map((ref) => [`${ref.type}:${ref.id}`, ref])).values()];
+  const path = (ref: ReviewRef) =>
+    ref.type === 'project'
+      ? `/projects/${ref.id}`
+      : ref.type === 'bill'
+        ? `/bills/${ref.id}`
+        : ref.type === 'person'
+          ? `/people/${ref.id}`
+          : ref.type === 'task'
+            ? `/tasks/${ref.id}`
+            : null;
   return (
-    <Card data-testid="morning-summary">
+    <Card data-testid="morning-summary" className="flex flex-col gap-3">
       <p className="text-sm text-ink">
         <strong>{count}</strong> block{count === 1 ? '' : 's'} ·{' '}
         <strong>{formatDuration(data.proposal.stats.plannedMin)}</strong> planned of{' '}
@@ -233,9 +694,37 @@ function AcceptStep({ data, energy, count }: { data: MorningData; energy: Energy
       </p>
       <p className="mt-2 text-[13px] text-ink-muted">
         {count === 0
-          ? 'Nothing to accept. Go back to the plan or add tasks to a project.'
+          ? 'Nothing is planned, and that can be the right plan. Accept to keep the day intentionally open.'
           : 'Accepting writes the commitment and the blocks; the Today screen takes over from there.'}
       </p>
+      <div className="border-t border-line pt-3">
+        <p className="text-[13px] font-semibold tracking-wide text-ink-muted uppercase">
+          Added during this briefing · {unique.length}
+        </p>
+        {unique.length ? (
+          <ul className="mt-2 flex flex-wrap gap-2" aria-label="Added during this briefing">
+            {unique.map((ref) => {
+              const to = path(ref);
+              return (
+                <li key={`${ref.type}:${ref.id}`}>
+                  {to ? (
+                    <Link
+                      to={to}
+                      className="rounded-md border border-line px-2 py-1 text-[13px] hover:bg-surface-2"
+                    >
+                      {ref.type} · {ref.id.slice(0, 8)}
+                    </Link>
+                  ) : (
+                    <span className="text-[13px] text-ink-muted">{ref.type}</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="mt-1 text-[13px] text-ink-faint">Nothing new was added.</p>
+        )}
+      </div>
     </Card>
   );
 }

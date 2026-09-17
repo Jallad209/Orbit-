@@ -4,7 +4,7 @@ import { cn } from '@/lib/cn';
 export const fieldClass = [
   'w-full rounded-md border border-line bg-white/60 px-3 text-sm text-ink placeholder:text-ink-faint',
   'transition-[border-color,box-shadow] duration-(--duration-fast)',
-  'hover:border-ink-faint focus:border-lime-2 focus:outline-none focus:ring-2 focus:ring-lime/40',
+  'hover:border-ink-faint focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink',
   'aria-invalid:border-danger aria-invalid:focus:ring-danger/30',
   'disabled:cursor-not-allowed disabled:opacity-50',
 ].join(' ');

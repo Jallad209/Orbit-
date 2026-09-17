@@ -7,20 +7,26 @@ import {
   systemClock,
   toLocalDate,
 } from '@orbit/core';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Repository } from '@orbit/storage';
 import { useNavigate, useSearchParams } from 'react-router';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { Card, ProgressBar, Skeleton } from '@/components/ui/Card';
-import { FieldError, Input, Label } from '@/components/ui/Input';
+import { FieldError, Input, Label, Textarea } from '@/components/ui/Input';
 import { toast } from '@/components/ui/toastStore';
 import { useRepoQuery } from '@/data/useQuery';
 import { cn } from '@/lib/cn';
 import { useRepository } from '@/platform';
 import { loadEvening, submitEvening, type EveningData } from './reviewService';
+import {
+  loadDailyReflectionDraft,
+  saveDailyReflection,
+  type ReflectionInput,
+} from './dailyReviewService';
 import { FlowShell } from './Stepper';
 
-const STEPS = ['Committed', 'Actuals', 'Rollover', 'Summary'] as const;
+const STEPS = ['Committed', 'Actuals', 'Rollover', 'Journal', 'Summary'] as const;
 const TARGETS: Array<{ value: RolloverTarget; label: string }> = [
   { value: 'tomorrow', label: 'Tomorrow' },
   { value: 'nextWeek', label: 'Next week' },
@@ -46,10 +52,26 @@ export function EveningFlow({ clock = systemClock }: Props) {
   const [actuals, setActuals] = useState<Record<Id, string>>({});
   const [errors, setErrors] = useState<Record<Id, string>>({});
   const [choices, setChoices] = useState<Record<Id, RolloverTarget>>({});
+  const [reflection, setReflection] = useState<ReflectionInput>({
+    body: '',
+    promptId: null,
+    mood: null,
+    stress: null,
+    sleepQuality: null,
+    tags: [],
+  });
+  const reflectionHydrated = useRef(false);
   const [busy, setBusy] = useState(false);
 
   const query = useCallback((r: Repository) => loadEvening(r, date, clock), [date, clock]);
   const { data } = useRepoQuery(query, [query]);
+  const reflectionQuery = useCallback((r: Repository) => loadDailyReflectionDraft(r, date), [date]);
+  const { data: savedReflection } = useRepoQuery(reflectionQuery, [reflectionQuery]);
+  useEffect(() => {
+    if (!savedReflection || reflectionHydrated.current) return;
+    reflectionHydrated.current = true;
+    setReflection(savedReflection);
+  }, [savedReflection]);
 
   // State holds only what the user changed; defaults come from the data:
   // the estimate for actuals, the rollover rule's suggestion for targets.
@@ -82,6 +104,12 @@ export function EveningFlow({ clock = systemClock }: Props) {
     }
     setBusy(true);
     try {
+      await saveDailyReflection(
+        repo,
+        date,
+        { ...reflection, promptId: reflection.promptId ?? journalPromptFor(date).id },
+        clock,
+      );
       const result = await submitEvening(
         repo,
         {
@@ -150,10 +178,148 @@ export function EveningFlow({ clock = systemClock }: Props) {
           choiceFor={choiceFor}
           onChoose={(id, target) => setChoices((c) => ({ ...c, [id]: target }))}
         />
+      ) : step === 3 ? (
+        <JournalStep
+          value={reflection}
+          onChange={(patch) => setReflection((current) => ({ ...current, ...patch }))}
+          date={date}
+        />
       ) : (
         <SummaryStep data={data} choiceFor={choiceFor} />
       )}
     </FlowShell>
+  );
+}
+
+const JOURNAL_PROMPTS = [
+  { id: 'win', text: 'What felt meaningful or went better than expected?' },
+  { id: 'lesson', text: 'What did today teach you?' },
+  { id: 'unfinished', text: 'What are you ready to leave here instead of carrying forward?' },
+  { id: 'gratitude', text: 'What small moment do you want to remember?' },
+] as const;
+
+export function journalPromptFor(date: LocalDate) {
+  const seed = [...date].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return JOURNAL_PROMPTS[seed % JOURNAL_PROMPTS.length]!;
+}
+
+function JournalStep({
+  value,
+  onChange,
+  date,
+}: {
+  value: ReflectionInput;
+  onChange: (patch: Partial<ReflectionInput>) => void;
+  date: LocalDate;
+}) {
+  const suggested = journalPromptFor(date);
+  const selected = value.promptId ?? suggested.id;
+  return (
+    <Card data-testid="evening-journal" className="flex flex-col gap-4">
+      <Label htmlFor="daily-journal" hint="optional">
+        Write about your day
+      </Label>
+      <p className="mt-1 text-sm text-ink-muted">
+        What happened, what mattered, and what do you want to remember? This saves as a daily note
+        for {date}.
+      </p>
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Journal prompt">
+        <Button
+          size="sm"
+          variant={selected === suggested.id ? 'primary' : 'secondary'}
+          onClick={() => onChange({ promptId: suggested.id })}
+        >
+          Today’s prompt
+        </Button>
+        <Button
+          size="sm"
+          variant={selected === 'free-write' ? 'primary' : 'secondary'}
+          onClick={() => onChange({ promptId: 'free-write' })}
+        >
+          Free write
+        </Button>
+      </div>
+      <p className="rounded-md bg-surface-2 px-3 py-2 text-sm text-ink">
+        {selected === 'free-write' ? 'Write whatever you want to keep from today.' : suggested.text}
+      </p>
+      <Textarea
+        id="daily-journal"
+        value={value.body}
+        onChange={(event) => onChange({ body: event.target.value })}
+        placeholder="Today I…"
+        rows={8}
+        className="mt-3 resize-y"
+      />
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Rating label="Mood" value={value.mood} onChange={(mood) => onChange({ mood })} />
+        <Rating label="Stress" value={value.stress} onChange={(stress) => onChange({ stress })} />
+        <Rating
+          label="Sleep quality"
+          value={value.sleepQuality}
+          onChange={(sleepQuality) => onChange({ sleepQuality })}
+        />
+      </div>
+      <div>
+        <Label htmlFor="reflection-tags" hint="optional, comma separated">
+          Tags
+        </Label>
+        <Input
+          id="reflection-tags"
+          value={value.tags.join(', ')}
+          onChange={(event) =>
+            onChange({
+              tags: event.target.value
+                .split(',')
+                .map((tag) => tag.trim())
+                .filter(Boolean)
+                .slice(0, 12),
+            })
+          }
+          placeholder="focused, family, low energy"
+        />
+      </div>
+      <p className="text-[12px] text-ink-faint">
+        Everything stays on this device. Orbit uses only the ratings and tags for patterns; it never
+        analyzes this prose.
+      </p>
+    </Card>
+  );
+}
+
+function Rating({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number | null;
+  onChange: (value: number | null) => void;
+}) {
+  return (
+    <div>
+      <p className="mb-1 text-[13px] font-medium text-ink">
+        {label} <span className="font-normal text-ink-faint">optional</span>
+      </p>
+      <div className="flex gap-1" role="radiogroup" aria-label={label}>
+        {[1, 2, 3, 4, 5].map((rating) => (
+          <button
+            key={rating}
+            type="button"
+            role="radio"
+            aria-checked={value === rating}
+            onClick={() => onChange(value === rating ? null : rating)}
+            className={cn(
+              'grid size-8 place-items-center rounded-md border text-[13px]',
+              value === rating
+                ? 'border-lime-ink bg-lime text-lime-ink'
+                : 'border-line text-ink-muted hover:bg-surface-2',
+            )}
+          >
+            {rating}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

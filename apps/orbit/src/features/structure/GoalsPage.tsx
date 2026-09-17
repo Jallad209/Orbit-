@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { GoalHealthBadge } from '@/components/HealthBadge';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonVariants } from '@/components/ui/Button';
 import { Card, EmptyState, ProgressBar, SectionHeader } from '@/components/ui/Card';
 import { InlineEdit } from '@/components/ui/InlineEdit';
 import { Input, Label, Select, Textarea } from '@/components/ui/Input';
@@ -73,51 +73,69 @@ export function GoalsPage() {
         ) : null}
       </div>
 
-      <form onSubmit={submit} className="flex flex-wrap gap-2" aria-label="New goal">
-        <Input
-          aria-label="Goal title"
-          placeholder="New goal, e.g. Run a half marathon"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="min-w-56 flex-1"
-        />
-        <Select
-          aria-label="Area"
-          value={effectiveArea}
-          onChange={(e) => setAreaId(e.target.value)}
-          className="w-40"
-        >
-          {data?.areas.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </Select>
-        <Select
-          aria-label="Importance"
-          value={importance}
-          onChange={(e) => setImportance(Number(e.target.value))}
-          className="w-36"
-        >
-          {[5, 4, 3, 2, 1].map((i) => (
-            <option key={i} value={i}>
-              Importance {i}
-            </option>
-          ))}
-        </Select>
-        <Button type="submit" variant="primary" disabled={!title.trim() || !effectiveArea}>
-          Add goal
-        </Button>
-      </form>
-
       {!loading && data && data.areas.length === 0 ? (
-        <p className="text-[13px] text-ink-muted">
-          Create an{' '}
-          <Link to="/areas" className="underline">
-            area
-          </Link>{' '}
-          first; every goal belongs to one.
-        </p>
+        <EmptyState
+          icon={<Target />}
+          title="Create an area first"
+          description="Every goal belongs to an area such as Health, Work, or Learning."
+          action={
+            <Link to="/areas" className={buttonVariants({ variant: 'primary', size: 'sm' })}>
+              Create an area
+            </Link>
+          }
+        />
+      ) : null}
+      {!loading && data && data.areas.length > 0 ? (
+        <form
+          onSubmit={submit}
+          className="grid grid-cols-[minmax(0,1fr)_10rem_10rem_auto] items-end gap-3 rounded-lg border border-line bg-surface-2/50 p-4"
+          aria-label="New goal"
+        >
+          <div>
+            <Label htmlFor="new-goal-title">Goal</Label>
+            <Input
+              id="new-goal-title"
+              aria-label="Goal title"
+              placeholder="e.g. Run a half marathon"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="new-goal-area">Area</Label>
+            <Select
+              id="new-goal-area"
+              value={effectiveArea}
+              onChange={(e) => setAreaId(e.target.value)}
+              className="mt-1"
+            >
+              {data.areas.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="new-goal-importance">Importance</Label>
+            <Select
+              id="new-goal-importance"
+              value={importance}
+              onChange={(e) => setImportance(Number(e.target.value))}
+              className="mt-1"
+            >
+              {[5, 4, 3, 2, 1].map((i) => (
+                <option key={i} value={i}>
+                  {i} of 5
+                </option>
+              ))}
+            </Select>
+          </div>
+          <Button type="submit" variant="primary" disabled={!title.trim() || !effectiveArea}>
+            Add goal
+          </Button>
+        </form>
       ) : null}
       {!loading && data && data.areas.length > 0 && data.goals.length === 0 ? (
         <EmptyState
@@ -155,7 +173,7 @@ export function GoalsPage() {
                   <li key={g.id}>
                     <Link
                       to={`/goals/${g.id}`}
-                      className="flex items-center gap-3 rounded-md border border-line bg-surface-2/50 px-3 py-2.5 hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-lime-2"
+                      className="flex items-center gap-3 rounded-md border border-line bg-surface-2/50 px-3 py-2.5 hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-ink"
                     >
                       <Importance value={g.importance} />
                       <span className="min-w-0 flex-1 truncate font-medium">{g.title}</span>

@@ -1,8 +1,9 @@
 import type { Id, LeftOutReason, PlanProposal, ProposedBlock } from '@orbit/core';
 import { formatDuration, formatMinute } from '@orbit/core';
 import { CalendarCheck, RefreshCw, RotateCcw, Undo2, X } from 'lucide-react';
+import { Link } from 'react-router';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonVariants } from '@/components/ui/Button';
 import { Card, EmptyState, SectionHeader } from '@/components/ui/Card';
 import { WhyPopover } from './WhyPopover';
 
@@ -31,6 +32,12 @@ interface Props {
   onAccept: () => void;
   onRegenerate: () => void;
   onReplan: () => void;
+  /** Keeps task capture in the current flow when a host provides it. */
+  onCaptureTask?: () => void;
+  /** A host flow may use this action to advance to its own confirmation step. */
+  acceptLabel?: string;
+  /** Empty days are valid in the morning briefing. */
+  allowEmpty?: boolean;
 }
 
 function rangeLabel(b: ProposedBlock): string {
@@ -49,6 +56,9 @@ export function PlanPanel({
   onAccept,
   onRegenerate,
   onReplan,
+  onCaptureTask,
+  acceptLabel = 'Accept',
+  allowEmpty = false,
 }: Props) {
   const proposed = proposal.blocks.filter((b) => b.kind === 'task' || b.kind === 'routine');
   const plannedMin = proposal.stats.plannedMin;
@@ -95,6 +105,11 @@ export function PlanPanel({
         }
         actions={
           <>
+            {onCaptureTask && proposed.length > 0 ? (
+              <Button size="sm" variant="ghost" onClick={onCaptureTask} disabled={busy}>
+                Add task
+              </Button>
+            ) : null}
             <Button size="sm" variant="ghost" onClick={onRegenerate} disabled={busy}>
               <RefreshCw className="size-3.5" aria-hidden="true" />
               Regenerate
@@ -104,10 +119,10 @@ export function PlanPanel({
               variant="primary"
               onClick={onAccept}
               loading={busy}
-              disabled={proposed.length === 0}
+              disabled={!allowEmpty && proposed.length === 0}
             >
               <CalendarCheck className="size-3.5" aria-hidden="true" />
-              Accept
+              {acceptLabel}
             </Button>
           </>
         }
@@ -125,7 +140,28 @@ export function PlanPanel({
           description={
             proposal.stats.freeMin === 0
               ? 'No free time left in the working window.'
-              : 'Add open tasks to a project and Orbit will propose a day.'
+              : 'Add an open task and Orbit will propose a day.'
+          }
+          action={
+            proposal.stats.freeMin === 0 ? undefined : (
+              <div className="flex items-center gap-2">
+                {onCaptureTask ? (
+                  <Button size="sm" variant="primary" onClick={onCaptureTask}>
+                    Capture a task
+                  </Button>
+                ) : (
+                  <Link to="/inbox" className={buttonVariants({ variant: 'primary', size: 'sm' })}>
+                    Capture a task
+                  </Link>
+                )}
+                <Link
+                  to="/projects"
+                  className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+                >
+                  Open projects
+                </Link>
+              </div>
+            )
           }
         />
       ) : (

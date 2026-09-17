@@ -36,9 +36,9 @@ export const DESTINATIONS: Destination[] = [
   { to: '/areas', label: 'Areas', icon: Layers, hotkey: 'g a' },
   { to: '/insights', label: 'Insights', icon: Lightbulb, hotkey: 'g o' },
   { to: '/people', label: 'People', icon: Users, hotkey: 'g e' },
-  { to: '/bills', label: 'Bills', icon: CircleDollarSign, hotkey: 'g b' },
+  { to: '/bills', label: 'Spending', icon: CircleDollarSign, hotkey: 'g b' },
   { to: '/notes', label: 'Notes', icon: NotebookPen, hotkey: 'g n' },
-  { to: '/review/weekly', label: 'Reviews', icon: ListChecks, hotkey: 'g r' },
+  { to: '/review', label: 'Reviews', icon: ListChecks, hotkey: 'g r' },
   { to: '/settings', label: 'Settings', icon: Settings, hotkey: 'g s' },
 ];
 

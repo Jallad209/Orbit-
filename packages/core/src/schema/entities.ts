@@ -69,6 +69,10 @@ export const TaskSchema = BaseRecordSchema.extend({
   status: TaskStatusSchema.default('inbox'),
   priority: PrioritySchema.default(2),
   estimateMin: z.number().int().min(0).default(30),
+  /** Optional day the user would prefer to work on this task. */
+  preferredDate: nullableDate,
+  /** Optional preferred start on `preferredDate`; the planner may move it around conflicts. */
+  preferredStartMin: MinuteOfDaySchema.nullable().default(null),
   actualMin: z.number().int().min(0).nullable().default(null),
   dueAt: nullableInstant,
   energy: EnergySchema.default('medium'),
@@ -196,6 +200,9 @@ export const PersonSchema = BaseRecordSchema.extend({
   name: title,
   contact: z.string().default(''),
   lastContactAt: nullableInstant,
+  /** Optional user-chosen schedule to reconnect; distinct from the last real contact. */
+  followUpDate: nullableDate,
+  followUpTime: MinuteOfDaySchema.nullable().default(null),
 });
 export type Person = z.infer<typeof PersonSchema>;
 
@@ -228,10 +235,15 @@ export type Commitment = z.infer<typeof CommitmentSchema>;
  *   the recurrence description and history intact.
  */
 export const BillSchema = BaseRecordSchema.extend({
+  /** Expenses share the durable money ledger while bill scheduling remains backwards compatible. */
+  kind: z.enum(['bill', 'expense']).default('bill'),
   title,
   amount: z.number().finite().min(0),
   currency: z.string().default(''),
-  dueAt: LocalDateSchema,
+  /** Undated bills remain visible in the upcoming group until the user schedules them. */
+  dueAt: nullableDate,
+  /** Optional minutes after midnight on the due date. */
+  dueTime: MinuteOfDaySchema.nullable().default(null),
   recurrence: RecurrenceSchema.nullable().default(null),
   paid: z.boolean().default(false),
   seriesId: nullableId,
@@ -461,9 +473,13 @@ export type ReminderStatus = z.infer<typeof ReminderStatusSchema>;
  */
 export const ReminderSchema = BaseRecordSchema.extend({
   key: z.string().min(1),
-  ruleId: IdSchema,
+  /** Rule reminders name their rule; direct reminders are created by a feature. */
+  ruleId: IdSchema.nullable().default(null),
+  source: z.enum(['rule', 'review-step', 'person-follow-up', 'monthly-spending']).default('rule'),
   entityType: EntityTypeSchema,
   entityId: IdSchema,
+  /** An internal route opened when the notification is activated. */
+  destination: z.string().startsWith('/').nullable().default(null),
   fireAt: InstantSchema,
   title,
   body: z.string().default(''),
@@ -499,6 +515,29 @@ export const InsightSettingsSchema = z.object({
 });
 export type InsightSettings = z.infer<typeof InsightSettingsSchema>;
 
+export const ReviewQuestionIdSchema = z.enum(['project', 'bill', 'person']);
+export type ReviewQuestionId = z.infer<typeof ReviewQuestionIdSchema>;
+
+const CaptureTemplateSchema = z.object({
+  id: IdSchema,
+  kind: ReviewQuestionIdSchema,
+  name: title,
+  values: z.record(z.string(), z.string()).default({}),
+});
+export type CaptureTemplate = z.infer<typeof CaptureTemplateSchema>;
+
+export const ReviewSettingsSchema = z.object({
+  questionOrder: z
+    .array(ReviewQuestionIdSchema)
+    .length(3)
+    .refine((items) => new Set(items).size === 3, 'questions must appear once')
+    .default(['project', 'bill', 'person']),
+  enabledQuestions: z.array(ReviewQuestionIdSchema).default(['project', 'bill', 'person']),
+  templates: z.array(CaptureTemplateSchema).max(20).default([]),
+});
+export type ReviewSettings = z.infer<typeof ReviewSettingsSchema>;
+export const DEFAULT_REVIEW_SETTINGS: ReviewSettings = ReviewSettingsSchema.parse({});
+
 export const AppSettingsSchema = BaseRecordSchema.extend({
   workingWindow: TimeWindowSchema.default({ startMin: 540, endMin: 1080 }),
   /** Never planned into; a lunch break by default. */
@@ -511,8 +550,54 @@ export const AppSettingsSchema = BaseRecordSchema.extend({
   eveningStartMin: MinuteOfDaySchema.default(17 * 60),
   /** Insight thresholds; restoring their defaults leaves the planning fields alone. */
   insights: InsightSettingsSchema.default({}),
+  /** Morning question order, visibility, and local capture templates. */
+  reviews: ReviewSettingsSchema.default({}),
 });
 export type AppSettings = z.infer<typeof AppSettingsSchema>;
+
+// ---------------------------------------------------------------------------
+// Daily reviews: resumable morning state and explicit evening reflection
+// ---------------------------------------------------------------------------
+
+export const DailyReviewKindSchema = z.enum(['morning', 'evening']);
+export type DailyReviewKind = z.infer<typeof DailyReviewKindSchema>;
+export const DailyReviewStepSchema = z.enum([
+  'project',
+  'bill',
+  'person',
+  'energy',
+  'at-risk',
+  'plan',
+  'accept',
+]);
+export type DailyReviewStep = z.infer<typeof DailyReviewStepSchema>;
+
+export const DailyReviewDraftSchema = BaseRecordSchema.extend({
+  date: LocalDateSchema,
+  kind: DailyReviewKindSchema,
+  step: DailyReviewStepSchema,
+  formState: z.record(z.string(), z.unknown()).default({}),
+  createdRefs: z
+    .array(z.object({ type: EntityTypeSchema, id: IdSchema }))
+    .max(100)
+    .default([]),
+  deferredQuestions: z.array(ReviewQuestionIdSchema).default([]),
+  reminderTime: MinuteOfDaySchema.nullable().default(null),
+});
+export type DailyReviewDraft = z.infer<typeof DailyReviewDraftSchema>;
+
+export const ReflectionRatingSchema = z.number().int().min(1).max(5).nullable().default(null);
+export const DailyReflectionSchema = BaseRecordSchema.extend({
+  date: LocalDateSchema,
+  journalNoteId: nullableId,
+  promptId: z.string().max(80).nullable().default(null),
+  mood: ReflectionRatingSchema,
+  stress: ReflectionRatingSchema,
+  sleepQuality: ReflectionRatingSchema,
+  tags: z.array(z.string().trim().min(1).max(30)).max(12).default([]),
+  completedAt: nullableInstant,
+});
+export type DailyReflection = z.infer<typeof DailyReflectionSchema>;
 
 // ---------------------------------------------------------------------------
 // Weekly review (week 12): a resumable six-step flow with durable receipts
@@ -525,6 +610,7 @@ export const WeeklyReviewStepSchema = z.enum([
   'projects',
   'goals',
   'bills',
+  'patterns',
   'capacity',
 ]);
 export type WeeklyReviewStep = z.infer<typeof WeeklyReviewStepSchema>;
@@ -622,7 +708,7 @@ export const WeeklyReviewSchema = BaseRecordSchema.extend({
   revision: z.number().int().min(1).default(1),
   status: WeeklyReviewStatusSchema.default('inProgress'),
   currentStep: WeeklyReviewStepSchema.default('inbox'),
-  steps: z.array(WeeklyReviewStepOutcomeSchema).max(6).default([]),
+  steps: z.array(WeeklyReviewStepOutcomeSchema).max(7).default([]),
   stepDraft: WeeklyReviewStepDraftSchema.nullable().default(null),
   startedAt: InstantSchema,
   pausedAt: nullableInstant,

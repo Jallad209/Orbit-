@@ -20,6 +20,7 @@ export function AreasPage() {
   const repo = useRepository();
   const { data, loading } = useStructure();
   const [name, setName] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -76,6 +77,7 @@ export function AreasPage() {
           const projects = data.projects.filter(
             (p) => p.areaId === area.id && p.status === 'active',
           ).length;
+          const hasChildren = goals > 0 || projects > 0;
           return (
             <li key={area.id}>
               <Card className="flex flex-col gap-3" data-testid={`area-${area.id}`}>
@@ -112,9 +114,21 @@ export function AreasPage() {
                   </label>
                   <Button
                     size="icon-sm"
-                    variant="ghost"
-                    aria-label={`Delete ${area.name}`}
-                    onClick={() => void remove(area.id)}
+                    variant={confirmDeleteId === area.id ? 'danger' : 'ghost'}
+                    aria-label={
+                      confirmDeleteId === area.id
+                        ? `Confirm delete ${area.name}`
+                        : `Delete ${area.name}`
+                    }
+                    title={confirmDeleteId === area.id ? 'Click again to confirm' : 'Delete area'}
+                    onClick={() => {
+                      if (hasChildren || confirmDeleteId === area.id) {
+                        setConfirmDeleteId(null);
+                        void remove(area.id);
+                      } else {
+                        setConfirmDeleteId(area.id);
+                      }
+                    }}
                   >
                     <Trash2 className="size-4" aria-hidden="true" />
                   </Button>

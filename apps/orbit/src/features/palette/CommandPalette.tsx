@@ -51,7 +51,9 @@ export function CommandPaletteTrigger({ className }: { className?: string }) {
     >
       <Search className="size-4 shrink-0" aria-hidden="true" />
       <span className="hidden flex-1 truncate text-left md:inline">Search…</span>
-      <Kbd spec="mod+k" className="hidden md:inline-flex" />
+      <span className="hidden md:inline">
+        <Kbd spec="mod+k" />
+      </span>
     </button>
   );
 }

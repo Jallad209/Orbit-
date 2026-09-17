@@ -239,10 +239,35 @@ export function TimelinePage({ clock = systemClock, date: dateProp }: Props) {
             )}
             <div className="flex flex-col gap-3">
               <UnscheduledPanel tasks={day.unscheduled} onSchedule={schedule} />
-              <p className="text-[11px] text-ink-faint">
-                <Kbd>↑</Kbd> <Kbd>↓</Kbd> move 15 min · <Kbd>Shift</Kbd>+<Kbd>↓</Kbd> resize ·{' '}
-                <Kbd>l</Kbd> lock · <Kbd>Del</Kbd> remove
-              </p>
+              <section
+                aria-label="Timeline keyboard shortcuts"
+                className="rounded-lg border border-line bg-surface-2/40 px-3 py-2.5"
+              >
+                <h2 className="text-[11px] font-semibold tracking-wide text-ink-muted uppercase">
+                  Keyboard
+                </h2>
+                <dl className="mt-2 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1.5 text-[12px]">
+                  <dt className="flex items-center gap-1">
+                    <Kbd>↑</Kbd>
+                    <Kbd>↓</Kbd>
+                  </dt>
+                  <dd className="text-ink-muted">Move 15 minutes</dd>
+                  <dt className="flex items-center gap-1">
+                    <Kbd>Shift</Kbd>
+                    <span className="text-ink-faint">+</span>
+                    <Kbd>↓</Kbd>
+                  </dt>
+                  <dd className="text-ink-muted">Resize block</dd>
+                  <dt>
+                    <Kbd>L</Kbd>
+                  </dt>
+                  <dd className="text-ink-muted">Lock or unlock</dd>
+                  <dt>
+                    <Kbd>Del</Kbd>
+                  </dt>
+                  <dd className="text-ink-muted">Remove block</dd>
+                </dl>
+              </section>
             </div>
           </div>
         </DndContext>

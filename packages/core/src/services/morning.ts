@@ -36,8 +36,8 @@ export interface MorningBriefing {
 export function billsDueWithin(bills: readonly Bill[], date: LocalDate, days: number): Bill[] {
   const limit = addDays(date, days);
   return bills
-    .filter((b) => b.deletedAt === null && !b.paid && b.dueAt <= limit)
-    .sort((a, b) => (a.dueAt < b.dueAt ? -1 : a.dueAt > b.dueAt ? 1 : 0));
+    .filter((b) => b.deletedAt === null && !b.paid && b.dueAt !== null && b.dueAt <= limit)
+    .sort((a, b) => (a.dueAt! < b.dueAt! ? -1 : a.dueAt! > b.dueAt! ? 1 : 0));
 }
 
 export function buildMorning(

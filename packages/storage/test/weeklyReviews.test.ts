@@ -168,7 +168,7 @@ describe('week 12 switches', () => {
   it('the current export carries reviews, receipts, and bill lineage losslessly', async () => {
     const text = readFileSync(new URL(`export/v${EXPORT_SCHEMA_VERSION}.json`, FIXTURES), 'utf8');
     const envelope = parseExport(text);
-    expect(envelope.schemaVersion).toBe(5);
+    expect(envelope.schemaVersion).toBe(6);
     expect(envelope.data.weeklyReviews.length).toBeGreaterThan(0);
     expect(envelope.data.weeklyReviewActions.length).toBeGreaterThan(0);
     const bills = envelope.data.bills as Bill[];

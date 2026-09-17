@@ -7,6 +7,8 @@ import {
   CaptureSchema,
   CommitmentSchema,
   DayCommitmentSchema,
+  DailyReflectionSchema,
+  DailyReviewDraftSchema,
   EventSchema,
   GoalSchema,
   InsightStateSchema,
@@ -44,7 +46,7 @@ export const EXPORT_FORMAT = 'orbit-export';
  * metadata on bills. A v1–4 file has no review stores (they default to
  * empty) and its bills are normalized as series roots.
  */
-export const EXPORT_SCHEMA_VERSION = 5;
+export const EXPORT_SCHEMA_VERSION = 6;
 
 /** Parents before children so a future FK-checking importer can stream in order. */
 export const STORE_ORDER: StoreName[] = [
@@ -70,6 +72,8 @@ export const STORE_ORDER: StoreName[] = [
   'appSettings',
   'weeklyReviews',
   'weeklyReviewActions',
+  'dailyReviewDrafts',
+  'dailyReflections',
   'links',
 ];
 
@@ -96,6 +100,8 @@ const STORE_SCHEMAS: Record<StoreName, z.ZodTypeAny> = {
   appSettings: AppSettingsSchema,
   weeklyReviews: WeeklyReviewSchema,
   weeklyReviewActions: WeeklyReviewActionSchema,
+  dailyReviewDrafts: DailyReviewDraftSchema,
+  dailyReflections: DailyReflectionSchema,
   links: LinkSchema,
 };
 

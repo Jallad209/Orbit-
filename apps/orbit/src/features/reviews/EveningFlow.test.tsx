@@ -14,12 +14,17 @@ import { createMemoryRepository } from '@orbit/storage';
 import { Route, Routes } from 'react-router';
 import { useToastStore } from '@/components/ui/toastStore';
 import { renderWithProviders } from '@/test/render';
-import { EveningFlow } from './EveningFlow';
+import { EveningFlow, journalPromptFor } from './EveningFlow';
 
 // Wednesday 16 Sep 2026, 18:30 local: next Monday is the 21st.
 const clock = fixedClock(new Date(2026, 8, 16, 18, 30, 0));
 const DATE = '2026-09-16';
 const at = (h: number, m = 0) => new Date(2026, 8, 16, h, m).toISOString();
+
+it('rotates bundled prompts deterministically by date', () => {
+  expect(journalPromptFor(DATE)).toEqual(journalPromptFor(DATE));
+  expect(journalPromptFor('2026-09-17').id).not.toBe(journalPromptFor(DATE).id);
+});
 
 async function seed() {
   const repo = createMemoryRepository({ clock });
@@ -156,6 +161,13 @@ describe('EveningFlow', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Next' }));
 
+    const journal = await screen.findByTestId('evening-journal');
+    await user.type(
+      within(journal).getByLabelText(/Write about your day/),
+      'Made solid progress and asked for help early.',
+    );
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+
     const summary = await screen.findByTestId('evening-summary');
     expect(summary).toHaveTextContent('2 of 4 committed tasks done');
     expect(summary).toHaveTextContent('1 to tomorrow · 0 to next week · 1 back to inbox');
@@ -177,16 +189,20 @@ describe('EveningFlow', () => {
     const movedP3 = (await repo.tasks.get(p3.id))!;
     expect(movedP3.status).toBe('inbox');
     expect(movedP3.dueAt).toBeNull();
+    const journalNote = (await repo.notes.list()).find(
+      (note) => note.title === `Daily journal · ${DATE}`,
+    );
+    expect(journalNote?.body).toBe('Made solid progress and asked for help early.');
     expect(await screen.findByRole('heading', { name: 'Today screen' })).toBeInTheDocument();
     expect(useToastStore.getState().toasts[0]?.description).toBe('2 done · 2 rolled over');
-  });
+  }, 15_000);
 
   it('rolls a P3 task to next Monday by default', async () => {
     const user = userEvent.setup();
     const { repo, p3 } = await seed();
     render(repo);
     await screen.findByTestId('evening-committed');
-    for (let i = 0; i < 3; i += 1) await user.click(screen.getByRole('button', { name: 'Next' }));
+    for (let i = 0; i < 4; i += 1) await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(await screen.findByRole('button', { name: 'Close the day' }));
     await waitFor(async () => expect((await repo.tasks.get(p3.id))?.dueAt).not.toBeNull());
     expect(toLocalDate(new Date((await repo.tasks.get(p3.id))!.dueAt!))).toBe('2026-09-21');
@@ -201,6 +217,8 @@ describe('EveningFlow', () => {
     expect(await screen.findByTestId('evening-no-actuals')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(await screen.findByTestId('evening-nothing-unfinished')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(await screen.findByTestId('evening-journal')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByTestId('evening-time-by-area')).toHaveTextContent('No sessions recorded');
   });

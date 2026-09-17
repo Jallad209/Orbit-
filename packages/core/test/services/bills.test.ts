@@ -61,6 +61,7 @@ describe('bill groups and totals', () => {
     // Midnight rollover: the same bill moves from due-soon to overdue.
     const bill = aBill({ dueAt: '2026-09-12' }, clock);
     expect(billGroup(bill, '2026-09-13')).toBe('overdue');
+    expect(billGroup(aBill({ dueAt: null }, clock), today)).toBe('upcoming');
   });
 
   it('groups with a stable order and keeps paid history newest first', () => {
@@ -98,6 +99,12 @@ describe('bill groups and totals', () => {
 
 describe('field validation and previews', () => {
   it('requires the first date to agree with the rule and rejects extreme intervals', () => {
+    expect(
+      validateBillFields({ title: 'Someday bill', amount: 0, dueAt: null, recurrence: null }),
+    ).toEqual({});
+    expect(
+      validateBillFields({ title: 'Rent', amount: 900, dueAt: null, recurrence: monthly }).dueAt,
+    ).toMatch(/needs a first due date/);
     expect(validateBillFields({ title: '', amount: -1, dueAt: 'nope', recurrence: null })).toEqual({
       title: 'A title is required.',
       amount: 'Enter an amount of zero or more.',

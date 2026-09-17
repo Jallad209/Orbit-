@@ -54,7 +54,9 @@ export function useReminderScheduler(clock: Clock = systemClock): void {
             description: r.body || undefined,
             variant: 'warning',
             durationMs: 0,
-            action: { label: 'Dismiss', onClick: () => void markReminder(repo, r, 'dismissed') },
+            action: r.destination
+              ? { label: 'Open', onClick: () => window.location.assign(r.destination!) }
+              : { label: 'Dismiss', onClick: () => void markReminder(repo, r, 'dismissed') },
           });
         }
         if (due.length) bumpData();

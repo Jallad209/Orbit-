@@ -1,14 +1,17 @@
 import {
   CommitmentSchema,
   PersonSchema,
+  ReminderSchema,
   comparePeople,
   countCommitments,
   createRecord,
+  newId,
   followUpBaseline,
   isOpenCommitment,
   openCommitmentsOf,
   recordContact as recordContactRule,
   systemClock,
+  toInstant,
   transitionCommitment,
   validateCommitmentFields,
 } from '@orbit/core';
@@ -24,6 +27,35 @@ import type {
 import type { Repository } from '@orbit/storage';
 import { ConflictError, currentRecord, mergePatch, mutate } from '@/data/mutations';
 import { reconcileReminderQueue } from '@/features/reminders/reminderService';
+
+async function reconcilePersonFollowUp(
+  tx: Repository,
+  person: Person,
+  clock: Clock,
+): Promise<void> {
+  const existing = await tx.reminders.query(
+    (item) => item.source === 'person-follow-up' && item.entityId === person.id,
+  );
+  for (const reminder of existing) await tx.reminders.softDelete(reminder.id);
+  if (person.deletedAt !== null || person.followUpDate === null) return;
+  const minute = person.followUpTime ?? 9 * 60;
+  const fireAt = toInstant(person.followUpDate, minute).toISOString();
+  await tx.reminders.upsert(
+    createRecord(ReminderSchema, clock, {
+      id: newId(),
+      key: `person-follow-up:${person.id}:${person.followUpDate}:${minute}`,
+      ruleId: null,
+      source: 'person-follow-up',
+      entityType: 'person',
+      entityId: person.id,
+      destination: `/people/${person.id}`,
+      fireAt,
+      title: `Follow up with ${person.name}`,
+      body: person.followUpTime === null ? 'Scheduled for today.' : 'Scheduled follow-up.',
+      status: 'pending',
+    }),
+  );
+}
 
 /**
  * People and commitments (week 12). Every write re-reads the current row
@@ -105,6 +137,8 @@ export async function loadPerson(repo: Repository, id: Id): Promise<PersonDetail
 export interface PersonFields {
   name: string;
   contact?: string;
+  followUpDate?: string | null;
+  followUpTime?: number | null;
 }
 
 export async function createPerson(
@@ -114,26 +148,38 @@ export async function createPerson(
 ): Promise<Person> {
   const name = fields.name.trim();
   if (!name) throw new Error('A name is required.');
-  return mutate(repo, (tx) =>
-    tx.people.upsert(createRecord(PersonSchema, clock, { name, contact: fields.contact ?? '' })),
-  );
+  return mutate(repo, async (tx) => {
+    const person = await tx.people.upsert(
+      createRecord(PersonSchema, clock, {
+        name,
+        contact: fields.contact ?? '',
+        followUpDate: fields.followUpDate ?? null,
+        followUpTime: fields.followUpTime ?? null,
+      }),
+    );
+    await reconcilePersonFollowUp(tx, person, clock);
+    return person;
+  });
 }
 
 /** Edit name or contact against the record the user saw; independent edits merge. */
 export async function updatePerson(
   repo: Repository,
   base: Person,
-  patch: Partial<Pick<Person, 'name' | 'contact'>>,
+  patch: Partial<Pick<Person, 'name' | 'contact' | 'followUpDate' | 'followUpTime'>>,
+  clock: Clock = systemClock,
 ): Promise<Person> {
   if (patch.name !== undefined && !patch.name.trim()) throw new Error('A name is required.');
   return mutate(repo, async (tx) => {
     const current = await currentRecord(tx.people, { id: base.id }, { noun: 'person' });
-    return tx.people.upsert(
+    const person = await tx.people.upsert(
       mergePatch(current, base, {
         ...patch,
         ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
       }),
     );
+    await reconcilePersonFollowUp(tx, person, clock);
+    return person;
   });
 }
 
@@ -178,6 +224,8 @@ export async function deletePerson(
   await mutate(repo, async (tx) => {
     await currentRecord(tx.people, { id: personId }, { noun: 'person' });
     await tx.people.softDelete(personId);
+    const deleted = await tx.people.get(personId);
+    if (deleted) await reconcilePersonFollowUp(tx, deleted, clock);
     await reconcileReminderQueue(tx, clock);
   });
 }
@@ -196,6 +244,7 @@ export async function restorePerson(
     );
     if (current.deletedAt === null) return current;
     const person = await tx.people.upsert({ ...current, deletedAt: null });
+    await reconcilePersonFollowUp(tx, person, clock);
     await reconcileReminderQueue(tx, clock);
     return person;
   });

@@ -1,4 +1,4 @@
-import { systemClock } from '@orbit/core';
+import { formatMinute, systemClock } from '@orbit/core';
 import type { Clock } from '@orbit/core';
 import { Users } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
@@ -140,6 +140,12 @@ export function PeoplePage({ clock = systemClock }: { clock?: Clock }) {
                 {flagged.has(person.id) ? (
                   <Badge tone="gold" title="Listed by Insights: many open commitments">
                     {counts.open} open
+                  </Badge>
+                ) : null}
+                {person.followUpDate ? (
+                  <Badge tone="lime">
+                    Follow up {person.followUpDate}
+                    {person.followUpTime === null ? '' : ` · ${formatMinute(person.followUpTime)}`}
                   </Badge>
                 ) : null}
                 <Badge tone="outline" aria-label={`You owe ${counts.owedByMe}`}>

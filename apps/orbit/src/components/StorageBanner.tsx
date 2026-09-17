@@ -74,7 +74,7 @@ export function StorageBanner() {
         It may clear it under storage pressure. Install Orbit or export regularly.
         {usage ? <span className="ml-1 text-gold-ink/70">Using {usage}.</span> : null}
       </p>
-      <Button size="sm" variant="gold" loading={exporting} onClick={exportNow}>
+      <Button size="sm" variant="secondary" loading={exporting} onClick={exportNow}>
         <Download className="size-3.5" aria-hidden="true" />
         Export now
       </Button>

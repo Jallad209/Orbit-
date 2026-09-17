@@ -13,3 +13,4 @@ export * from './evening';
 export * from './bills';
 export * from './people';
 export * from './weeklyReview';
+export * from './trends';

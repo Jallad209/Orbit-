@@ -28,6 +28,7 @@ const SETTINGS_FILE: &str = "settings.json";
 /// still complete Orbit backups that migrate forward after the restore.
 const TABLES_V2: &[&str] = &["reminders", "appSettings"];
 const TABLES_V3: &[&str] = &["weeklyReviews", "weeklyReviewActions"];
+const TABLES_V4: &[&str] = &["dailyReviewDrafts", "dailyReflections"];
 
 /// Whether a table that exists in the live file is expected in a backup at `version`.
 fn table_expected_at(table: &str, version: i64) -> bool {
@@ -35,6 +36,9 @@ fn table_expected_at(table: &str, version: i64) -> bool {
         return false;
     }
     if version < 3 && TABLES_V3.contains(&table) {
+        return false;
+    }
+    if version < 4 && TABLES_V4.contains(&table) {
         return false;
     }
     // The search index (week 10) is a rebuildable cache, not part of the data.

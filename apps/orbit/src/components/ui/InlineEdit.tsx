@@ -113,7 +113,7 @@ export function InlineEdit({
         }
       }}
       className={cn(
-        'block w-full truncate rounded-sm px-1 -mx-1 text-left hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-lime-2',
+        'block w-full truncate rounded-sm px-1 -mx-1 text-left hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-ink',
         !value && 'text-ink-faint',
         className,
       )}

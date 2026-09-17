@@ -7,6 +7,8 @@ import {
   CaptureSchema,
   CommitmentSchema,
   DayCommitmentSchema,
+  DailyReflectionSchema,
+  DailyReviewDraftSchema,
   EventSchema,
   GoalSchema,
   InsightStateSchema,
@@ -213,6 +215,8 @@ export function createMemoryRepository(options: MemoryRepositoryOptions = {}): R
     appSettings: new MemoryStore('appSettings', AppSettingsSchema, ctx),
     weeklyReviews: new MemoryStore('weeklyReviews', WeeklyReviewSchema, ctx),
     weeklyReviewActions: new MemoryStore('weeklyReviewActions', WeeklyReviewActionSchema, ctx),
+    dailyReviewDrafts: new MemoryStore('dailyReviewDrafts', DailyReviewDraftSchema, ctx),
+    dailyReflections: new MemoryStore('dailyReflections', DailyReflectionSchema, ctx),
     links: new MemoryLinkStore('links', LinkSchema, ctx),
     opLog: new MemoryOpLog(ctx),
 

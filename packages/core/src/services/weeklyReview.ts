@@ -36,7 +36,7 @@ import type {
  * and conflicts live in the application service; nothing here writes.
  */
 
-export const WEEKLY_REVIEW_FLOW_VERSION = 1;
+export const WEEKLY_REVIEW_FLOW_VERSION = 2;
 
 export const STEP_LABEL: Record<WeeklyReviewStep, string> = {
   inbox: 'Inbox',
@@ -44,6 +44,7 @@ export const STEP_LABEL: Record<WeeklyReviewStep, string> = {
   projects: 'Projects',
   goals: 'Goals and targets',
   bills: 'Bills',
+  patterns: 'Patterns',
   capacity: 'Next week',
 };
 

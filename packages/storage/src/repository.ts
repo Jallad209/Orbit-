@@ -7,6 +7,8 @@ import type {
   Block,
   Commitment,
   DayCommitment,
+  DailyReflection,
+  DailyReviewDraft,
   EntityType,
   Event,
   Goal,
@@ -103,6 +105,8 @@ export interface Repository {
   readonly appSettings: EntityStore<AppSettings>;
   readonly weeklyReviews: EntityStore<WeeklyReview>;
   readonly weeklyReviewActions: EntityStore<WeeklyReviewAction>;
+  readonly dailyReviewDrafts: EntityStore<DailyReviewDraft>;
+  readonly dailyReflections: EntityStore<DailyReflection>;
   readonly links: LinkStore;
   readonly opLog: OpLogReader;
 
@@ -144,6 +148,8 @@ export const STORE_ENTITY: Record<
   appSettings: 'appSettings',
   weeklyReviews: 'weeklyReview',
   weeklyReviewActions: 'weeklyReviewAction',
+  dailyReviewDrafts: 'dailyReviewDraft',
+  dailyReflections: 'dailyReflection',
   links: 'link',
 };
 

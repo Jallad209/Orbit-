@@ -40,6 +40,11 @@ export function BillForm({
   const [amount, setAmount] = useState(initial.amount !== undefined ? String(initial.amount) : '');
   const [currency, setCurrency] = useState(initial.currency ?? '');
   const [dueAt, setDueAt] = useState(initial.dueAt ?? '');
+  const [dueTime, setDueTime] = useState(
+    initial.dueTime == null
+      ? ''
+      : `${String(Math.floor(initial.dueTime / 60)).padStart(2, '0')}:${String(initial.dueTime % 60).padStart(2, '0')}`,
+  );
   const [freq, setFreq] = useState<Freq>(initial.recurrence?.freq ?? 'none');
   const [interval, setInterval] = useState(String(initial.recurrence?.interval ?? 1));
   const [byDay, setByDay] = useState<Weekday[]>(initial.recurrence?.byDay ?? []);
@@ -69,12 +74,13 @@ export function BillForm({
     title,
     amount: amount.trim() === '' ? NaN : Number(amount),
     currency,
-    dueAt,
+    dueAt: dueAt || null,
+    dueTime: dueTime ? Number(dueTime.slice(0, 2)) * 60 + Number(dueTime.slice(3, 5)) : null,
     recurrence,
   };
   const errors = validateBillFields(fields);
   const valid = Object.keys(errors).length === 0;
-  const preview = recurrence && valid ? previewSchedule(recurrence, dueAt) : [];
+  const preview = recurrence && valid && dueAt ? previewSchedule(recurrence, dueAt) : [];
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -86,6 +92,7 @@ export function BillForm({
       setTitle('');
       setAmount('');
       setDueAt('');
+      setDueTime('');
       setSubmitted(false);
     } catch (err) {
       setProblem(err instanceof Error ? err.message : String(err));
@@ -138,7 +145,9 @@ export function BillForm({
           />
         </div>
         <div>
-          <Label htmlFor="bill-due">{recurrence ? 'First due date' : 'Due date'}</Label>
+          <Label htmlFor="bill-due" hint={recurrence ? undefined : 'optional'}>
+            {recurrence ? 'First due date' : 'Due date'}
+          </Label>
           <Input
             id="bill-due"
             type="date"
@@ -148,6 +157,19 @@ export function BillForm({
             className="mt-1"
           />
           <FieldError>{show('dueAt')}</FieldError>
+        </div>
+        <div>
+          <Label htmlFor="bill-time" hint="optional">
+            Due time
+          </Label>
+          <Input
+            id="bill-time"
+            type="time"
+            value={dueTime}
+            onChange={(e) => setDueTime(e.target.value)}
+            disabled={!dueAt}
+            className="mt-1"
+          />
         </div>
         <div>
           <Label htmlFor="bill-repeat">Repeats</Label>
@@ -273,7 +295,7 @@ export function BillForm({
             <span className="text-danger">{errors.recurrence}</span>
           ) : preview.length ? (
             <>
-              {describeRecurrence(recurrence, dueAt)}: first on {preview[0]}
+              {describeRecurrence(recurrence, dueAt || null)}: first on {preview[0]}
               {preview.length > 1 ? `, then ${preview.slice(1).join(' and ')}` : ''}
               {preview.length < 3 ? ' (the series ends there)' : ''}
             </>

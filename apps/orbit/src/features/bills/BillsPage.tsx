@@ -1,4 +1,10 @@
-import { DUE_SOON_DAYS, describeRecurrence, systemClock, toLocalDate } from '@orbit/core';
+import {
+  DUE_SOON_DAYS,
+  describeRecurrence,
+  formatMinute,
+  systemClock,
+  toLocalDate,
+} from '@orbit/core';
 import type { Bill, Clock } from '@orbit/core';
 import { Receipt } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -13,6 +19,7 @@ import { useRepository } from '@/platform';
 import { routeFor } from '@/lib/destinations';
 import { BillForm } from './BillForm';
 import { createBill, loadBills, restoreBill, type BillsView } from './billsService';
+import { SpendingPanel } from './SpendingPanel';
 
 /** Sums per currency as text; an empty currency is "currency not set", never merged in. */
 export function formatTotals(totals: Array<{ currency: string; total: number }>): string {
@@ -36,6 +43,7 @@ export function BillsPage({ clock = systemClock }: { clock?: Clock }) {
   const [showDeleted, setShowDeleted] = useState(false);
   const [series, setSeries] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
 
   // Date-sensitive groups: recompute at local midnight and whenever the window regains focus.
   useEffect(() => {
@@ -58,28 +66,47 @@ export function BillsPage({ clock = systemClock }: { clock?: Clock }) {
       ]
     : [];
   const paidRows = (data?.groups.paid ?? []).filter((b) => !series || b.seriesId === series);
+  const openBillCount = data
+    ? data.groups.overdue.length + data.groups.dueSoon.length + data.groups.upcoming.length
+    : 0;
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <div>
-        <h1 className="text-display font-semibold tracking-tight text-ink">Bills</h1>
-        <p className="mt-1 text-ink-muted">
-          What is due, when, and what was paid. "Due soon" means within {DUE_SOON_DAYS} days; a
-          reminder rule has its own lead time.
-        </p>
+      <div className="flex items-start justify-between gap-6">
+        <div>
+          <h1 className="text-display font-semibold tracking-tight text-ink">Spending & bills</h1>
+          <p className="mt-1 max-w-2xl text-ink-muted">
+            Log what you spend and keep any scheduled bills below. Everything stays on this device.
+          </p>
+        </div>
+        <Button
+          variant={showCreate ? 'ghost' : 'secondary'}
+          onClick={() => setShowCreate((v) => !v)}
+        >
+          {showCreate ? 'Cancel' : 'Add bill'}
+        </Button>
       </div>
-
-      <BillForm
-        busy={busy}
-        onSubmit={async (fields) => {
-          setBusy(true);
-          try {
-            await createBill(repo, fields, clock);
-          } finally {
-            setBusy(false);
-          }
-        }}
-      />
+      <SpendingPanel clock={clock} />
+      <div className="border-t border-line pt-5">
+        <SectionHeader
+          title="Scheduled bills"
+          meta={`Due soon means within ${DUE_SOON_DAYS} days`}
+        />
+      </div>
+      {showCreate ? (
+        <BillForm
+          busy={busy}
+          onSubmit={async (fields) => {
+            setBusy(true);
+            try {
+              await createBill(repo, fields, clock);
+              setShowCreate(false);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        />
+      ) : null}
 
       {error ? (
         <p role="alert" className="text-sm text-danger">
@@ -92,30 +119,44 @@ export function BillsPage({ clock = systemClock }: { clock?: Clock }) {
         </div>
       ) : data ? (
         <>
-          <Group
-            title="Overdue"
-            tone="danger"
-            bills={data.groups.overdue}
-            totals={formatTotals(data.totals.overdue)}
-            view={data}
-            empty="Nothing overdue."
-          />
-          <Group
-            title="Due soon"
-            tone="gold"
-            bills={data.groups.dueSoon}
-            totals={formatTotals(data.totals.dueSoon)}
-            view={data}
-            empty={`Nothing due in the next ${DUE_SOON_DAYS} days.`}
-          />
-          <Group
-            title="Upcoming"
-            tone="neutral"
-            bills={data.groups.upcoming}
-            totals={formatTotals(data.totals.upcoming)}
-            view={data}
-            empty="No later bills."
-          />
+          {openBillCount === 0 ? (
+            <EmptyState
+              icon={<Receipt />}
+              title="No unpaid bills"
+              description="Add a bill once and Orbit will keep its due date, reminder, and payment history together."
+              className="py-8"
+            />
+          ) : null}
+          {data.groups.overdue.length ? (
+            <Group
+              title="Overdue"
+              tone="danger"
+              bills={data.groups.overdue}
+              totals={formatTotals(data.totals.overdue)}
+              view={data}
+              empty="Nothing overdue."
+            />
+          ) : null}
+          {data.groups.dueSoon.length ? (
+            <Group
+              title="Due soon"
+              tone="gold"
+              bills={data.groups.dueSoon}
+              totals={formatTotals(data.totals.dueSoon)}
+              view={data}
+              empty={`Nothing due in the next ${DUE_SOON_DAYS} days.`}
+            />
+          ) : null}
+          {data.groups.upcoming.length ? (
+            <Group
+              title="Upcoming"
+              tone="neutral"
+              bills={data.groups.upcoming}
+              totals={formatTotals(data.totals.upcoming)}
+              view={data}
+              empty="No later bills."
+            />
+          ) : null}
           <section aria-label="Paid history">
             <SectionHeader
               title="Paid history"
@@ -174,7 +215,7 @@ export function BillsPage({ clock = systemClock }: { clock?: Clock }) {
                       className="flex items-center gap-3 rounded-md border border-dashed border-line px-3 py-2 text-sm text-ink-muted"
                     >
                       <span className="min-w-0 flex-1 truncate">
-                        {b.title} · {b.amount} {b.currency} · {b.dueAt}
+                        {b.title} · {b.amount} {b.currency} · {b.dueAt ?? 'no due date'}
                       </span>
                       <Button
                         size="sm"
@@ -259,7 +300,9 @@ function Row({
         <Badge tone={tone === 'ok' ? 'ok' : tone === 'neutral' ? 'outline' : tone}>
           {bill.paid
             ? `paid ${bill.paidAt ? toLocalDate(new Date(bill.paidAt)) : '(time not recorded)'}`
-            : `due ${bill.dueAt}`}
+            : bill.dueAt
+              ? `due ${bill.dueAt}${bill.dueTime === null ? '' : ` at ${formatMinute(bill.dueTime)}`}`
+              : 'no due date'}
         </Badge>
         {bill.recurrence ? (
           <Badge tone="outline" title={describeRecurrence(bill.recurrence, bill.recurrenceAnchor)}>

@@ -1,4 +1,11 @@
-import { applyRollover, buildEvening, buildMorning, systemClock } from '@orbit/core';
+import {
+  NoteSchema,
+  applyRollover,
+  buildEvening,
+  buildMorning,
+  createRecord,
+  systemClock,
+} from '@orbit/core';
 import type {
   Area,
   Clock,
@@ -123,6 +130,24 @@ export interface EveningSubmission {
   /** Actual minutes for tasks completed without a timer. */
   actuals: Array<{ taskId: Id; actualMin: number }>;
   rollover: RolloverChoice[];
+}
+
+/** One editable note per local date, used by the evening journal step. */
+export async function saveDailyJournal(
+  repo: Repository,
+  date: LocalDate,
+  body: string,
+  clock: Clock = systemClock,
+) {
+  const text = body.trim();
+  if (!text) return null;
+  const title = `Daily journal · ${date}`;
+  const existing = (await repo.notes.query((note) => note.title === title))[0];
+  const note = await repo.notes.upsert(
+    existing ? { ...existing, body: text } : createRecord(NoteSchema, clock, { title, body: text }),
+  );
+  bumpData();
+  return note;
 }
 
 export interface EveningResult {

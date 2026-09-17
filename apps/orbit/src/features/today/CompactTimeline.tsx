@@ -12,7 +12,7 @@ interface Props {
 }
 
 const KIND_CLASS: Record<ProposedBlock['kind'], string> = {
-  task: 'border-lime-2/70 bg-lime/30',
+  task: 'border-lime-2 bg-surface-3',
   routine: 'border-[#9fd0b0] bg-[#dcefe3]',
   event: 'border-[#9fb8d6] bg-[#dbe7f3]',
   fixed: 'border-line bg-surface-3',

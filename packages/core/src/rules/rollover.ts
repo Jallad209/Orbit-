@@ -47,9 +47,10 @@ export function rolloverDate(target: RolloverTarget, today: LocalDate): LocalDat
 }
 
 /**
- * Apply the user's choices. Tomorrow and next week move the due date,
- * keeping the task's own time of day when it had one; inbox sends the task
- * back to triage with no due date. Returns only the tasks that changed.
+ * Apply the user's choices. Tomorrow and next week move the due date and the
+ * preferred plan date, keeping the task's own time of day when it had one;
+ * inbox sends the task back to triage without a day assignment. Returns only
+ * the tasks that changed.
  */
 export function applyRollover(
   choices: readonly RolloverChoice[],
@@ -63,7 +64,15 @@ export function applyRollover(
     const task = byId.get(choice.taskId);
     if (!task || task.deletedAt !== null) continue;
     if (choice.target === 'inbox') {
-      out.push(TaskSchema.parse({ ...task, status: 'inbox', dueAt: null }));
+      out.push(
+        TaskSchema.parse({
+          ...task,
+          status: 'inbox',
+          dueAt: null,
+          preferredDate: null,
+          preferredStartMin: null,
+        }),
+      );
       continue;
     }
     const date = rolloverDate(choice.target, today)!;
@@ -73,6 +82,7 @@ export function applyRollover(
         ...task,
         status: task.status === 'inbox' ? 'open' : task.status,
         dueAt: toInstant(date, minute).toISOString(),
+        preferredDate: date,
       }),
     );
   }

@@ -324,8 +324,10 @@ describe('rollover', () => {
     expect(changed).toHaveLength(2);
     const [np1, np3] = changed;
     expect(toLocalDate(new Date(np1!.dueAt!))).toBe('2026-09-17');
+    expect(np1!.preferredDate).toBe('2026-09-17');
     expect(new Date(np1!.dueAt!).getHours()).toBe(17);
     expect(toLocalDate(new Date(np3!.dueAt!))).toBe('2026-09-21');
+    expect(np3!.preferredDate).toBe('2026-09-21');
     expect(new Date(np3!.dueAt!).getHours()).toBe(23);
     expect(new Date(np3!.dueAt!).getMinutes()).toBe(59);
     expect(np3!.status).toBe('open');
@@ -345,10 +347,17 @@ describe('rollover', () => {
       clock,
     );
     expect(out).toHaveLength(1);
-    expect(out[0]).toMatchObject({ id: t.id, status: 'inbox', dueAt: null });
+    expect(out[0]).toMatchObject({
+      id: t.id,
+      status: 'inbox',
+      dueAt: null,
+      preferredDate: null,
+      preferredStartMin: null,
+    });
     // An inbox task rolled forward becomes actionable again.
     const back = applyRollover([{ taskId: t.id, target: 'tomorrow' }], [out[0]!], clock);
     expect(back[0]!.status).toBe('open');
+    expect(back[0]!.preferredDate).toBe(addDays(TODAY, 1));
     expect(toLocalDate(new Date(back[0]!.dueAt!))).toBe(addDays(TODAY, 1));
   });
 });

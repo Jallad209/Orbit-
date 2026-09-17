@@ -8,7 +8,7 @@ export const buttonVariants = cva(
     'inline-flex shrink-0 items-center justify-center gap-2 rounded-md font-medium whitespace-nowrap select-none',
     'transition-[background-color,color,box-shadow,transform] duration-(--duration-fast) ease-(--ease-out-quick)',
     'active:translate-y-px disabled:pointer-events-none disabled:opacity-50',
-    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-2',
+    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink',
   ],
   {
     variants: {
@@ -17,7 +17,7 @@ export const buttonVariants = cva(
         secondary: 'border border-line bg-surface-2 text-ink hover:bg-surface-3',
         ghost: 'text-ink-muted hover:bg-surface-2 hover:text-ink',
         danger: 'bg-danger text-white hover:bg-danger/90',
-        gold: 'bg-gold text-gold-ink hover:bg-gold-2',
+        gold: 'bg-gold-2 text-gold-ink hover:bg-gold',
       },
       size: {
         sm: 'h-8 px-2.5 text-[13px]',

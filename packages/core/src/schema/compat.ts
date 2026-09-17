@@ -5,6 +5,7 @@ import {
   BillSchema,
   InsightSettingsSchema,
   InsightStateSchema,
+  ReviewSettingsSchema,
   type AppSettings,
   type Bill,
   type InsightState,
@@ -62,13 +63,18 @@ export function normalizeAppSettings(raw: unknown): Normalized<AppSettings> {
   if (!isObject(raw)) throw new Error('The settings record is not an object.');
   const base = BaseRecordSchema.parse(raw);
   const repairs: string[] = [];
-  const { insights, ...rest } = AppSettingsSchema.shape;
+  const { insights, reviews, ...rest } = AppSettingsSchema.shape;
   const top = repairShape(raw, rest, '', repairs);
   // The insight group is repaired field by field rather than reset as a whole.
   if (isObject(raw.insights)) {
     top.insights = repairShape(raw.insights, InsightSettingsSchema.shape, 'insights', repairs);
   } else if (raw.insights !== undefined && !insights.safeParse(raw.insights).success) {
     repairs.push('insights');
+  }
+  if (isObject(raw.reviews)) {
+    top.reviews = repairShape(raw.reviews, ReviewSettingsSchema.shape, 'reviews', repairs);
+  } else if (raw.reviews !== undefined && !reviews.safeParse(raw.reviews).success) {
+    repairs.push('reviews');
   }
   return { record: AppSettingsSchema.parse({ ...top, ...base }), repairs };
 }

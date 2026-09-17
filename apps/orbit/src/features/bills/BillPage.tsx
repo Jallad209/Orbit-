@@ -1,4 +1,4 @@
-import { describeRecurrence, systemClock, toLocalDate } from '@orbit/core';
+import { describeRecurrence, formatMinute, systemClock, toLocalDate } from '@orbit/core';
 import type { Clock } from '@orbit/core';
 import { Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -116,7 +116,8 @@ function Detail({ detail, clock }: { detail: BillDetail; clock: Clock }) {
   const [title, setTitle] = useState(bill.title);
   const [amount, setAmount] = useState(String(bill.amount));
   const [currency, setCurrency] = useState(bill.currency);
-  const [dueAt, setDueAt] = useState(bill.dueAt);
+  const [dueAt, setDueAt] = useState(bill.dueAt ?? '');
+  const [dueTime, setDueTime] = useState(bill.dueTime === null ? '' : formatMinute(bill.dueTime));
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'failed'>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
@@ -129,12 +130,13 @@ function Detail({ detail, clock }: { detail: BillDetail; clock: Clock }) {
     (title !== bill.title ||
       Number(amount) !== bill.amount ||
       currency !== bill.currency ||
-      dueAt !== bill.dueAt);
+      dueAt !== (bill.dueAt ?? '') ||
+      dueTime !== (bill.dueTime === null ? '' : formatMinute(bill.dueTime)));
   const errors = billFieldErrors({
     title,
     amount: amount.trim() === '' ? NaN : Number(amount),
     currency,
-    dueAt,
+    dueAt: dueAt || null,
     recurrence: null,
   });
 
@@ -147,7 +149,18 @@ function Detail({ detail, clock }: { detail: BillDetail; clock: Clock }) {
     setSaveState('saving');
     setSaveError(null);
     try {
-      await editBill(repo, bill, { title, amount: Number(amount), currency, dueAt }, clock);
+      await editBill(
+        repo,
+        bill,
+        {
+          title,
+          amount: Number(amount),
+          currency,
+          dueAt: dueAt || null,
+          dueTime: dueTime ? Number(dueTime.slice(0, 2)) * 60 + Number(dueTime.slice(3, 5)) : null,
+        },
+        clock,
+      );
       setSaveState('idle');
       return true;
     } catch (e) {
@@ -170,7 +183,8 @@ function Detail({ detail, clock }: { detail: BillDetail; clock: Clock }) {
       setTitle(bill.title);
       setAmount(String(bill.amount));
       setCurrency(bill.currency);
-      setDueAt(bill.dueAt);
+      setDueAt(bill.dueAt ?? '');
+      setDueTime(bill.dueTime === null ? '' : formatMinute(bill.dueTime));
       setSaveError(null);
     },
   });
@@ -230,10 +244,14 @@ function Detail({ detail, clock }: { detail: BillDetail; clock: Clock }) {
             </Badge>
           ) : (
             <Badge
-              tone={bill.dueAt < toLocalDate(clock.now()) ? 'danger' : 'outline'}
+              tone={
+                bill.dueAt !== null && bill.dueAt < toLocalDate(clock.now()) ? 'danger' : 'outline'
+              }
               data-testid="bill-status"
             >
-              Due {bill.dueAt}
+              {bill.dueAt
+                ? `Due ${bill.dueAt}${bill.dueTime === null ? '' : ` at ${formatMinute(bill.dueTime)}`}`
+                : 'No due date'}
             </Badge>
           )}
           <Badge tone="outline" data-testid="bill-schedule">
@@ -355,12 +373,17 @@ function Detail({ detail, clock }: { detail: BillDetail; clock: Clock }) {
               />
             </div>
             <div>
-              <Label htmlFor="edit-due">Deadline for this occurrence</Label>
+              <Label htmlFor="edit-due" hint={bill.seriesId ? undefined : 'optional'}>
+                Deadline for this occurrence
+              </Label>
               <Input
                 id="edit-due"
                 type="date"
                 value={dueAt}
-                onChange={(e) => setDueAt(e.target.value)}
+                onChange={(e) => {
+                  setDueAt(e.target.value);
+                  if (!e.target.value) setDueTime('');
+                }}
                 className="mt-1"
               />
               {bill.seriesId ? (
@@ -368,6 +391,19 @@ function Detail({ detail, clock }: { detail: BillDetail; clock: Clock }) {
                   Moves only this deadline; the schedule stays on {bill.scheduledFor}.
                 </p>
               ) : null}
+            </div>
+            <div>
+              <Label htmlFor="edit-due-time" hint="optional">
+                Due time
+              </Label>
+              <Input
+                id="edit-due-time"
+                type="time"
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+                disabled={!dueAt}
+                className="mt-1"
+              />
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">

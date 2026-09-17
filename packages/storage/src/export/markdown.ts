@@ -164,9 +164,11 @@ export async function exportMarkdown(
   // Bills
   if (bills.length) {
     const lines = ['# Bills', '', '| Bill | Amount | Due | Paid |', '| --- | ---: | --- | :---: |'];
-    for (const b of [...bills].sort((a, b) => a.dueAt.localeCompare(b.dueAt))) {
+    for (const b of [...bills].sort((a, b) =>
+      (a.dueAt ?? '9999-12-31').localeCompare(b.dueAt ?? '9999-12-31'),
+    )) {
       lines.push(
-        `| ${b.title} | ${b.amount}${b.currency ? ` ${b.currency}` : ''} | ${b.dueAt} | ${b.paid ? 'yes' : 'no'} |`,
+        `| ${b.title} | ${b.amount}${b.currency ? ` ${b.currency}` : ''} | ${b.dueAt ?? '—'} | ${b.paid ? 'yes' : 'no'} |`,
       );
     }
     lines.push('');

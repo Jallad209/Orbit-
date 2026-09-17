@@ -451,7 +451,14 @@ describe('weekly review service', () => {
     // Five of six acknowledged: Finish reports the missing one and completes nothing.
     let attempt = await finishReview(repo, review.id, review.revision, clock);
     expect(attempt.review.status).toBe('inProgress');
-    expect(attempt.check.missing).toEqual(['capacity']);
+    expect(attempt.check.missing).toEqual(['patterns', 'capacity']);
+    review = await acknowledge(
+      repo,
+      review.id,
+      review.revision,
+      { ...outcome, step: 'patterns', fingerprint: prints.patterns },
+      clock,
+    );
     review = await acknowledge(
       repo,
       review.id,

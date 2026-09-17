@@ -17,12 +17,12 @@
   --color-surface: #f5f1ea;
   --color-surface-2: #ede7dd;
   --color-surface-3: #e2dbcd;
-  --color-line: #d8d0c1;
+  --color-line: #c9c0ae;
 
   /* Text */
   --color-ink: #1a1917;
   --color-ink-muted: #6b665d;
-  --color-ink-faint: #9a9488;
+  --color-ink-faint: #6c665c;
 
   /* Accents */
   --color-lime: #c6f135;
@@ -30,7 +30,7 @@
   --color-lime-ink: #1e2a00;
   --color-gold: #d4a93a;
   --color-gold-2: #e9c96a;
-  --color-gold-ink: #6b4f0a;
+  --color-gold-ink: #4c3907;
   --color-danger: #c43d2e;
   --color-danger-soft: #f6dcd7;
   --color-ok: #3d8f5a;
@@ -136,9 +136,14 @@
 
   /* Keyboard-first: a visible ring on every focusable element */
   :focus-visible {
-    outline: 2px solid var(--color-lime-2);
+    outline: 2px solid var(--color-ink);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
+  }
+
+  /* Lime remains highly visible against the charcoal navigation surface. */
+  .bg-nav :focus-visible {
+    outline-color: var(--color-lime-2);
   }
 
   @media (prefers-reduced-motion: reduce) {

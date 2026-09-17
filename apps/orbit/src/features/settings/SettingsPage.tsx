@@ -10,6 +10,7 @@ import { DesktopSettings } from './DesktopSettings';
 import { DiagnosticsSettings } from './DiagnosticsSettings';
 import { InsightSettings } from './InsightSettings';
 import { PlanningSettings } from './PlanningSettings';
+import { ReviewSettings } from './ReviewSettings';
 import { ShortcutsReference } from './ShortcutsReference';
 
 /** Honest messaging by capability, never by user agent. */
@@ -90,7 +91,10 @@ export function SettingsPage() {
         </nav>
         <div className="flex min-w-0 flex-col gap-5">
           <section id="planning" aria-label="Planning" className="scroll-mt-4">
-            <PlanningSettings />
+            <div className="flex flex-col gap-5">
+              <PlanningSettings />
+              <ReviewSettings />
+            </div>
           </section>
           <section id="insights" aria-label="Insights" className="scroll-mt-4">
             <InsightSettings />

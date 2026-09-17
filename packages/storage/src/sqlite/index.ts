@@ -7,6 +7,8 @@ import {
   CaptureSchema,
   CommitmentSchema,
   DayCommitmentSchema,
+  DailyReflectionSchema,
+  DailyReviewDraftSchema,
   EventSchema,
   GoalSchema,
   InsightStateSchema,
@@ -265,6 +267,8 @@ function repositoryFor(ctx: Ctx): Repository {
     appSettings: new SqliteStore('appSettings', AppSettingsSchema, ctx),
     weeklyReviews: new SqliteStore('weeklyReviews', WeeklyReviewSchema, ctx),
     weeklyReviewActions: new SqliteStore('weeklyReviewActions', WeeklyReviewActionSchema, ctx),
+    dailyReviewDrafts: new SqliteStore('dailyReviewDrafts', DailyReviewDraftSchema, ctx),
+    dailyReflections: new SqliteStore('dailyReflections', DailyReflectionSchema, ctx),
     links: new SqliteLinkStore('links', LinkSchema, ctx),
     opLog: new SqliteOpLog(ctx),
 

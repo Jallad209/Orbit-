@@ -26,7 +26,7 @@ export function DrawerContent({
       >
         {children}
         <DialogPrimitive.Close
-          className="absolute top-3 right-3 grid size-8 place-items-center rounded-md text-ink-muted hover:bg-surface-2 hover:text-ink focus-visible:outline-2 focus-visible:outline-lime-2"
+          className="absolute top-3 right-3 grid size-8 place-items-center rounded-md text-ink-muted hover:bg-surface-2 hover:text-ink focus-visible:outline-2 focus-visible:outline-ink"
           aria-label="Close"
         >
           <X className="size-4" aria-hidden="true" />

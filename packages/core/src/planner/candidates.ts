@@ -80,6 +80,11 @@ export function selectCandidates(
       continue;
     }
 
+    // A preferred day is an explicit assignment, not a recurring suggestion. An unfinished task
+    // only moves to another day through rollover or an edit. A preferred start remains a placement
+    // hint rather than a hard reservation, so conflicts can still be resolved transparently.
+    if (t.preferredDate && t.preferredDate !== date) continue;
+
     let dueDate: LocalDate | null = null;
     let dueSource: Candidate['dueSource'] = null;
     let dueMin: number | null = null;
@@ -110,7 +115,13 @@ export function selectCandidates(
       dueDate,
       dueSource,
       dueMin,
-      preferredWindow: null,
+      preferredWindow:
+        t.preferredDate === date && t.preferredStartMin !== null
+          ? {
+              startMin: t.preferredStartMin,
+              endMin: Math.min(1440, t.preferredStartMin + t.estimateMin),
+            }
+          : null,
       isNextAction: project?.nextActionTaskId === t.id,
       untouchedDays: daysBetween(latest, now),
       createdAt: t.createdAt,

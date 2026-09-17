@@ -37,6 +37,7 @@ interface AppState {
 // The week-10 close-to-tray flag now lives in the shell's native preferences; the raw
 // localStorage value is read once by the resident bridge for the migration.
 const REDUCE_MOTION_KEY = 'orbit-reduce-motion';
+const STORAGE_BANNER_KEY = 'orbit-storage-banner-dismissed';
 function readFlag(key: string): boolean {
   try {
     return localStorage.getItem(key) === '1';
@@ -52,6 +53,22 @@ function writeFlag(key: string, on: boolean): void {
   }
 }
 
+function readSessionFlag(key: string): boolean {
+  try {
+    return sessionStorage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeSessionFlag(key: string): void {
+  try {
+    sessionStorage.setItem(key, '1');
+  } catch {
+    /* preference only */
+  }
+}
+
 /** Reflect the preference on the root element; tokens.css shortens animations under it. */
 export function applyReduceMotion(on: boolean): void {
   if (typeof document === 'undefined') return;
@@ -62,7 +79,7 @@ applyReduceMotion(readFlag(REDUCE_MOTION_KEY));
 
 export const useAppStore = create<AppState>((set) => ({
   storageStatus: null,
-  storageBannerDismissed: false,
+  storageBannerDismissed: readSessionFlag(STORAGE_BANNER_KEY),
   offlineReady: false,
   updateAvailable: false,
   dataVersion: 0,
@@ -73,7 +90,10 @@ export const useAppStore = create<AppState>((set) => ({
   pendingActivation: null,
   setPendingActivation: (pendingActivation) => set({ pendingActivation }),
   setStorageStatus: (storageStatus) => set({ storageStatus }),
-  dismissStorageBanner: () => set({ storageBannerDismissed: true }),
+  dismissStorageBanner: () => {
+    writeSessionFlag(STORAGE_BANNER_KEY);
+    set({ storageBannerDismissed: true });
+  },
   setOfflineReady: (offlineReady) => set({ offlineReady }),
   setUpdateAvailable: (updateAvailable) => set({ updateAvailable }),
   bump: () => set((s) => ({ dataVersion: s.dataVersion + 1 })),

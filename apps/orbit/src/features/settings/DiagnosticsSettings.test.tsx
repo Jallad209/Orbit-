@@ -106,7 +106,7 @@ describe('diagnostics report', () => {
     expect(report).toMatchObject({
       generatedAt: clock.now().toISOString(),
       app: { build: 'web' },
-      schema: { export: 5, indexeddb: 4, sqlite: 3 },
+      schema: { export: 6, indexeddb: 5, sqlite: 4 },
       data: {
         tasks: { live: 1, total: 1 },
         notes: { live: 1, total: 1 },

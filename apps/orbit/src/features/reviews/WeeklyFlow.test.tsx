@@ -164,6 +164,9 @@ describe('WeeklyFlow', () => {
     await waitFor(async () => expect((await repo.bills.get(rent.id))!.paid).toBe(true));
     await waitFor(() => expect(screen.getByTestId('acknowledge-step')).toBeEnabled());
     await userEvent.click(screen.getByTestId('acknowledge-step'));
+    await waitFor(() => expect(flow).toHaveAttribute('data-step', 'patterns'));
+    expect(await screen.findByTestId('weekly-patterns')).toHaveTextContent('Recorded time');
+    await userEvent.click(screen.getByTestId('acknowledge-step'));
     await waitFor(() => expect(flow).toHaveAttribute('data-step', 'capacity'));
     // Capacity: both comparisons, then finish.
     expect(await screen.findByTestId('capacity-booked')).toHaveTextContent('of 57.8 h');

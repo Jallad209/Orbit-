@@ -163,7 +163,7 @@ export function ListRow({
         'group flex min-h-10 cursor-default items-center gap-3 rounded-md px-2.5 text-sm outline-none',
         'transition-colors duration-(--duration-fast)',
         selected ? 'bg-surface-3 text-ink' : 'text-ink hover:bg-surface-2',
-        'focus-visible:outline-2 focus-visible:outline-lime-2',
+        'focus-visible:outline-2 focus-visible:outline-ink',
         className,
       )}
       onClick={(e) => {

@@ -53,11 +53,14 @@ export interface BillsView {
 
 export async function loadBills(repo: Repository, clock: Clock = systemClock): Promise<BillsView> {
   const today = toLocalDate(clock.now());
-  const [bills, reminders] = await Promise.all([
+  const [allBills, reminders] = await Promise.all([
     repo.bills.list({ includeDeleted: true }),
     repo.reminders.query((r) => r.entityType === 'bill' && r.status === 'pending'),
   ]);
-  const groups = groupBills(bills, today);
+  const groups = groupBills(
+    allBills.filter((bill) => bill.kind === 'bill'),
+    today,
+  );
   return {
     today,
     groups,
@@ -120,7 +123,8 @@ export interface BillFields {
   title: string;
   amount: number;
   currency: string;
-  dueAt: LocalDate;
+  dueAt: LocalDate | null;
+  dueTime?: number | null;
   recurrence: Recurrence | null;
 }
 
@@ -145,6 +149,7 @@ export async function createBill(
     amount: fields.amount,
     currency: fields.currency.trim(),
     dueAt: fields.dueAt,
+    dueTime: fields.dueTime ?? null,
     recurrence: fields.recurrence,
     paid: false,
     seriesId: fields.recurrence ? id : null,

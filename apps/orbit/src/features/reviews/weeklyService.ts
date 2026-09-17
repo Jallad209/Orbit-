@@ -7,6 +7,7 @@ import {
   archiveProjectCascade,
   assertRevision,
   buildInsightIndex,
+  buildWeeklyTrendReport,
   canonicalActiveReview,
   capacitySummary,
   completeReview,
@@ -52,6 +53,7 @@ import type {
   ReviewRef,
   Task,
   WeekCapacity,
+  WeeklyTrendReport,
   WeeklyReview,
   WeeklyReviewAction,
   WeeklyReviewActionKind,
@@ -489,7 +491,7 @@ export async function loadBillsStep(
   const periodEnd = addDaysLocal(review.targetWeekStart, 6);
   const groups = groupBills(bills, today);
   const due = [...groups.overdue, ...groups.dueSoon, ...groups.upcoming].filter(
-    (b) => b.dueAt <= periodEnd,
+    (b) => b.dueAt !== null && b.dueAt <= periodEnd,
   );
   return {
     due,
@@ -509,6 +511,39 @@ export interface CapacityStep {
   week: WeekCapacity;
   dayOverloadRatio: number;
   fingerprint: string;
+}
+
+export interface PatternsStep {
+  report: WeeklyTrendReport;
+  fingerprint: string;
+}
+
+export async function loadPatternsStep(
+  repo: Repository,
+  review: WeeklyReview,
+): Promise<PatternsStep> {
+  const [areas, projects, tasks, sessions, blocks, commitments, reflections, bills] =
+    await Promise.all([
+      repo.areas.list(),
+      repo.projects.list(),
+      repo.tasks.list(),
+      repo.sessions.list(),
+      repo.blocks.list(),
+      repo.dayCommitments.list(),
+      repo.dailyReflections.list(),
+      repo.bills.list(),
+    ]);
+  const report = buildWeeklyTrendReport(review.reviewWeekStart, {
+    areas,
+    projects,
+    tasks,
+    sessions,
+    blocks,
+    commitments,
+    reflections,
+    bills,
+  });
+  return { report, fingerprint: report.fingerprint };
 }
 
 export async function loadCapacityStep(
@@ -547,12 +582,13 @@ export async function currentFingerprints(
   review: WeeklyReview,
   clock: Clock = systemClock,
 ): Promise<Record<WeeklyReviewStep, string>> {
-  const [inbox, overdue, projects, goals, bills, capacity] = await Promise.all([
+  const [inbox, overdue, projects, goals, bills, patterns, capacity] = await Promise.all([
     loadInboxStep(repo),
     loadOverdueStep(repo, clock),
     loadProjectsStep(repo, clock),
     loadGoalsStep(repo, clock),
     loadBillsStep(repo, review, clock),
+    loadPatternsStep(repo, review),
     loadCapacityStep(repo, review, clock),
   ]);
   return {
@@ -561,6 +597,7 @@ export async function currentFingerprints(
     projects: projects.fingerprint,
     goals: goals.fingerprint,
     bills: bills.fingerprint,
+    patterns: patterns.fingerprint,
     capacity: capacity.fingerprint,
   };
 }

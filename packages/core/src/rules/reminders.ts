@@ -18,7 +18,7 @@ import type { Bill, Commitment, Id, Instant, LocalDate, Person, Reminder, Rule }
  * would be stale by the time a prepared row is delivered.
  */
 
-/** Reminders fire at 09:00 local on the day they become relevant. */
+/** Reminders default to 09:00 local on the day they become relevant. */
 export const REMINDER_HOUR_MIN = 9 * 60;
 
 export interface ReminderDraft {
@@ -49,15 +49,15 @@ export function reminderKey(ruleId: Id, entityId: Id, dueDate: LocalDate): strin
   return `${ruleId}:${entityId}:${dueDate}`;
 }
 
-function fireOn(date: LocalDate): Instant {
-  return toInstant(date, REMINDER_HOUR_MIN).toISOString();
+function fireOn(date: LocalDate, minute = REMINDER_HOUR_MIN): Instant {
+  return toInstant(date, minute).toISOString();
 }
 
 /**
  * Every reminder the enabled rules call for, given the sources known at
  * `now`. Fire times may be in the future: the row waits in the queue.
- * - `billDueWithin(days)`: each unpaid bill, firing at 09:00 on the day it
- *   enters the window (due − days); an overdue or late-found bill fires as
+ * - `billDueWithin(days)`: each dated unpaid bill, firing at its optional
+ *   due time (09:00 by default) on the day it enters the window (due − days); an overdue or late-found bill fires as
  *   soon as a scheduler sees it, because that day has passed;
  * - `followUpAfter(days)`: each open commitment owed to me, firing at 09:00
  *   on the day the quiet period runs out: the later of the commitment's
@@ -75,7 +75,7 @@ export function computeReminders(snapshot: ReminderSnapshot, _now: Date): Remind
     const c = rule.config;
     if (c.kind === 'billDueWithin') {
       for (const bill of snapshot.bills ?? []) {
-        if (bill.deletedAt !== null || bill.paid) continue;
+        if (bill.deletedAt !== null || bill.paid || bill.dueAt === null) continue;
         const enters = addDays(bill.dueAt, -c.days);
         const amount = bill.amount
           ? `${bill.amount}${bill.currency ? ` ${bill.currency}` : ''}`
@@ -85,7 +85,7 @@ export function computeReminders(snapshot: ReminderSnapshot, _now: Date): Remind
           ruleId: rule.id,
           entityType: 'bill',
           entityId: bill.id,
-          fireAt: fireOn(enters),
+          fireAt: fireOn(enters, bill.dueTime ?? REMINDER_HOUR_MIN),
           title: `${bill.title} due ${bill.dueAt}`,
           body: amount,
         });

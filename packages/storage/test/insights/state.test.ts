@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   APP_SETTINGS_ID,
   DEFAULT_INSIGHT_SETTINGS,
+  DEFAULT_REVIEW_SETTINGS,
   InsightStateSchema,
   createRecord,
   dismissState,
@@ -143,7 +144,11 @@ for (const adapter of adapters) {
       await seedRaw({ appSettings: [LEGACY_SETTINGS], insightStates: [LEGACY_STATE] });
 
       const settings = await repo.appSettings.get(APP_SETTINGS_ID);
-      expect(settings).toEqual({ ...LEGACY_SETTINGS, insights: DEFAULT_INSIGHT_SETTINGS });
+      expect(settings).toEqual({
+        ...LEGACY_SETTINGS,
+        insights: DEFAULT_INSIGHT_SETTINGS,
+        reviews: DEFAULT_REVIEW_SETTINGS,
+      });
       expect((await repo.appSettings.list())[0]).toEqual(settings);
 
       const expected: InsightState = {

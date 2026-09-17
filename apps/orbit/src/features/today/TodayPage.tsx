@@ -12,7 +12,6 @@ import { cn } from '@/lib/cn';
 import { InsightsStrip } from '@/features/insights/InsightsStrip';
 import { ReviewLaunchers } from '@/features/reviews/ReviewLaunchers';
 import { loadLanding } from '@/features/reviews/weeklyService';
-import { CompactTimeline } from './CompactTimeline';
 import { EnergyPicker } from './EnergyPicker';
 import { FocusHeader } from './FocusHeader';
 import { PlanPanel, type PlanDiff } from './PlanPanel';
@@ -40,7 +39,7 @@ interface Props {
 /**
  * Home. Answers what matters, what to do next, what is at risk, where time
  * is going, and what is neglected. One dominant element (the next action),
- * the plan on the left, the timeline in the middle, signals on the right.
+ * the plan and its times in one primary column, with signals alongside it.
  */
 export function TodayPage({ clock = systemClock, date: dateProp }: Props) {
   const repo = useRepository();
@@ -173,7 +172,7 @@ export function TodayPage({ clock = systemClock, date: dateProp }: Props) {
         <>
           <FocusHeader data={data} block={focus} mode={mode} clock={clock} />
           <InsightsStrip />
-          <div className="grid gap-5 min-[900px]:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.9fr)]">
+          <div className="grid gap-5 min-[900px]:grid-cols-[minmax(0,1.7fr)_minmax(18rem,0.9fr)]">
             <div className="flex flex-col gap-5">
               <ReviewLaunchers
                 date={date}
@@ -195,25 +194,6 @@ export function TodayPage({ clock = systemClock, date: dateProp }: Props) {
                 onReplan={replan}
               />
             </div>
-            <div className="hidden min-[900px]:block">
-              <CompactTimeline
-                blocks={mode === 'committed' ? data.timeline : data.proposal.blocks}
-                workingWindow={prefs.workingWindow}
-                nowMin={nowMin}
-              />
-            </div>
-            <details className="min-[900px]:hidden">
-              <summary className="cursor-pointer text-[13px] text-ink-muted select-none">
-                Timeline
-              </summary>
-              <div className="mt-2">
-                <CompactTimeline
-                  blocks={mode === 'committed' ? data.timeline : data.proposal.blocks}
-                  workingWindow={prefs.workingWindow}
-                  nowMin={nowMin}
-                />
-              </div>
-            </details>
             <div className="flex flex-col gap-5">
               <AtRiskPanel data={data} />
               <ActiveProjects data={data} />

@@ -58,21 +58,24 @@ export function ProjectsPage() {
           onChange={(e) => setTitle(e.target.value)}
           className="min-w-56 flex-1"
         />
-        <Select
-          aria-label="Area"
-          value={effectiveArea}
-          onChange={(e) => {
-            setAreaId(e.target.value);
-            setGoalId('');
-          }}
-          className="w-40"
-        >
-          {data?.areas.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </Select>
+        <label className="text-[12px] font-medium text-ink-muted">
+          Area
+          <Select
+            aria-label="Area"
+            value={effectiveArea}
+            onChange={(e) => {
+              setAreaId(e.target.value);
+              setGoalId('');
+            }}
+            className="mt-0.5 w-40"
+          >
+            {data?.areas.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </Select>
+        </label>
         <Select
           aria-label="Goal"
           value={goalId}
@@ -125,7 +128,7 @@ export function ProjectsPage() {
               <Link
                 to={`/projects/${p.id}`}
                 data-testid={`project-${p.id}`}
-                className="flex items-center gap-3 rounded-md border border-line bg-surface-2/50 px-3 py-2.5 hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-lime-2"
+                className="flex items-center gap-3 rounded-md border border-line bg-surface-2/50 px-3 py-2.5 hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-ink"
               >
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{p.title}</div>

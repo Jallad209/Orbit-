@@ -37,6 +37,11 @@ flate2 = { version = "1", default-features = false, features = ["rust_backend"] 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.61", features = ["Data_Xml_Dom", "UI_Notifications", "Foundation"] }
 
+# Keep useful source locations in development backtraces without making MSVC
+# generate the much larger full debug database on every app relink.
+[profile.dev]
+debug = "line-tables-only"
+
 # Small, fast release binaries (DEVOPS-TASKS week 7).
 [profile.release]
 opt-level = "s"

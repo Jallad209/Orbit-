@@ -99,10 +99,12 @@ fn take_due(conn: &Connection, now: &str) -> Vec<Due> {
          WHERE r.deletedAt IS NULL AND r.status = 'pending' AND r.fireAt <= ?1 \
          AND NOT EXISTS (SELECT 1 FROM reminders history WHERE history.status IN ('fired', 'dismissed') \
            AND json_extract(history.data, '$.key') = json_extract(r.data, '$.key')) \
-         AND EXISTS (SELECT 1 FROM rules rule WHERE rule.id = json_extract(r.data, '$.ruleId') \
+         AND (json_extract(r.data, '$.source') IN ('review-step', 'person-follow-up', 'monthly-spending') OR ( \
+          (json_extract(r.data, '$.source') = 'rule' OR json_extract(r.data, '$.source') IS NULL) \
+          AND EXISTS (SELECT 1 FROM rules rule WHERE rule.id = json_extract(r.data, '$.ruleId') \
            AND json_extract(rule.data, '$.deletedAt') IS NULL AND json_extract(rule.data, '$.enabled') = 1 \
            AND json_extract(rule.data, '$.updatedAt') <= json_extract(r.data, '$.updatedAt')) \
-         AND ((json_extract(r.data, '$.entityType') = 'bill' AND EXISTS \
+          AND ((json_extract(r.data, '$.entityType') = 'bill' AND EXISTS \
            (SELECT 1 FROM bills b WHERE b.id = json_extract(r.data, '$.entityId') \
             AND json_extract(b.data, '$.deletedAt') IS NULL AND json_extract(b.data, '$.paid') = 0 \
             AND json_extract(b.data, '$.updatedAt') <= json_extract(r.data, '$.updatedAt') \
@@ -113,7 +115,7 @@ fn take_due(conn: &Connection, now: &str) -> Vec<Due> {
             AND json_extract(c.data, '$.status') = 'open' AND json_extract(c.data, '$.direction') = 'owed-to-me' \
             AND json_extract(c.data, '$.updatedAt') <= json_extract(r.data, '$.updatedAt') \
             AND p.id IS NOT NULL AND json_extract(p.data, '$.deletedAt') IS NULL \
-            AND json_extract(p.data, '$.updatedAt') <= json_extract(r.data, '$.updatedAt')))) \
+             AND json_extract(p.data, '$.updatedAt') <= json_extract(r.data, '$.updatedAt')))))) \
          ORDER BY r.fireAt LIMIT 20",
     ) {
         Ok(s) => s,

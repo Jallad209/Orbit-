@@ -60,6 +60,40 @@ async function seed() {
 }
 
 describe('Bills pages', () => {
+  it('logs repeated spending names and combines them in the weekly total', async () => {
+    const repo = createMemoryRepository({ clock: fixedClock(new Date()) });
+    renderWithProviders(<AppRoutes />, { repository: repo, route: '/bills' });
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Add spending' }));
+    const add = async (name: string, amount: string) => {
+      await userEvent.type(screen.getByLabelText('Item'), name);
+      await userEvent.type(screen.getByLabelText('Amount (JOD)'), amount);
+      await userEvent.click(screen.getByRole('button', { name: 'Add item' }));
+    };
+    await add('Food', '5');
+    await waitFor(() => expect(screen.getByLabelText('Item')).toHaveValue(''));
+    await add('food', '15');
+
+    const weekly = await screen.findByRole('list', { name: 'This week spending breakdown' });
+    expect(weekly).toHaveTextContent('Food');
+    expect(weekly).toHaveTextContent('2 items');
+    expect(weekly).toHaveTextContent('20.00 JOD');
+    expect(await repo.bills.query((bill) => bill.kind === 'expense')).toHaveLength(2);
+  });
+
+  it('uses one clear empty state and reveals the create form on demand', async () => {
+    const repo = createMemoryRepository({ clock: fixedClock(new Date()) });
+    renderWithProviders(<AppRoutes />, { repository: repo, route: '/bills' });
+
+    expect(await screen.findByText('No unpaid bills')).toBeInTheDocument();
+    expect(screen.queryByTestId('bills-overdue')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Title')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add bill' }));
+    expect(screen.getByLabelText('Title')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+  });
+
   it('groups by overdue, due soon, and upcoming with per-currency totals and reminder status', async () => {
     const { repo } = await seed();
     renderWithProviders(<AppRoutes />, { repository: repo, route: '/bills' });
@@ -84,6 +118,7 @@ describe('Bills pages', () => {
     const { repo } = await seed();
     renderWithProviders(<AppRoutes />, { repository: repo, route: '/bills' });
     await screen.findByTestId('bills-overdue');
+    await userEvent.click(screen.getByRole('button', { name: 'Add bill' }));
     await userEvent.type(screen.getByLabelText('Title'), 'Gym');
     await userEvent.type(screen.getByLabelText('Amount'), '35');
     await userEvent.type(screen.getByLabelText(/^Currency/), 'usd');
