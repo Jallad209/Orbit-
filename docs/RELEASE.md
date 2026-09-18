@@ -34,8 +34,9 @@ say so. The workflow still knows how to sign (see the last section) should that 
    CSP, and zero-network checks. Both harnesses attach to WebView2 through the
    `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` override, which WebView2 ignores when the host
    process is elevated: Orbit starts normally, no debug port opens, and every launch times out
-   with `could not attach over CDP`. The cold harness refuses to start in an Administrator shell;
-   `tests/e2e/desktop/probe-launch.ps1` shows the browser command line if it ever recurs.
+   with `could not attach over CDP`. The cold harness refuses to start in an Administrator shell; from one, run either suite
+   through `scripts/run-unelevated.ps1 -CommandLine "…"` (a restricted non-admin token, as CI
+   does). `tests/e2e/desktop/probe-launch.ps1` shows the browser command line if it ever recurs.
 6. **Docs.** The week's task docs are updated; `docs/HOSTING.md` and `SETUP.md` still describe
    what ships. Re-read `docs/SECURITY.md` and `docs/PRIVACY.md`; attach the dependency-audit
    and zero-network evidence under `docs/testing/release-1.0/`.

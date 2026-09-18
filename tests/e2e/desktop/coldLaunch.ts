@@ -53,8 +53,9 @@ function assertNotElevated() {
   if (elevated) {
     throw new Error(
       'the desktop cold-launch harness must run from a non-elevated shell: an elevated host makes ' +
-        'WebView2 ignore WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS, so Orbit never opens a CDP port ' +
-        '(see tests/e2e/desktop/probe-launch.ps1)',
+        'WebView2 ignore WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS, so Orbit never opens a CDP port. ' +
+        'From an admin shell, run it through scripts/run-unelevated.ps1 -CommandLine "…" ' +
+        '(see tests/e2e/desktop/probe-launch.ps1 for the browser command line)',
     );
   }
 }

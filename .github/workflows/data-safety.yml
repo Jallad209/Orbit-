@@ -135,14 +135,20 @@ jobs:
       - name: Build the app (binary only; installers are the release workflow's job)
         run: pnpm run tauri:build:bin
 
+      # GitHub-hosted Windows runners are elevated, and WebView2 ignores the remote-debugging
+      # override for an elevated host: Edge WebDriver never sees DevToolsActivePort and the cold
+      # harness never gets a CDP port (every run of this job failed that way until 19 September).
+      # Both harnesses therefore run under a restricted, non-admin token.
       - name: Core loop on desktop
-        run: pnpm run e2e:desktop
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File scripts/run-unelevated.ps1 -CommandLine "pnpm run e2e:desktop"
         env:
           CI: true
 
       # Direct-process tests use the exact release binary: cold activation, 50k startup,
       # scheduled backup, CSP, and the WebView network boundary.
       - name: Cold desktop safety and performance
-        run: pnpm run e2e:desktop:cold
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File scripts/run-unelevated.ps1 -CommandLine "pnpm run e2e:desktop:cold"
         env:
           CI: true
