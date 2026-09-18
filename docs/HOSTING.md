@@ -49,6 +49,7 @@ Example Caddyfile:
 orbit.example.lan {
   root * /srv/orbit/dist
   try_files {path} /index.html
+  header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; frame-ancestors 'none'"
   header /sw.js Cache-Control "no-cache"
   header /index.html Cache-Control "no-cache"
   file_server

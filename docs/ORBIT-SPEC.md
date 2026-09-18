@@ -35,7 +35,7 @@ Desktop is required for three things a browser cannot do offline: fire reminders
 | Reminders                | Desktop only: Tauri tray + OS notifications. Web build shows reminders only while open (documented).                                     |
 | Cross-device             | v1 is single-device per runtime. Desktop data file is portable. Web ↔ desktop moves via JSON export/import. Later: operation-log merge.  |
 | Browser storage eviction | Web build requests persistent storage (`navigator.storage.persist()`), warns if denied, and nags to export. Desktop is the durable home. |
-| Backups                  | Desktop: rotating dated copies + integrity check on startup. Web: export reminders.                                                      |
+| Backups                  | Desktop: rotating dated copies in `backups/` — 7 daily + 4 weekly, plus 3 manual and 3 before-restore copies. Web: export reminders.     |
 | Fonts/assets             | Everything bundled. No CDN, no Google Fonts.                                                                                             |
 | Search                   | MiniSearch in-process index on both runtimes; SQLite FTS5 on desktop when the bundled build has it.                                      |
 
@@ -76,27 +76,27 @@ C:\Orbit
 
 All records: `id: uuid`, `createdAt`, `updatedAt`, `deletedAt?` (soft delete).
 
-| Entity              | Key fields                                                                                                       | Canonical parent      |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------- |
-| **Area**            | name, color, weeklyHoursTarget                                                                                   | —                     |
-| **Goal**            | title, areaId, importance (1–5), targetDate?, status                                                             | Area                  |
-| **Project**         | title, goalId?, areaId, outcome, deadline?, status, nextActionTaskId?                                            | Goal (or Area)        |
-| **Milestone**       | projectId, title, done, order                                                                                    | Project               |
-| **Task**            | title, projectId?, areaId?, status, priority, estimateMin, actualMin, dueAt?, energy (low/med/high), dependsOn[] | Project (or Area)     |
-| **Event**           | title, startAt, endAt, source (manual/import), locked                                                            | —                     |
-| **Routine**         | title, recurrence (RRULE-like), durationMin, energy, preferredWindow, areaId                                     | Area                  |
-| **RoutineInstance** | routineId, date, status (planned/done/skipped)                                                                   | Routine               |
-| **Note**            | title, body (markdown), projectId?, areaId?                                                                      | Project (or Area)     |
-| **Person**          | name, contact?, lastContactAt                                                                                    | —                     |
-| **Commitment**      | personId, text, dueAt?, status, direction (owed-by-me/owed-to-me)                                                | Person                |
-| **Bill**            | title, amount, dueAt, recurrence?, paid                                                                          | — (v1 expense = bill) |
-| **Block**           | date, startMin, endMin, taskId? / routineInstanceId? / eventId?, locked, source (planner/manual)                 | —                     |
-| **DayCommitment**   | date, acceptedTaskIds[], energy, acceptedAt                                                                      | —                     |
-| **Session**         | taskId, startAt, endAt                                                                                           | Task                  |
-| **Rule**            | type (constraint/recurring/rollover/reminder), config (JSON), enabled                                            | —                     |
-| **Link**            | fromType, fromId, toType, toId, linkType                                                                         | — (soft links)        |
-| **InsightState**    | insightKey, snoozedUntil?, dismissedAt?                                                                          | —                     |
-| **OpLog**           | seq, entity, entityId, op (create/update/delete), patch, at                                                      | append-only           |
+| Entity              | Key fields                                                                                                       | Canonical parent                                                   |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| **Area**            | name, color, weeklyHoursTarget                                                                                   | —                                                                  |
+| **Goal**            | title, areaId, importance (1–5), targetDate?, status                                                             | Area                                                               |
+| **Project**         | title, goalId?, areaId, outcome, deadline?, status, nextActionTaskId?                                            | Goal (or Area)                                                     |
+| **Milestone**       | projectId, title, done, order                                                                                    | Project                                                            |
+| **Task**            | title, projectId?, areaId?, status, priority, estimateMin, actualMin, dueAt?, energy (low/med/high), dependsOn[] | Project (or Area)                                                  |
+| **Event**           | title, startAt, endAt, source (manual/import), locked                                                            | —                                                                  |
+| **Routine**         | title, recurrence (RRULE-like), durationMin, energy, preferredWindow, areaId                                     | Area                                                               |
+| **RoutineInstance** | routineId, date, status (planned/done/skipped)                                                                   | Routine                                                            |
+| **Note**            | title, body (markdown), projectId?, areaId?                                                                      | Project (or Area)                                                  |
+| **Person**          | name, contact?, lastContactAt                                                                                    | —                                                                  |
+| **Commitment**      | personId, text, dueAt?, status, direction (owed-by-me/owed-to-me)                                                | Person                                                             |
+| **Bill / expense**  | kind, title, amount, currency, dueAt?, dueTime?, recurrence?, paid                                               | `kind: expense` is the spending-log record; no currency conversion |
+| **Block**           | date, startMin, endMin, taskId? / routineInstanceId? / eventId?, locked, source (planner/manual)                 | —                                                                  |
+| **DayCommitment**   | date, acceptedTaskIds[], energy, acceptedAt                                                                      | —                                                                  |
+| **Session**         | taskId, startAt, endAt                                                                                           | Task                                                               |
+| **Rule**            | type (constraint/recurring/rollover/reminder), config (JSON), enabled                                            | —                                                                  |
+| **Link**            | fromType, fromId, toType, toId, linkType                                                                         | — (soft links)                                                     |
+| **InsightState**    | insightKey, snoozedUntil?, dismissedAt?                                                                          | —                                                                  |
+| **OpLog**           | seq, entity, entityId, op (create/update/delete), patch, at                                                      | append-only                                                        |
 
 ## 7. Engine Contracts (packages/core)
 

@@ -625,6 +625,10 @@ justification (react-markdown lands only in the lazy note-preview chunk), and th
 cold-activation suite (`e2e:desktop:cold`) promoted to `tests/e2e/desktop/` with a Windows
 CI job.
 
+**Post-Week-12 additions (d832130):** the schema matrix advanced to export 6 / IndexedDB 5 /
+SQLite 4; browser tests now cover the new daily-review, Patterns, spending, and direct-reminder
+surfaces. The updater decision remains unchanged: this track is not selected.
+
 **Deliverables:**
 
 - [ ] Updater configured; `latest.json` published per release — not selected
@@ -661,8 +665,9 @@ CI job.
 
 **Deliverables:**
 
-- [ ] `docs/SECURITY.md` with capability and CSP rationale
-- [ ] Audit reports clean
+- [x] `docs/SECURITY.md` with capability and CSP rationale
+- [x] Local production/Cargo audits pass; Q-002 dev-only advisories documented
+- [ ] CI audit artifacts and desktop/OS zero-network evidence captured
 - [ ] `v1.0.0` published with signed installers, PWA bundle, and checksums
 
 **Verification:**
@@ -677,20 +682,20 @@ git tag v1.0.0 && git push --tags
 
 ## Summary: DevOps Implementation Status
 
-| Week        | Feature Area                                      | Status      | Progress |
-| ----------- | ------------------------------------------------- | ----------- | -------- |
-| **Week 1**  | Local Toolchain & Repository Bootstrap            | ✅ COMPLETE | 100%     |
-| **Week 2**  | Continuous Integration                            | ✅ COMPLETE | 90%      |
-| **Week 3**  | PWA Build & Static Preview                        | ✅ COMPLETE | 100%     |
-| **Week 4**  | Test Infrastructure & Browser End-to-End          | ✅ COMPLETE | 100%     |
-| **Week 5**  | Data Safety Verification (Web)                    | ✅ COMPLETE | 100%     |
-| **Week 6**  | Performance Benchmarks                            | ✅ COMPLETE | 100%     |
-| **Week 7**  | Rust Toolchain, Tauri Build Pipeline & Installers | ✅ COMPLETE | 100%     |
-| **Week 8**  | Desktop E2E & SQLite Data Safety                  | ✅ COMPLETE | 100%     |
-| **Week 9**  | Code Signing & Release Process                    | ✅ COMPLETE | 100%     |
-| **Week 10** | Local Diagnostics & Logging (No Telemetry)        | ✅ COMPLETE | 100%     |
-| **Week 11** | Tray, Autostart & Notification Packaging          | ✅ COMPLETE | 100%     |
-| **Week 12** | Optional Updater (Manual Check)                   | ⏳ PENDING  | 0%       |
-| **Week 13** | Security Review & 1.0 Release                     | ⏳ PENDING  | 0%       |
+| Week        | Feature Area                                      | Status                                      | Progress |
+| ----------- | ------------------------------------------------- | ------------------------------------------- | -------- |
+| **Week 1**  | Local Toolchain & Repository Bootstrap            | ✅ COMPLETE                                 | 100%     |
+| **Week 2**  | Continuous Integration                            | ✅ COMPLETE                                 | 90%      |
+| **Week 3**  | PWA Build & Static Preview                        | ✅ COMPLETE                                 | 100%     |
+| **Week 4**  | Test Infrastructure & Browser End-to-End          | ✅ COMPLETE                                 | 100%     |
+| **Week 5**  | Data Safety Verification (Web)                    | ✅ COMPLETE                                 | 100%     |
+| **Week 6**  | Performance Benchmarks                            | ✅ COMPLETE                                 | 100%     |
+| **Week 7**  | Rust Toolchain, Tauri Build Pipeline & Installers | ✅ COMPLETE                                 | 100%     |
+| **Week 8**  | Desktop E2E & SQLite Data Safety                  | ✅ COMPLETE                                 | 100%     |
+| **Week 9**  | Code Signing & Release Process                    | ✅ COMPLETE                                 | 100%     |
+| **Week 10** | Local Diagnostics & Logging (No Telemetry)        | ✅ COMPLETE                                 | 100%     |
+| **Week 11** | Tray, Autostart & Notification Packaging          | ✅ COMPLETE                                 | 100%     |
+| **Week 12** | Optional Updater (Manual Check)                   | ⏸ NOT SELECTED                              | —        |
+| **Week 13** | Security Review & 1.0 Release                     | 🟡 HARDENED; external release gates pending | 75%      |
 
-**Total Progress:** 11/13 weeks complete (85%)
+**Total Progress:** hardening implemented; installed verification and publication remain open

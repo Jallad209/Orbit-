@@ -53,13 +53,6 @@ docs/              Spec and the three task tracks
 - **Tests** live next to code (`*.test.ts`) or in `test/`. Run one project with `pnpm vitest run --project core`.
 - **No network** in the app. Fonts and assets are bundled. Nothing may import Tauri outside `apps/orbit/src/platform/`.
 
-## 6. Week 7 (desktop) prerequisites — not needed yet
-
-- Rust stable via rustup
-- Microsoft C++ Build Tools (Desktop development with C++)
-- WebView2 runtime (preinstalled on Windows 11)
-- `pnpm add -Dw @tauri-apps/cli`
-
 ## 5. Desktop shell (Tauri) — Windows
 
 Needed only to run or build the desktop app (`pnpm run tauri:dev`, `pnpm run tauri:build`). CI builds the installers on GitHub's Windows runners, so the web app and every test run without any of this.
@@ -71,16 +64,16 @@ Needed only to run or build the desktop app (`pnpm run tauri:dev`, `pnpm run tau
 | WebView2 runtime          | Included in Windows 11 and recent Windows 10; otherwise the Evergreen installer from Microsoft                                                                                                           | `Get-ItemProperty 'HKLM:SOFTWAREWOW6432NodeMicrosoftEdgeUpdateClients{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'` |
 | Tauri CLI                 | already a dev dependency (`@tauri-apps/cli`)                                                                                                                                                             | `pnpm exec tauri --version`                                                                                   |
 
-Then:
+The Tauri CLI is already a locked development dependency. Then:
 
 ```bash
 pnpm run tauri:dev      # Vite + the Rust shell with hot reload
-pnpm run tauri:build    # NSIS and MSI installers under apps/orbit/src-tauri/target/release/bundle
+pnpm run tauri:build    # NSIS installer under apps/orbit/src-tauri/target/release/bundle/nsis
 ```
 
 Run cargo from PowerShell or cmd, not Git Bash: Git's `usr/bin` carries a GNU `link.exe` that shadows the MSVC linker.
 
-Where the data goes: first run uses `%APPDATA%app.orbit.desktopdataorbit.db` (WAL mode, so `orbit.db-wal` and `orbit.db-shm` sit next to it). Change the folder from Settings → Data; Orbit restarts on the new location. The chosen folder is remembered in `%APPDATA%app.orbit.desktopsettings.json`.
+Where the data goes: first run uses `%APPDATA%\app.orbit.desktop\data\orbit.db` (WAL mode, so `orbit.db-wal` and `orbit.db-shm` sit next to it). Change the folder from Settings → Data; Orbit restarts on the new location. The chosen folder is remembered in `%APPDATA%\app.orbit.desktop\settings.json`.
 
 Release: `pnpm run bump -- 0.1.0-alpha.1`, commit, `git tag v0.1.0-alpha.1 && git push --tags`. The Release workflow builds the installers, attaches them with a SHA-256 list, and creates a draft release to publish.
 
@@ -96,3 +89,5 @@ Release: `pnpm run bump -- 0.1.0-alpha.1`, commit, `git tag v0.1.0-alpha.1 && gi
 | Run                                   | `pnpm run e2e:desktop`                                                        |
 
 The harness lives in `tests/e2e/tauri/` (`wdio.conf.ts` plus `specs/`). After a WebView2 update, run `pnpm run edge:driver` again; a version mismatch fails at session start with an Edge Driver message naming both versions.
+
+Use a **non-elevated** PowerShell for both `pnpm run e2e:desktop` and `pnpm run e2e:desktop:cold`. The harnesses reach WebView2 through the `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` override, and an Administrator host process makes WebView2 drop it: Orbit starts and works, but no debug port ever opens and every launch fails with `could not attach over CDP`. The cold harness checks for this and refuses to start; `tests/e2e/desktop/probe-launch.ps1` launches the binary the same way and prints the resulting browser command line and listeners if you need to see it yourself.

@@ -52,6 +52,12 @@ commitments owed to you. It does not complete any commitment._
 
 ## Follow-ups
 
+A person may also have an explicit `followUpDate` and optional `followUpTime`. Saving it
+creates a direct `person-follow-up` reminder for that person (09:00 when no time is chosen),
+independent of the rule-based quiet period for owed-to-me commitments. Editing or clearing
+the schedule reconciles the pending row; deleting the person cancels it. Its destination is
+the person's current route.
+
 The quiet period of an owed-to-me commitment counts from the **later** of the commitment's
 creation and the person's last recorded contact. A person's old contact date cannot make a
 commitment created today overdue, and a reply after the promise restarts the wait. The
@@ -59,9 +65,10 @@ calendar-date quiet period and the 09:00 local reminder time from Week 9 are unc
 reply on the same date keeps the same reminder key, and fired or dismissed rows are history
 that is never revived, while a cancelled pending row may be.
 
-The Rust scheduler validates the same conditions immediately before delivery: the rule
-enabled, the commitment open and owed-to-me, the person live, and no source changed after
-the row was prepared. A missing or deleted person cancels delivery outright.
+The Rust scheduler validates the same conditions immediately before delivery: rule-based
+rows still need the enabled rule, open owed-to-me commitment, and live person; direct
+person rows need a live person with the same chosen schedule. No source may have changed
+after preparation. A missing or deleted person cancels delivery outright.
 
 ## Deleting and restoring
 

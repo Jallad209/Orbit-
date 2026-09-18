@@ -8,14 +8,18 @@ Capture → Plan → Do → Review. One loop, one connected system.
 
 ## Status
 
-Weeks 1–12 of 13 complete (the installed-Windows passes for weeks 11 and 12 are recorded as NOT RUN in [docs/RESIDENT-BEHAVIOUR.md](docs/RESIDENT-BEHAVIOUR.md); the optional week-12 updater was not selected). See the task tracks:
+Week 13 hardening is implemented and locally verified where automation can reach it. The
+installed-Windows, fresh desktop-binary, manual accessibility, CI, and publication gates remain
+open, so this is not yet a 1.0 release. Their exact status is in
+[the 1.0 verification report](docs/testing/release-1.0/REPORT.md). The optional week-12 updater
+was not selected. See the task tracks:
 
 - [docs/ORBIT-SPEC.md](docs/ORBIT-SPEC.md) — product and technical spec
 - [docs/BACKEND-TASKS.md](docs/BACKEND-TASKS.md) — core engine and local data layer
 - [docs/FRONTEND-TASKS.md](docs/FRONTEND-TASKS.md) — interface
 - [docs/DEVOPS-TASKS.md](docs/DEVOPS-TASKS.md) — builds, CI, releases
 
-Feature behaviour and limits: [Insights](docs/INSIGHTS.md), [Weekly review](docs/WEEKLY-REVIEW.md), [People and commitments](docs/PEOPLE-AND-COMMITMENTS.md), [Bills](docs/BILLS.md), [Notes](docs/NOTES.md), [Deep links](docs/DEEP-LINKS.md), [Resident behaviour (desktop)](docs/RESIDENT-BEHAVIOUR.md), [Release process](docs/RELEASE.md), [Hosting the PWA](docs/HOSTING.md).
+Feature behaviour and limits: [Daily reviews](docs/DAILY-REVIEWS.md), [Weekly review](docs/WEEKLY-REVIEW.md), [Insights](docs/INSIGHTS.md), [People and commitments](docs/PEOPLE-AND-COMMITMENTS.md), [Bills](docs/BILLS.md), [Notes](docs/NOTES.md), [Deep links](docs/DEEP-LINKS.md), [Resident behaviour (desktop)](docs/RESIDENT-BEHAVIOUR.md), [Accessibility audit](docs/A11Y-AUDIT.md), [Security](docs/SECURITY.md), [Privacy](docs/PRIVACY.md), [Release process](docs/RELEASE.md), [1.0 verification](docs/testing/release-1.0/REPORT.md), and [Hosting the PWA](docs/HOSTING.md).
 
 ## Quick start
 

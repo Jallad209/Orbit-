@@ -51,6 +51,9 @@ prepared.
    preference, and reconciles reminders once.
 6. The main window (only) acknowledges readiness for the open database generation. A stale
    generation or another window is refused. The scheduler starts delivering only then.
+7. After each ready scheduler tick, the shell takes the day's verified online backup if it
+   does not already exist. UTC dates name the files; the same minute loop covers a process
+   that remains resident for days.
 
 ### Readiness
 
@@ -100,7 +103,10 @@ Reconciliation runs at startup, every minute, after any write, and on window foc
 visibility (a resumed machine, a returning user); after it writes rows it wakes the
 scheduler so the first eligible batch starts within two intervals of readiness or resume.
 The scheduler keeps its 20-per-pass cap and validates every row against its live sources
-and the rule's watermark immediately before delivery; cancelled rows are tombstones that
+immediately before delivery. Rule rows also require the rule watermark; direct
+`review-step`, `person-follow-up`, and `monthly-spending` rows do not require a rule, but
+their draft, person/schedule, or pending spending source must still be live and unchanged.
+Cancelled rows are tombstones that
 can revive, fired and dismissed rows are terminal history. An OS notification failure is
 logged (without record contents) and retried on the next pass. Windows accepting a
 notification is not proof that a toast was visible: Focus Assist and notification settings
@@ -108,6 +114,17 @@ can hide it, and Settings says so.
 
 Nothing is delivered while the computer sleeps or Orbit is not running; due rows catch up
 when it can run again, subject to the per-pass cap.
+
+## Automatic backups
+
+The scheduler creates a verified SQLite online snapshot in `<data>/backups` once per UTC
+day, only after the current database generation is ready and while no transaction or Quit
+owns the database. It keeps seven daily, four weekly, three manual, and three
+before-restore copies; unknown `.db` files are never pruned. A daily copy is promoted to a
+weekly copy when the newest weekly is at least seven days old. Settings → Data can create a
+manual copy and restore every listed kind. Snapshots include committed WAL contents, switch
+to a single-file DELETE journal, pass integrity/schema/row-count verification, and are
+published without clobbering an existing name. Restore preserves the live database first.
 
 Since week 12 a delivered toast carries a launch payload. The notification plugin forwards
 title and body only and cannot report whether Windows accepted the toast, so on Windows
@@ -245,9 +262,10 @@ Week 12 (activation, protocol, quit preparation), automated on the same machine:
 | Scheduler pre-delivery validation: paid bill, completed/deleted commitment, deleted person, watermark           | PASS — `cargo test` (scheduler)                                                                                                                                                    |
 
 Installed build (clean VM procedure in `docs/WEEK-11` plan §14.6 and `docs/WEEK-12-PLAN.md`
-§11.1/§11.5): **NOT RUN** in either pass. No VM or disposable account was available. Until
-it is, the following remain pending and neither resident delivery nor notification
-activation is marked complete on an installed build:
+§11.1/§11.5): **NOT RUN** in either pass. Week 13 now provides a Windows Sandbox harness at
+`tests/installed/`, but the current candidate has not been built and exercised from the required
+external user terminal/Sandbox session. Until that happens, the following remain pending and
+neither resident delivery nor notification activation is marked complete on an installed build:
 
 - notification body click with Orbit visible, hidden, and fully exited (notification-center
   item after exit) opening the exact current record in one process;

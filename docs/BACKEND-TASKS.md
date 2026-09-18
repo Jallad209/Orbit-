@@ -424,7 +424,7 @@ pnpm run test --filter @orbit/core -- recurrence blocks recalculate
 
 - `packages/storage/src/sqlite`: `SqlDriver` seam (`execute`, `select`, `exec`, `close`), `createSqliteRepository` implementing the full `Repository` contract on one connection: every store is a table with the record as JSON in `data` plus generated columns for the indexed fields (`deletedAt`, `updatedAt`, and per store the same keys Dexie indexes), `opLog` as an autoincrement table; transactions are real `BEGIN IMMEDIATE … COMMIT` blocks with nested calls joining the outer one; WAL mode, `synchronous=NORMAL`, foreign keys on
 - `migrations.ts`: forward-only migrations keyed by `PRAGMA user_version`, each in its own transaction, refusing files written by a newer Orbit; `0001_init` is generated from one table spec so a new store is one line
-- `integrityCheck` (`PRAGMA integrity_check` + FTS5 detection via `compile_options`) and `chooseRestore` (newest non-empty backup); the desktop platform quarantines a corrupt file, restores the newest backup, and reopens
+- `integrityCheck` (`PRAGMA quick_check` at open since Week 13 — the full `integrity_check` runs on every verified backup copy and on demand from Diagnostics — plus FTS5 detection via `compile_options`) and `chooseRestore` (newest non-empty backup); the desktop platform quarantines a corrupt file, restores the newest backup, and reopens
 - Storage factory gained `{ kind: 'sqlite', driver }`; web still opens IndexedDB
 - Rust shell in `apps/orbit/src-tauri`: `commands/db.rs` (rusqlite, bundled SQLite, one connection behind a mutex, JSON ⇄ SQL value mapping), `commands/data_dir.rs` (get / set / default folder remembered in the app config dir, reveal in Explorer, list backups, quarantine, restore, plain text read / write for import and export), `commands/capture.rs` (show / hide the capture window); plugins dialog, notification, opener, window-state, global-shortcut; `Ctrl+Shift+Space` registered at startup
 - 21 SQLite tests: the week-1 contract suite, WAL persistence across reopen, index usage by `EXPLAIN QUERY PLAN`, fresh-file migration, a v1 SQL fixture migrating forward through a synthetic later migration without losing rows, newer-file refusal, rollback on a failing migration, web export → SQLite → export with zero diff, integrity ok + FTS5, corrupt file detected and the right backup chosen
@@ -748,7 +748,15 @@ See `docs/INSIGHTS.md` for the exact formulas, evidence, suppression, and limita
 - [x] `apps/orbit/src-tauri/src/{tray,autostart}.rs` — shipped in week 11 (`docs/RESIDENT-BEHAVIOUR.md`); week 12 added `notifications.rs` and `activation.rs`
 - [x] Unit tests written and passing
 
-**Still pending (recorded, not ticked):** the installed-build proof of notification activation (visible / hidden / exited), production protocol registration through the installer, and an immediate native display failure leaving a retryable pending row — no VM was available (`docs/RESIDENT-BEHAVIOUR.md` → Verification record). Page-level performance measurements for review snapshot loading and receipt lookup at 50k (plan §14) were not added; only the pure engine budgets are benchmarked.
+**Still pending (recorded, not ticked):** the installed-build proof of notification activation
+(visible / hidden / exited), production protocol registration, and immediate native display
+failure. The Week 13 Sandbox harness now exists, but the candidate pass remains NOT RUN
+(`docs/RESIDENT-BEHAVIOUR.md`).
+
+**Post-Week-12 additions (d832130):** resumable morning/evening daily reviews and reflections,
+the review dashboard and settings, a seventh weekly Patterns step over trend fingerprints,
+spending entries and direct monthly reminders, explicit person follow-up schedules, planner
+preferred dates, idempotent inbox conversion with Undo, and schema 4 / IndexedDB 5 / export 6.
 
 **Verification:**
 
@@ -792,10 +800,11 @@ pnpm run e2e:desktop && pnpm run e2e:desktop:cold
 
 **Deliverables:**
 
-- [ ] `packages/storage/src/backup/*`
-- [ ] `scripts/seed.ts`, `scripts/bench.ts`
-- [ ] `apps/orbit/src-tauri/src/commands/diagnostics.rs`
-- [ ] Unit tests written and passing
+- [x] `apps/orbit/src-tauri/src/backup.rs` — verified online SQLite snapshots and rotation
+- [x] `scripts/seed.ts`, `scripts/bench.ts`, and `bench/adapters.bench.ts`
+- [x] `apps/orbit/src-tauri/src/commands/diagnostics.rs` — fresh integrity result, no content
+- [x] Unit tests written and passing
+- [ ] Fresh release-binary desktop startup and scheduled-backup E2E executed
 
 **Verification:**
 
@@ -809,20 +818,20 @@ pnpm run test
 
 ## Summary: Backend Implementation Status
 
-| Week        | Feature Area                                           | Status      | Progress |
-| ----------- | ------------------------------------------------------ | ----------- | -------- |
-| **Week 1**  | Monorepo, Schemas & In-Memory Repository               | ✅ COMPLETE | 100%     |
-| **Week 2**  | IndexedDB Adapter, Op Log, Persistence & Export/Import | ✅ COMPLETE | 100%     |
-| **Week 3**  | Capture Parser & Classifier                            | ✅ COMPLETE | 100%     |
-| **Week 4**  | Structure Services — Hierarchy, Links & Project Health | ✅ COMPLETE | 100%     |
-| **Week 5**  | Planning Engine v1                                     | ✅ COMPLETE | 100%     |
-| **Week 6**  | Recurrence, Blocks & Recalculation                     | ✅ COMPLETE | 100%     |
-| **Week 7**  | Desktop Shell — Tauri, SQLite Adapter & Data File      | ✅ COMPLETE | 100%     |
-| **Week 8**  | Actuals, Sessions & Review Data Services               | ✅ COMPLETE | 100%     |
-| **Week 9**  | Rules Engine & Reminder Scheduler                      | ✅ COMPLETE | 100%     |
-| **Week 10** | Search Index & Command Registry                        | ✅ COMPLETE | 100%     |
-| **Week 11** | Insights Engine                                        | ✅ COMPLETE | 100%     |
-| **Week 12** | Weekly Review, People, Bills & Tray                    | ⏳ PENDING  | 0%       |
-| **Week 13** | Hardening, Performance & Data Safety                   | ⏳ PENDING  | 0%       |
+| Week        | Feature Area                                           | Status                                           | Progress |
+| ----------- | ------------------------------------------------------ | ------------------------------------------------ | -------- |
+| **Week 1**  | Monorepo, Schemas & In-Memory Repository               | ✅ COMPLETE                                      | 100%     |
+| **Week 2**  | IndexedDB Adapter, Op Log, Persistence & Export/Import | ✅ COMPLETE                                      | 100%     |
+| **Week 3**  | Capture Parser & Classifier                            | ✅ COMPLETE                                      | 100%     |
+| **Week 4**  | Structure Services — Hierarchy, Links & Project Health | ✅ COMPLETE                                      | 100%     |
+| **Week 5**  | Planning Engine v1                                     | ✅ COMPLETE                                      | 100%     |
+| **Week 6**  | Recurrence, Blocks & Recalculation                     | ✅ COMPLETE                                      | 100%     |
+| **Week 7**  | Desktop Shell — Tauri, SQLite Adapter & Data File      | ✅ COMPLETE                                      | 100%     |
+| **Week 8**  | Actuals, Sessions & Review Data Services               | ✅ COMPLETE                                      | 100%     |
+| **Week 9**  | Rules Engine & Reminder Scheduler                      | ✅ COMPLETE                                      | 100%     |
+| **Week 10** | Search Index & Command Registry                        | ✅ COMPLETE                                      | 100%     |
+| **Week 11** | Insights Engine                                        | ✅ COMPLETE                                      | 100%     |
+| **Week 12** | Weekly Review, People, Bills & Tray                    | ✅ COMPLETE (installed-build activation pending) | 100%     |
+| **Week 13** | Hardening, Performance & Data Safety                   | 🟡 IMPLEMENTED; release verification pending     | 85%      |
 
-**Total Progress:** 11/13 weeks complete (85%)
+**Total Progress:** implementation complete through Week 13; release verification remains open

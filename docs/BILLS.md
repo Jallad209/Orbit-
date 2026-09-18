@@ -1,6 +1,6 @@
 # Bills
 
-A bill is one occurrence: one amount due on one date. A recurring bill is a chain of
+A `kind: 'bill'` record is one occurrence: one amount due on one date. A recurring bill is a chain of
 occurrences generated one at a time from an original schedule — paying an occurrence
 creates at most one successor. Orbit records payments; it never sends or executes them.
 
@@ -21,6 +21,7 @@ are `BillsPage` (`/bills`), `BillPage` (`/bills/:id`), and `BillForm`.
 | `paidAt`           | When the payment was recorded; `null` on legacy paid rows means "not recorded", never a made-up time         |
 | `nextBillId`       | The one successor generated from this occurrence's payment                                                   |
 | `repeatStopped`    | This occurrence ends the chain; the recurrence description and history stay                                  |
+| `dueTime`          | Optional minute of day for display and reminder delivery                                                     |
 
 The recurrence (rule, interval, COUNT, UNTIL) travels with the chain unchanged. Records
 from before Week 12 normalize on read as roots anchored at their own `dueAt` with
@@ -128,3 +129,14 @@ date, and duplicate weekdays not consuming COUNT twice.
   are "edit this one, and the next inherits".
 - No payment execution, bank data, or currency conversion.
 - Reversing a payment with a successor waits for a fully tested grouped reversal.
+
+## Spending log
+
+The Spending panel uses the same store with `kind: 'expense'`. An expense is a recorded
+purchase, not a payable bill: `dueAt` is nullable, recurrence and payment actions do not
+apply, and the panel groups normalized item names for the selected month. Totals are kept
+separate by the row's currency; Orbit does no currency conversion.
+
+The optional month reminder is a direct `monthly-spending` reminder, not a rule-derived
+bill reminder. It opens `/bills`, remains live only while its pending source row is live,
+and is reconciled when spending settings change.

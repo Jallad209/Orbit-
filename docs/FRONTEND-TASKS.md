@@ -754,7 +754,15 @@ pnpm exec playwright test tests/e2e/playwright/insights.spec.ts
 - [x] `apps/orbit/src/platform/deepLinks.ts` — implemented as `apps/orbit/src/lib/destinations.ts` (typed resolver + `orbit://` parser); the native side is `src-tauri/src/activation.rs`
 - [x] Unit tests written and passing
 
-**Still pending (recorded, not ticked):** notification-click activation with Orbit visible, hidden, and exited on an **installed** build, and the installer's protocol registration/upgrade/uninstall — no VM was available; the list is in `docs/RESIDENT-BEHAVIOUR.md` → Verification record. The Week 12 plan's §14 page-level performance measurements (review snapshot load, note save/preview at 50k) were not added.
+**Still pending (recorded, not ticked):** notification-click activation with Orbit visible,
+hidden, and exited on an **installed** build, plus installer registration/upgrade/uninstall.
+The Week 13 Sandbox harness exists; the candidate pass remains NOT RUN. Page-level 50k
+measurements are now recorded in `docs/testing/release-1.0/performance.md`.
+
+**Post-Week-12 additions (d832130):** configurable morning questions and templates, same-day
+drafts and Later today reminders, an evening journal and review dashboard, weekly Patterns,
+the spending panel, review settings, explicit person follow-up schedules, direct reminder
+navigation, preferred planner dates, and the contrast/focus-ring critique pass.
 
 **Verification:**
 
@@ -798,9 +806,11 @@ pnpm run e2e:desktop:cold     # cold activation against the release binary
 
 **Deliverables:**
 
-- [ ] Mobile and narrow layouts for all main routes
-- [ ] Accessibility audit report in `docs/A11Y-AUDIT.md` with fixes applied
-- [ ] Unit tests written and passing
+- [ ] Mobile PWA layouts — deliberately deferred to 1.1 by `WEEK-13-PLAN.md` §15
+- [x] Narrow desktop shell and Today breakpoints implemented and tested
+- [x] Automated accessibility audit and fixes recorded in `docs/A11Y-AUDIT.md`
+- [ ] Manual keyboard, NVDA/WebView2, and zoom audit executed
+- [x] Unit tests written and passing
 
 **Verification:**
 
@@ -814,20 +824,20 @@ pnpm run build && pnpm run preview
 
 ## Summary: Frontend Implementation Status
 
-| Week        | Feature Area                                  | Status      | Progress |
-| ----------- | --------------------------------------------- | ----------- | -------- |
-| **Week 1**  | Vite + React Setup, Design Tokens & App Shell | ✅ COMPLETE | 100%     |
-| **Week 2**  | Base Component Library & PWA Shell            | ✅ COMPLETE | 100%     |
-| **Week 3**  | Universal Inbox                               | ✅ COMPLETE | 100%     |
-| **Week 4**  | Areas, Goals, Projects & Tasks                | ✅ COMPLETE | 100%     |
-| **Week 5**  | Today Screen & Plan Proposal                  | ✅ COMPLETE | 100%     |
-| **Week 6**  | Time-Block Timeline                           | ✅ COMPLETE | 100%     |
-| **Week 7**  | Desktop Shell Integration                     | ✅ COMPLETE | 100%     |
-| **Week 8**  | Morning Briefing, Evening Shutdown & Timer    | ✅ COMPLETE | 100%     |
-| **Week 9**  | Rules & Settings                              | ✅ COMPLETE | 100%     |
-| **Week 10** | Command Palette & Global Search               | ✅ COMPLETE | 100%     |
-| **Week 11** | Insights & Project Health Surfaces            | ✅ COMPLETE | 100%     |
-| **Week 12** | Weekly Review, People, Bills & Notes          | ⏳ PENDING  | 0%       |
-| **Week 13** | Mobile PWA Layouts, Accessibility & Polish    | ⏳ PENDING  | 0%       |
+| Week        | Feature Area                                  | Status                                           | Progress |
+| ----------- | --------------------------------------------- | ------------------------------------------------ | -------- |
+| **Week 1**  | Vite + React Setup, Design Tokens & App Shell | ✅ COMPLETE                                      | 100%     |
+| **Week 2**  | Base Component Library & PWA Shell            | ✅ COMPLETE                                      | 100%     |
+| **Week 3**  | Universal Inbox                               | ✅ COMPLETE                                      | 100%     |
+| **Week 4**  | Areas, Goals, Projects & Tasks                | ✅ COMPLETE                                      | 100%     |
+| **Week 5**  | Today Screen & Plan Proposal                  | ✅ COMPLETE                                      | 100%     |
+| **Week 6**  | Time-Block Timeline                           | ✅ COMPLETE                                      | 100%     |
+| **Week 7**  | Desktop Shell Integration                     | ✅ COMPLETE                                      | 100%     |
+| **Week 8**  | Morning Briefing, Evening Shutdown & Timer    | ✅ COMPLETE                                      | 100%     |
+| **Week 9**  | Rules & Settings                              | ✅ COMPLETE                                      | 100%     |
+| **Week 10** | Command Palette & Global Search               | ✅ COMPLETE                                      | 100%     |
+| **Week 11** | Insights & Project Health Surfaces            | ✅ COMPLETE                                      | 100%     |
+| **Week 12** | Weekly Review, People, Bills & Notes          | ✅ COMPLETE (installed-build activation pending) | 100%     |
+| **Week 13** | Accessibility, Narrow Desktop & Polish        | 🟡 AUTOMATED PASS; manual audit pending          | 80%      |
 
-**Total Progress:** 11/13 weeks complete (85%)
+**Total Progress:** Week 13 automated implementation complete; manual accessibility gate open

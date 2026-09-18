@@ -1,7 +1,7 @@
 # Weekly review
 
 The weekly review is a guided pass over one week: inbox, overdue work, projects, goals,
-bills, and next week's capacity, in that order, ending in a frozen summary. It can be paused
+bills, patterns, and next week's capacity, in that order, ending in a frozen summary. It can be paused
 and resumed, every decision it applies is recorded as a receipt, and nothing it shows is
 changed by merely looking at it.
 
@@ -33,7 +33,7 @@ others are listed rather than merged.
 `?review=<id>` opens exactly that record; a missing or deleted id shows a safe missing
 state. Resuming after Monday keeps the original review and target weeks.
 
-## The six steps
+## The seven steps
 
 | Step     | What it shows                                                                             | Actions                                                                                                                                                                                                                                          |
 | -------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -42,9 +42,15 @@ state. Resuming after Monday keeps the original review and target weeks.
 | projects | Every active project's health, tasks and milestones, last activity                        | Set the next action from a live open task of that project (revalidated at save); create a task and select it in the same transaction; edit the outcome with a conflict-aware patch; archive with the existing cascade preview; acknowledge/defer |
 | goals    | Goals and area weekly-hours targets                                                       | Update importance/target date; mark achieved or dropped; edit an area's weekly target in its own labelled control; acknowledge/defer                                                                                                             |
 | bills    | Unpaid bills overdue or due through the end of the target week (late successors included) | Mark paid (atomic, successor shown — see `docs/BILLS.md`); open the bill; defer without paying or dismissing its reminder                                                                                                                        |
+| patterns | The completed week's time, completion, energy, reflections, tags, coverage, and spending  | Inspect the report and acknowledge it; spending totals remain separate by currency                                                                                                                                                               |
 | capacity | Next week's booked work and area targets against available time                           | Acknowledge                                                                                                                                                                                                                                      |
 
-The closing summary is the end of the sixth step, not a seventh.
+The closing summary is the end of the seventh step, not an eighth.
+
+Patterns is a frozen-window calculation over the review week. Its fingerprint includes
+sessions, completed tasks, blocks, day commitments, daily reflections, and expense rows,
+so changing any source invalidates a stale acknowledgement. Journal prose is excluded;
+only explicit ratings and tags participate.
 
 ## Step completion
 
@@ -115,7 +121,7 @@ and their history is the receipt store.
 
 ## Limitations
 
-- The step structure is fixed (`flowVersion` 1); a future change to the steps is a new flow
+- The step structure is fixed for the current `flowVersion`; a future change to the steps is a new flow
   version, not an edit of stored reviews.
 - Review actions are not undoable through the palette. Reopen and Restore exist where the
   underlying record offers them.

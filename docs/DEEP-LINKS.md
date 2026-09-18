@@ -101,6 +101,7 @@ planning". See `docs/RESIDENT-BEHAVIOUR.md` for the lifecycle and the verificati
 - The protocol handler is registered by the Windows NSIS installer only; the PWA has no
   `orbit://` handler and receives links as ordinary navigation.
 - Installed-build verification of notification clicks with Orbit visible, hidden, and
-  exited is still pending (no disposable VM) — see the verification record in
-  `docs/RESIDENT-BEHAVIOUR.md`. The cold-launch path is covered by the isolated desktop
-  suite against the real binary.
+  exited is still pending. Week 13 supplies `tests/installed/orbit-sandbox.wsb` and its
+  checklist, but the candidate has not yet been exercised from an external user terminal —
+  see the verification record in `docs/RESIDENT-BEHAVIOUR.md`. The cold-launch path is covered
+  by the isolated desktop suite against the real binary.

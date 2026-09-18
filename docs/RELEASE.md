@@ -9,10 +9,9 @@ signing, and attaching, and leaves a **draft** on GitHub for you to read and pub
 | ---------------- | ----------- | ---------- | ---------------------------- |
 | `v0.1.0-alpha.N` | pre-release | NSIS       | trying things out            |
 | `v0.1.0-beta.N`  | pre-release | NSIS       | ready for the trusted circle |
-| `v0.1.0`         | release     | NSIS + MSI | stable                       |
+| `v1.0.0`         | release     | NSIS       | stable                       |
 
-Any tag with a hyphen is a pre-release and ships NSIS only: the MSI's version field cannot
-carry a pre-release identifier.
+MSI is deferred until its installer cleanup and upgrade behaviour has its own release gate.
 
 **Builds are unsigned by decision** (week 9): Orbit is for its author and people who trust
 them, so a code-signing certificate is not worth its cost yet. Windows shows a SmartScreen
@@ -29,16 +28,24 @@ say so. The workflow still knows how to sign (see the last section) should that 
    must pass every path (IndexedDB v1→current, SQLite v1→current, every export version).
 3. **Data safety.** `pnpm run verify:backup` and `pnpm run test:roundtrip` pass.
 4. **Benchmarks.** `pnpm run bench` stays inside the baseline (`bench/baseline.json`).
-5. **Desktop e2e.** `pnpm run tauri:build:bin && pnpm run e2e:desktop` (PowerShell).
+5. **Desktop e2e.** From the user's external, **non-elevated** PowerShell terminal, build the
+   exact candidate with `pnpm run tauri:build:bin`, then run `pnpm run e2e:desktop` and
+   `pnpm run e2e:desktop:cold`. The cold suite includes the 50k startup, scheduled backup,
+   CSP, and zero-network checks. Both harnesses attach to WebView2 through the
+   `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` override, which WebView2 ignores when the host
+   process is elevated: Orbit starts normally, no debug port opens, and every launch times out
+   with `could not attach over CDP`. The cold harness refuses to start in an Administrator shell;
+   `tests/e2e/desktop/probe-launch.ps1` shows the browser command line if it ever recurs.
 6. **Docs.** The week's task docs are updated; `docs/HOSTING.md` and `SETUP.md` still describe
-   what ships.
+   what ships. Re-read `docs/SECURITY.md` and `docs/PRIVACY.md`; attach the dependency-audit
+   and zero-network evidence under `docs/testing/release-1.0/`.
 
 ## Cut the release
 
 7. **Bump** every version file together:
 
    ```bash
-   pnpm run bump -- 0.1.0-beta.1
+   pnpm run bump -- 1.0.0
    ```
 
    (`package.json` ×2, `tauri.conf.json`, `Cargo.toml`.)
@@ -47,7 +54,7 @@ say so. The workflow still knows how to sign (see the last section) should that 
    then edit it by hand — the generator gives the skeleton, the notes say what changed for a user:
 
    ```bash
-   pnpm run changelog:release -- v0.1.0-beta.1
+   pnpm run changelog:release -- v1.0.0
    ```
 
    Fold anything under `[Unreleased]` into the new section and delete the empty heading.
@@ -55,8 +62,8 @@ say so. The workflow still knows how to sign (see the last section) should that 
 9. **Commit and tag:**
 
    ```bash
-   git commit -am "chore: release v0.1.0-beta.1"
-   git tag v0.1.0-beta.1
+   git commit -am "chore: release v1.0.0"
+   git tag v1.0.0
    git push && git push --tags
    ```
 
@@ -70,13 +77,15 @@ say so. The workflow still knows how to sign (see the last section) should that 
 
 ## Verify the draft
 
-11. Open the draft release. Attached: `Orbit_<version>_x64-setup.exe` (and the `.msi` on a stable
-    tag), `orbit-pwa-<tag>.zip`, `SHA256SUMS.txt`.
-12. **Install on a machine that has never seen Orbit** (a clean VM is best): download the
-    installer and run it. Expect the SmartScreen warning (builds are unsigned); confirm
-    _More info → Run anyway_ gets through and the installer completes.
-13. **Install check.** First run creates the data folder (`%APPDATA%\app.orbit.desktop\data`) with
-    `orbit.db`; Settings → Data shows the integrity check as ok.
+11. Open the draft release. Attached: `Orbit_<version>_x64-setup.exe`,
+    `orbit-pwa-<tag>.zip`, `SHA256SUMS.txt`.
+12. **Installed pass.** Open `tests/installed/orbit-sandbox.wsb`, follow
+    `tests/installed/CHECKLIST.md`, run `checks.ps1` inside Sandbox, and copy evidence to the
+    mapped folder before closing it. Expect the SmartScreen warning because builds are unsigned.
+    Run the three reboot/sleep cases under the disposable `OrbitTest` host account.
+13. **Install check.** Record every scenario PASS, FAIL, or NOT RUN. First run creates
+    `%APPDATA%\app.orbit.desktop\data\orbit.db`; Settings → Data reports integrity ok. Do not
+    publish while an installed release gate is NOT RUN.
 14. **PWA check.** Unzip the bundle, serve it (`npx serve dist` or any static server), open it,
     confirm the install prompt and that it works offline after the first load.
 15. **Checksums.** `Get-FileHash` on a downloaded file matches `SHA256SUMS.txt`.

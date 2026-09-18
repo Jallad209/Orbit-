@@ -7,6 +7,28 @@ then edited by hand before each release.
 
 ### Added
 
+- Weekly reviews now cover seven resumable steps—Inbox, Overdue, Projects, Goals, Bills,
+  Patterns, and Capacity—with idempotent receipts and frozen summaries. People and
+  commitments, recurring bills, notes, `orbit://` links, notification activation, and
+  draft-safe activation complete the Week 12 workflows.
+- Daily reviews ask configurable morning capture questions, support Later today reminders
+  and templates, preserve same-day drafts, add an evening journal/reflection, and have a
+  review dashboard. Weekly Patterns summarizes explicit time, energy, reflection tags, and
+  per-currency spending without reading journal prose.
+- Spending log entries and monthly reminders; explicit person follow-up dates/times; direct
+  reminders for review steps, people, and spending; preferred-date planner hints; and review
+  settings.
+- Desktop data safety: verified daily/weekly rotating SQLite backups (the first attempt waits
+  20 s after launch so it never competes with the first screen), manual backups, restore-kind
+  labels, and a fresh integrity check in diagnostics. The shell logs any database command that
+  waits for or holds the connection for 250 ms or more. The open-time check is now
+  `PRAGMA quick_check`, run once per connection rather than once per window; the full
+  `integrity_check` stays on every verified backup copy and in Diagnostics. The first insights
+  scan waits out its 3 s initial delay even when boot itself writes. A window that reloads
+  releases the transaction its previous document owned at once, so the next document no
+  longer waits up to 30 s on "Opening Orbit…". The web now reminds after
+  more than seven days and 100 changes without a full JSON export.
+
 - Command palette: `Ctrl+K` (or the Search button on the rail) opens one box for commands and
   search. Commands — add task / note / event, plan my day, regenerate today's proposal,
   reschedule unfinished work, show neglected goals, review this week, open project, go to any
@@ -44,10 +66,19 @@ then edited by hand before each release.
   sessions) and the stale threshold from Settings → Insights.
 - Reminder wording carries dates ("Rent due 2026-09-20", "No reply on … since 2026-09-10")
   instead of "due in 3 days".
-- Export schema is now 4 (insight thresholds and snooze state). Older Orbit refuses a v4
-  file; this version reads v1–v3.
+- Export schema is now 6 / IndexedDB 5 / SQLite 4. Older formats migrate forward; newer
+  formats are still refused.
 - Close-to-tray moved from Settings → Data to Settings → Desktop; the earlier setting is
   carried over once.
+
+### Fixed
+
+- PD-001: cold `orbit://` and notification activation waits for a subscribed frontend and
+  is acknowledged before the native queue entry is removed, so startup races no longer
+  silently lose the destination.
+- Area deletion always requires confirmation, direct reminder toasts open their exact
+  destination, old daily-review drafts expire, and spending totals remain separated by
+  currency.
 
 ## [0.1.0-alpha.2] — 2026-09-13
 
