@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 
 /**
  * Data safety in the browser runtime (DEVOPS-TASKS week 5).
@@ -71,6 +71,9 @@ test('a browser that refuses persistent storage shows the warning and a working 
   const download = page.waitForEvent('download');
   await banner.getByRole('button', { name: 'Export now' }).click();
   const file = await download;
+  // Check the short-lived confirmation before reading and parsing the file;
+  // saturated cross-browser runs can otherwise outlive the toast duration.
+  await expect(page.getByText('Export saved')).toBeVisible();
   expect(file.suggestedFilename()).toMatch(/^orbit-export-\d{4}-\d{2}-\d{2}\.json$/);
   const path = await file.path();
   const envelope = JSON.parse(readFileSync(path!, 'utf8')) as {
@@ -79,5 +82,4 @@ test('a browser that refuses persistent storage shows the warning and a working 
   };
   expect(envelope.format).toBe('orbit-export');
   expect(envelope.data.areas.map((a) => a.name)).toEqual(['Health']);
-  await expect(page.getByText('Export saved')).toBeVisible();
 });

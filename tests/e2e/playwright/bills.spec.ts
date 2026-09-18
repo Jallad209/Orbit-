@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 /**
  * Bills in a real browser over IndexedDB: a monthly series anchored on the
@@ -11,15 +11,17 @@ test('bills: pay a recurring occurrence once, see the successor, and stop the se
   page,
 }) => {
   await page.goto('/bills');
-  await page.getByLabel('Title').fill('Rent');
-  await page.getByLabel('Amount').fill('900');
-  await page.getByLabel(/^Currency/).fill('USD');
-  await page.getByLabel('Repeats').selectOption('monthly');
-  await page.getByLabel('First due date').fill('2026-01-31');
-  await expect(page.getByTestId('bill-preview')).toContainText(
+  await page.getByRole('button', { name: 'Add bill' }).click();
+  const form = page.getByRole('form', { name: 'New bill' });
+  await form.getByLabel('Title').fill('Rent');
+  await form.getByLabel('Amount').fill('900');
+  await form.getByLabel(/^Currency/).fill('USD');
+  await form.getByLabel('Repeats').selectOption('monthly');
+  await form.getByLabel('First due date').fill('2026-01-31');
+  await expect(form.getByTestId('bill-preview')).toContainText(
     'Monthly on the 31st: first on 2026-01-31, then 2026-02-28 and 2026-03-31',
   );
-  await page.getByRole('button', { name: 'Add bill' }).click();
+  await form.getByRole('button', { name: 'Add bill' }).click();
 
   const row = page.getByTestId('bill-row').filter({ hasText: 'Rent' });
   await expect(row).toHaveCount(1);

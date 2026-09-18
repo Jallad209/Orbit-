@@ -1,0 +1,24 @@
+<Configuration>
+  <MappedFolders>
+    <MappedFolder>
+      <HostFolder>C:\Orbit\tests\installed</HostFolder>
+      <SandboxFolder>C:\OrbitHarness</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+    <MappedFolder>
+      <HostFolder>C:\Orbit\apps\orbit\src-tauri\target\release\bundle\nsis</HostFolder>
+      <SandboxFolder>C:\OrbitInstallers</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+    <MappedFolder>
+      <HostFolder>C:\Orbit\tests\installed\evidence</HostFolder>
+      <SandboxFolder>C:\OrbitEvidence</SandboxFolder>
+      <ReadOnly>false</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+  <Networking>Enable</Networking>
+  <ClipboardRedirection>Disable</ClipboardRedirection>
+  <LogonCommand>
+    <Command>powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\OrbitHarness\bootstrap.ps1</Command>
+  </LogonCommand>
+</Configuration>

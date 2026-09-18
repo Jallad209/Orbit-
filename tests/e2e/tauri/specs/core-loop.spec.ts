@@ -58,14 +58,21 @@ describe('core loop on desktop', () => {
     await popover.$('button=Thesis').click();
     await expect($('[role="option"]*=Submit my report')).not.toBeExisting();
 
+    // The row leaves the inbox before the write commits, so prove the filing landed before
+    // reloading: reach the project in-app (no reload) and wait for the task to be listed,
+    // which happens on the post-commit data bump. A reload earlier would abandon the
+    // transaction and the filing with it.
+    await $('nav[aria-label="Primary"] a[href="/projects"]').click();
+    await $('a*=Thesis').click();
+    const list = await $('[role="list"][aria-label="Project tasks"]');
+    await expect(list.$('[role="listitem"]*=Submit my report')).toBeDisplayed();
+
     // Data is in the SQLite file: a full reload keeps it.
     await browser.refresh();
+    const reloaded = await $('[role="list"][aria-label="Project tasks"]');
+    await expect(reloaded.$('[role="listitem"]*=Submit my report')).toBeDisplayed();
+    await goto('/inbox');
     await expect($('[role="group"][aria-label="Bills"]')).toBeDisplayed();
     await expect($('[role="option"]*=Pay electricity bill')).toBeDisplayed();
-
-    await goto('/projects');
-    await $('a*=Thesis').click();
-    const list = await $('[role="listbox"][aria-label="Project tasks"]');
-    await expect(list.$('[role="option"]*=Submit my report')).toBeDisplayed();
   });
 });

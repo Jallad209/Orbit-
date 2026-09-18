@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 /**
  * The weekly review in a real browser over IndexedDB: start, act on an
@@ -17,10 +17,12 @@ test('weekly review: pause, reload, resume, and finish with a frozen summary', a
   await capture.press('Enter');
   await expect(page.getByTestId('capture-bar')).toBeVisible();
   await page.goto('/bills');
-  await page.getByLabel('Title').fill('Rent');
-  await page.getByLabel('Amount').fill('900');
-  await page.getByLabel('Due date').fill('2026-01-31');
   await page.getByRole('button', { name: 'Add bill' }).click();
+  const billForm = page.getByRole('form', { name: 'New bill' });
+  await billForm.getByLabel('Title').fill('Rent');
+  await billForm.getByLabel('Amount').fill('900');
+  await billForm.getByLabel('Due date').fill('2026-01-31');
+  await billForm.getByRole('button', { name: 'Add bill' }).click();
   await expect(page.getByTestId('bill-row')).toHaveCount(1);
 
   await page.goto('/review/weekly');
@@ -70,6 +72,9 @@ test('weekly review: pause, reload, resume, and finish with a frozen summary', a
   await expect(flow).toHaveAttribute('data-step', 'bills');
   await page.getByTestId('review-bill').getByRole('button', { name: 'Mark paid' }).click();
   await expect(page.getByTestId('acknowledge-step')).toBeEnabled();
+  await page.getByTestId('acknowledge-step').click();
+  await expect(flow).toHaveAttribute('data-step', 'patterns');
+  await expect(page.getByTestId('weekly-patterns')).toBeVisible();
   await page.getByTestId('acknowledge-step').click();
   await expect(flow).toHaveAttribute('data-step', 'capacity');
   await expect(page.getByTestId('capacity-day')).toHaveCount(7);

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 /**
  * Notes in a real browser over IndexedDB: create, type, blur-save, reload

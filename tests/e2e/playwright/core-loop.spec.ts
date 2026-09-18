@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 
 /**
  * The capture → structure loop, end to end in a real browser with IndexedDB.
@@ -51,6 +51,7 @@ test('captures three items, files one into a project, and keeps everything after
   await page.keyboard.press('p');
   const popover = page.getByRole('dialog', { name: 'Assign project' });
   await popover.getByRole('button', { name: 'Thesis' }).click();
+  await expect(page.getByText('Added to Thesis', { exact: true })).toBeVisible();
   await expect(page.getByRole('option', { name: /Submit my report/ })).toHaveCount(0);
 
   // Data is in IndexedDB: a full reload keeps it.
@@ -61,8 +62,10 @@ test('captures three items, files one into a project, and keeps everything after
   await page.goto('/projects');
   const row = page.getByRole('link', { name: /Thesis/ });
   await row.click();
-  const taskList = page.getByRole('listbox', { name: 'Project tasks' });
-  await expect(taskList.getByRole('option', { name: /Submit my report/ })).toBeVisible();
+  const taskList = page.getByRole('list', { name: 'Project tasks' });
+  await expect(
+    taskList.getByRole('listitem').filter({ hasText: 'Submit my report' }),
+  ).toBeVisible();
 });
 
 test('quick capture from any screen with c', async ({ page }) => {
@@ -121,8 +124,9 @@ test('proposes a plan with reasons, accepts it, and keeps the commitment after a
     await task.press('Enter');
     await expect(
       page
-        .getByRole('listbox', { name: 'Project tasks' })
-        .getByRole('option', { name: new RegExp(title) }),
+        .getByRole('list', { name: 'Project tasks' })
+        .getByRole('listitem')
+        .filter({ hasText: title }),
     ).toBeVisible();
   }
 
@@ -167,8 +171,9 @@ test('timeline: schedules a task, locks it, moves another around it, and re-plan
     await task.press('Enter');
     await expect(
       page
-        .getByRole('listbox', { name: 'Project tasks' })
-        .getByRole('option', { name: new RegExp(title) }),
+        .getByRole('list', { name: 'Project tasks' })
+        .getByRole('listitem')
+        .filter({ hasText: title }),
     ).toBeVisible();
   }
 
@@ -215,12 +220,13 @@ test('morning briefing → timer → completion prompt → evening shutdown with
     await task.press('Enter');
     await expect(
       page
-        .getByRole('listbox', { name: 'Project tasks' })
-        .getByRole('option', { name: new RegExp(title) }),
+        .getByRole('list', { name: 'Project tasks' })
+        .getByRole('listitem')
+        .filter({ hasText: title }),
     ).toBeVisible();
   }
 
-  // Morning: energy by hotkey, at-risk, plan, accept.
+  // Morning: answer the three configurable check-in questions, then choose energy by hotkey.
   await page.goto('/today');
   const launcher = page.getByRole('link', { name: 'Start morning briefing' });
   const date = new URL(
@@ -230,6 +236,11 @@ test('morning briefing → timer → completion prompt → evening shutdown with
   await launcher.click();
   const flow = page.getByTestId('morning-flow');
   await expect(flow).toHaveAttribute('data-step', '0');
+  for (let step = 0; step < 3; step++) {
+    await page.getByRole('button', { name: 'No, continue' }).click();
+    await page.getByRole('button', { name: 'Next' }).click();
+  }
+  await expect(flow).toHaveAttribute('data-step', '3');
   await page.keyboard.press('3');
   await expect(page.getByRole('radio', { name: /high/ })).toBeChecked();
   await page.getByRole('button', { name: 'Next' }).click();
@@ -284,6 +295,8 @@ test('morning briefing → timer → completion prompt → evening shutdown with
   await expect(rows.first()).toContainText('Email the supervisor');
   await rows.first().getByRole('radio', { name: 'Next week' }).click();
   await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByTestId('evening-journal')).toBeVisible();
+  await page.getByRole('button', { name: 'Next' }).click();
   await expect(page.getByTestId('evening-summary')).toContainText('1 to next week');
   await page.getByRole('button', { name: 'Close the day' }).click();
   await expect(page.getByRole('heading', { level: 1, name: /Today|Tomorrow/ })).toBeVisible();
@@ -298,7 +311,8 @@ test('morning briefing → timer → completion prompt → evening shutdown with
   await page.goto('/projects');
   await page.getByRole('link', { name: /Thesis/ }).click();
   const row = page
-    .getByRole('listbox', { name: 'Project tasks' })
-    .getByRole('option', { name: /Email the supervisor/ });
+    .getByRole('list', { name: 'Project tasks' })
+    .getByRole('listitem')
+    .filter({ hasText: 'Email the supervisor' });
   await expect(row).toContainText(monday.toISOString().slice(0, 10));
 });

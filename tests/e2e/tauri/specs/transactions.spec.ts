@@ -41,7 +41,9 @@ describe('database ownership across desktop windows', () => {
     const capture = await secondWindowHandle();
     expect(capture).toBeDefined();
     const dir = readFileSync(SESSION_DIR_FILE, 'utf8').trim();
-    const generation = await invoke<number>('db_open', { path: join(dir, 'data', 'orbit.db') });
+    const { generation } = await invoke<{ generation: number; fresh: boolean }>('db_open', {
+      path: join(dir, 'data', 'orbit.db'),
+    });
     await invoke('db_exec', { sql: 'CREATE TABLE ownership_probe(value TEXT)', generation });
     await expect(invoke('db_exec', { sql: 'BEGIN IMMEDIATE', generation })).rejects.toThrow(
       'owned database transaction',

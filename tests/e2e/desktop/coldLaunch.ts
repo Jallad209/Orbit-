@@ -7,8 +7,13 @@
  * isolation as the WDIO harness: throwaway data folder, WebView2 profile, and
  * fake autostart file; single-instance and window-state are skipped by the
  * shell under ORBIT_DATA_DIR, so it never touches the real install.
+ *
+ * Run it from a non-elevated shell. An elevated (Administrator) host process
+ * makes WebView2 drop the `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` override, so
+ * Orbit starts normally but never listens for CDP and every launch times out.
+ * `probe-launch.ps1` beside this file shows the resulting browser command line.
  */
-import { spawn, type ChildProcess } from 'node:child_process';
+import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -31,6 +36,27 @@ export interface LaunchedOrbit {
   /** Milliseconds from spawn to CDP attach and to the main page being found. */
   timings: { spawnToCdpMs: number; spawnToMainPageMs: number };
   close(): Promise<void>;
+}
+
+/** High (`S-1-16-12288`) or System (`S-1-16-16384`) integrity: WebView2 ignores the env-var flags. */
+let elevated: boolean | undefined;
+function assertNotElevated() {
+  if (process.platform !== 'win32') return;
+  if (elevated === undefined) {
+    try {
+      const groups = execFileSync('whoami', ['/groups'], { encoding: 'utf8', windowsHide: true });
+      elevated = /S-1-16-(12288|16384)\b/.test(groups);
+    } catch {
+      elevated = false; // cannot tell; let the launch speak for itself
+    }
+  }
+  if (elevated) {
+    throw new Error(
+      'the desktop cold-launch harness must run from a non-elevated shell: an elevated host makes ' +
+        'WebView2 ignore WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS, so Orbit never opens a CDP port ' +
+        '(see tests/e2e/desktop/probe-launch.ps1)',
+    );
+  }
 }
 
 async function freePort(): Promise<number> {
@@ -62,34 +88,71 @@ function waitForExit(child: ChildProcess, timeoutMs: number): Promise<boolean> {
   });
 }
 
-async function terminateOrbit(child: ChildProcess): Promise<void> {
-  if (child.exitCode !== null) return;
-  child.kill();
-  if (!(await waitForExit(child, 2_000)) && child.pid) {
-    await new Promise<void>((resolveKill, rejectKill) => {
-      const killer = spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], {
-        stdio: 'ignore',
-      });
-      const timer = setTimeout(() => {
-        killer.kill();
-        rejectKill(new Error(`taskkill timed out for Orbit process ${child.pid}`));
-      }, 15_000);
-      killer.once('error', (error) => {
-        clearTimeout(timer);
-        rejectKill(error);
-      });
-      killer.once('exit', (code) => {
-        clearTimeout(timer);
-        if (code === 0 || child.exitCode !== null) resolveKill();
-        else rejectKill(new Error(`taskkill exited ${code} for Orbit process ${child.pid}`));
-      });
+function killTree(pid: number, exited: () => boolean): Promise<void> {
+  return new Promise<void>((resolveKill, rejectKill) => {
+    const killer = spawn('taskkill', ['/PID', String(pid), '/T', '/F'], { stdio: 'ignore' });
+    const timer = setTimeout(() => {
+      killer.kill();
+      rejectKill(new Error(`taskkill timed out for Orbit process ${pid}`));
+    }, 15_000);
+    killer.once('error', (error) => {
+      clearTimeout(timer);
+      rejectKill(error);
     });
+    killer.once('exit', (code) => {
+      clearTimeout(timer);
+      if (code === 0 || exited()) resolveKill();
+      else rejectKill(new Error(`taskkill exited ${code} for Orbit process ${pid}`));
+    });
+  });
+}
+
+/**
+ * Chromium holds `lockfile` in the profile for as long as its browser process lives; a
+ * relaunch into the same profile before it is released waits on the old instance (seconds)
+ * and `removeSession` fails. Wait for the release rather than a fixed pause.
+ */
+async function waitForProfileRelease(sessionDir: string, timeoutMs = 15_000): Promise<void> {
+  const lockfile = join(sessionDir, 'webview', 'EBWebView', 'lockfile');
+  const deadline = Date.now() + timeoutMs;
+  while (existsSync(lockfile)) {
+    if (Date.now() > deadline) {
+      throw new Error(
+        `WebView2 profile still locked ${timeoutMs} ms after Orbit exited: ${lockfile}`,
+      );
+    }
+    await new Promise((r) => setTimeout(r, 50));
+  }
+}
+
+/**
+ * Quit the way the tray does (`resident_quit`, forced past the draft/ack round), so the shell
+ * closes the file and WebView2 shuts down and flushes what the renderer wrote — killing the
+ * browser process with the host drops unflushed `localStorage` such as the first-run flag.
+ */
+async function quitOrbit(page: Page, child: ChildProcess): Promise<void> {
+  if (child.exitCode !== null) return;
+  await page
+    .evaluate(() => {
+      const w = window as typeof window & {
+        __TAURI_INTERNALS__?: { invoke(cmd: string, args?: unknown): Promise<unknown> };
+      };
+      void w.__TAURI_INTERNALS__?.invoke('resident_quit', { force: true });
+    })
+    .catch(() => undefined);
+  await waitForExit(child, 10_000);
+}
+
+async function terminateOrbit(child: ChildProcess, sessionDir: string): Promise<void> {
+  if (child.exitCode === null && child.pid) {
+    // Kill the tree while the host is alive: the WebView2 browser process is its child and,
+    // orphaned, keeps the profile locked for ten seconds or more after the host is gone.
+    await killTree(child.pid, () => child.exitCode !== null);
     if (!(await waitForExit(child, 15_000))) {
       throw new Error(`Orbit process ${child.pid} did not exit after taskkill`);
     }
   }
-  // WebView2 child processes release their profile shortly after the client exits.
-  await new Promise((r) => setTimeout(r, 1_000));
+  await waitForProfileRelease(sessionDir);
 }
 
 export interface LaunchOptions {
@@ -105,6 +168,7 @@ export interface LaunchOptions {
 
 export async function launchOrbit(options: LaunchOptions = {}): Promise<LaunchedOrbit> {
   if (!existsSync(ORBIT_EXE)) throw new Error(`no desktop binary at ${ORBIT_EXE}`);
+  assertNotElevated();
   const sessionDir = options.sessionDir ?? mkdtempSync(join(tmpdir(), 'orbit-campaign-'));
   const dataDir = join(sessionDir, 'data');
   mkdirSync(dataDir, { recursive: true });
@@ -134,9 +198,14 @@ export async function launchOrbit(options: LaunchOptions = {}): Promise<Launched
         throw new Error(`orbit exited early (${child.exitCode}): ${stderr.join('')}`);
       try {
         browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { timeout: 2_000 });
-      } catch {
-        if (Date.now() > deadline)
-          throw new Error(`could not attach over CDP within timeout; stderr: ${stderr.join('')}`);
+      } catch (error) {
+        if (Date.now() > deadline) {
+          const reason = error instanceof Error ? error.message : String(error);
+          throw new Error(
+            `could not attach over CDP on port ${port} within timeout; last error: ${reason}; stderr: ${stderr.join('')}`,
+            { cause: error },
+          );
+        }
         await new Promise((r) => setTimeout(r, 100));
       }
     }
@@ -190,12 +259,13 @@ export async function launchOrbit(options: LaunchOptions = {}): Promise<Launched
       shellLog,
       timings: { spawnToCdpMs, spawnToMainPageMs },
       async close() {
+        await quitOrbit(page, child);
         try {
           await browser?.close();
         } catch {
           /* already gone */
         }
-        await terminateOrbit(child);
+        await terminateOrbit(child, sessionDir);
       },
     };
   } catch (error) {
@@ -204,7 +274,7 @@ export async function launchOrbit(options: LaunchOptions = {}): Promise<Launched
     } catch {
       /* preserve the launch error */
     }
-    await terminateOrbit(child).catch(() => undefined);
+    await terminateOrbit(child, sessionDir).catch(() => undefined);
     throw error;
   }
 }
@@ -215,7 +285,10 @@ export function removeSession(sessionDir: string) {
   if (!target.startsWith(tempRoot) || !basename(target).startsWith('orbit-campaign-')) {
     throw new Error(`refusing to remove a non-campaign directory: ${target}`);
   }
-  rmSync(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 250 });
+  // WebView2 helper processes can hold profile files for a few seconds after the browser
+  // process has exited and released the lockfile; Node backs off linearly, so 12 retries at
+  // 250 ms allow up to ~20 s while an ordinary close finishes in one or two.
+  rmSync(target, { recursive: true, force: true, maxRetries: 12, retryDelay: 250 });
   if (existsSync(target)) throw new Error(`campaign directory is still in use: ${target}`);
 }
 

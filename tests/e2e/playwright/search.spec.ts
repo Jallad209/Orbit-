@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 
 /**
  * The command centre in a real browser: Ctrl+K opens the palette over the
@@ -30,13 +30,14 @@ async function seed(page: Page) {
     await capture.press('Enter');
   }
   // Accept all three so they exist as records the index sees (the commitment creates Omar).
-  for (const name of [
-    /University reading list/,
-    /Fill in the university fees form/,
-    /Ask Omar about the lab/,
+  for (const [name, confirmation] of [
+    [/University reading list/, 'Added note'],
+    [/Fill in the university fees form/, 'Added task'],
+    [/Ask Omar about the lab/, 'Added commitment'],
   ]) {
     await page.getByRole('option', { name }).click();
     await page.keyboard.press('Enter');
+    await expect(page.getByText(confirmation, { exact: true })).toBeVisible();
     await expect(page.getByRole('option', { name })).toHaveCount(0);
   }
 }
