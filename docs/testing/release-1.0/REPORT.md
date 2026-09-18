@@ -12,7 +12,7 @@ This is a live implementation record, not a release sign-off.
 | Data safety             | PARTIAL PASS | 50k round trip, 18 migrations, verified restore, rotation/manual/export/diagnostics tests PASS; fresh desktop binary pending                                                                                                                |
 | Performance             | PARTIAL PASS | Chromium 50k startup 886 ms; adapter matrix and 59 ms snapshot recorded; desktop 50k cold start 1.9–2.6 s (was 4.1–5.4 s) against a desktop budget re-based to 3,000 ms local / 6,000 ms CI (performance.md); reference-machine run pending |
 | Accessibility           | PARTIAL PASS | Chromium/Firefox/WebKit axe, contrast, motion, and breakpoint tests PASS; manual keyboard/NVDA/zoom pending                                                                                                                                 |
-| Security                | PARTIAL PASS | Three-browser CSP/network, ACL, Cargo/production dependency audits PASS; CI, Benchmarks, and PWA workflows green on 5f9cd07 (first green since 14 September); E2E and Data safety await a dispatch; desktop runtime/OS watch pending        |
+| Security                | PARTIAL PASS | Three-browser CSP/network, ACL, Cargo/production dependency audits PASS; every workflow green on cb16ba3 (19 September, first time since 14 September) including the Windows desktop job; desktop runtime/OS watch pending                  |
 | Installed Windows       | NOT RUN      | No candidate installer was built or launched from the required external terminal/Sandbox session                                                                                                                                            |
 | Release                 | NOT RUN      | Version remains pre-1.0; no tag, artifacts, checksums, Sandbox smoke, or publication                                                                                                                                                        |
 
@@ -21,20 +21,21 @@ See [performance.md](performance.md), [dependency-audit.md](dependency-audit.md)
 
 ## Local gate record
 
-| Gate                                         | Result                                                            |
-| -------------------------------------------- | ----------------------------------------------------------------- |
-| Workspace type-check, ESLint, Prettier       | PASS                                                              |
-| Vitest                                       | PASS — 99 files, 769 tests                                        |
-| Coverage                                     | PASS — 85.28% statements, 75.79% branches, 87.06% lines           |
-| Playwright production build                  | PASS — 59 passed, 1 documented WebKit bulk-startup skip           |
-| Rust fmt / Clippy / tests                    | PASS — 67 tests, 1 ignored measurement                            |
-| Desktop e2e, WebDriver (`e2e:desktop`)       | PASS — 8 spec files, 18 September, after the ACL and reload fixes |
-| Desktop e2e, cold (`e2e:desktop:cold`)       | PASS — 7 tests incl. 50k start against the re-based budget        |
-| 50k export/import round trip                 | PASS — 3 cases                                                    |
-| Migration matrix                             | PASS — 18 cases; regenerated fixtures are current                 |
-| SQLite backup verification                   | PASS — schema 4, 26 tables, 1,592 rows, restored copy identical   |
-| Bundle budget                                | PASS — 458.2 KB JS gzip, +3.7% from baseline                      |
-| Installed desktop, CI, Sandbox, host account | NOT RUN                                                           |
+| Gate                                     | Result                                                                                                                                           |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Workspace type-check, ESLint, Prettier   | PASS                                                                                                                                             |
+| Vitest                                   | PASS — 99 files, 769 tests                                                                                                                       |
+| Coverage                                 | PASS — 85.28% statements, 75.79% branches, 87.06% lines                                                                                          |
+| Playwright production build              | PASS — 59 passed, 1 documented WebKit bulk-startup skip                                                                                          |
+| Rust fmt / Clippy / tests                | PASS — 67 tests, 1 ignored measurement                                                                                                           |
+| Desktop e2e, WebDriver (`e2e:desktop`)   | PASS — 8 spec files, 18 September, after the ACL and reload fixes                                                                                |
+| Desktop e2e, cold (`e2e:desktop:cold`)   | PASS — 7 tests incl. 50k start against the re-based budget                                                                                       |
+| 50k export/import round trip             | PASS — 3 cases                                                                                                                                   |
+| Migration matrix                         | PASS — 18 cases; regenerated fixtures are current                                                                                                |
+| SQLite backup verification               | PASS — schema 4, 26 tables, 1,592 rows, restored copy identical                                                                                  |
+| Bundle budget                            | PASS — 458.2 KB JS gzip, +3.7% from baseline                                                                                                     |
+| CI (GitHub-hosted)                       | PASS — every workflow green on cb16ba3 (19 Sep); the Windows desktop job passed for the first time: WDIO 8/8, cold 5/5, under a restricted token |
+| Installed desktop, Sandbox, host account | NOT RUN                                                                                                                                          |
 
 ## Critique disposition
 
