@@ -1,41 +1,101 @@
 {
   "note": "Means in ms. Regenerate with `pnpm run bench -- --update` on the reference machine.",
   "machine": "win32 x64 node v24.20.0",
-  "at": "2026-09-14T03:08:04.920Z",
+  "at": "2026-09-17T16:41:52.518Z",
   "results": {
     "planner: planDay, 2k open tasks": {
-      "meanMs": 2.792001045296167,
-      "p99Ms": 3.7462280000001487,
+      "meanMs": 2.929749635036315,
+      "p99Ms": 4.165198000000846,
       "samples": 0
     },
     "search: minisearch query, 50k tasks + 5k notes": {
-      "meanMs": 4.990305590062083,
-      "p99Ms": 6.608380000000037,
+      "meanMs": 5.631502097902082,
+      "p99Ms": 7.608025999999887,
       "samples": 0
     },
     "insights: computeInsights, five detectors + evidence, 50k world": {
-      "meanMs": 28.01102812499997,
-      "p99Ms": 32.852205000000815,
+      "meanMs": 28.519995312499983,
+      "p99Ms": 33.18445699999906,
       "samples": 0
     },
     "insights: shared health + attention, 50k world": {
-      "meanMs": 76.65290312500004,
-      "p99Ms": 81.73334999999967,
+      "meanMs": 22.09305156249985,
+      "p99Ms": 26.162425000000034,
       "samples": 0
     },
     "recurrence: one year of routines": {
-      "meanMs": 3.9119897560975674,
-      "p99Ms": 4.65611199999963,
+      "meanMs": 4.27240319148921,
+      "p99Ms": 5.374535999996583,
       "samples": 0
     },
     "capture: parse 100 phrases": {
-      "meanMs": 1.9170377990430798,
-      "p99Ms": 2.5029090000002907,
+      "meanMs": 1.8376568807342064,
+      "p99Ms": 2.7111699999950356,
+      "samples": 0
+    },
+    "adapter:sqlite: search query, 50k tasks + 10k notes": {
+      "meanMs": 35.33924218749975,
+      "p99Ms": 38.675210999999976,
+      "samples": 0
+    },
+    "adapter:sqlite: action receipt lookup": {
+      "meanMs": 0.0052344895335210435,
+      "p99Ms": 0.015400000003864989,
+      "samples": 0
+    },
+    "adapter:sqlite: note save": {
+      "meanMs": 9.58081904761873,
+      "p99Ms": 10.59337400000055,
+      "samples": 0
+    },
+    "adapter:sqlite: note preview read": {
+      "meanMs": 0.005829586609440105,
+      "p99Ms": 0.015469999997004633,
+      "samples": 0
+    },
+    "adapter:indexeddb: search query, 50k tasks + 10k notes": {
+      "meanMs": 5.4229520270271045,
+      "p99Ms": 7.302964000001885,
+      "samples": 0
+    },
+    "adapter:indexeddb: action receipt lookup": {
+      "meanMs": 0.17677087936373048,
+      "p99Ms": 0.41797500000029686,
+      "samples": 0
+    },
+    "adapter:indexeddb: note save": {
+      "meanMs": 22.569503124999976,
+      "p99Ms": 326.95213499999494,
+      "samples": 0
+    },
+    "adapter:indexeddb: note preview read": {
+      "meanMs": 0.1694857021817242,
+      "p99Ms": 0.3694000000003147,
       "samples": 0
     },
     "search: rebuild index, 55k documents": {
-      "meanMs": 814.1912333333324,
-      "p99Ms": 834.0875739999997,
+      "meanMs": 807.9925999999978,
+      "p99Ms": 810.7293579999948,
+      "samples": 0
+    },
+    "adapter:sqlite: list open tasks, 50k": {
+      "meanMs": 67.94636666666823,
+      "p99Ms": 69.8552980000012,
+      "samples": 0
+    },
+    "adapter:sqlite: weekly snapshot load, 50k": {
+      "meanMs": 74.37546666666458,
+      "p99Ms": 75.05366600000096,
+      "samples": 0
+    },
+    "adapter:indexeddb: list open tasks, 50k": {
+      "meanMs": 455.3117333333357,
+      "p99Ms": 460.72774000000106,
+      "samples": 0
+    },
+    "adapter:indexeddb: weekly snapshot load, 50k": {
+      "meanMs": 514.886566666663,
+      "p99Ms": 519.0338759999997,
       "samples": 0
     }
   }

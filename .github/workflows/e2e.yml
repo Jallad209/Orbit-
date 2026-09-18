@@ -36,6 +36,7 @@ jobs:
         run: pnpm exec playwright test
         env:
           CI: true
+          PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS: 1
 
       - name: Upload report and traces
         if: failure()

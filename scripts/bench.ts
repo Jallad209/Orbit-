@@ -39,6 +39,7 @@ import {
 } from '@orbit/core';
 import { createMemoryRepository } from '@orbit/storage';
 import { createMiniSearchService } from '@orbit/storage/search/minisearch';
+import { prepareAdapterBenchEntries } from '../bench/adapters.bench';
 
 interface Entry {
   name: string;
@@ -219,6 +220,9 @@ const entries: Entry[] = [
     },
   },
 ];
+
+console.log('seeding SQLite and IndexedDB adapter worlds…');
+entries.push(...(await prepareAdapterBenchEntries()));
 
 const bench = new Bench({ time: 800, warmupTime: 200 });
 const heavy = new Bench({ time: 0, iterations: 3, warmupTime: 0, warmupIterations: 1 });

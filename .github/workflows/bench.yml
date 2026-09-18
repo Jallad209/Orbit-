@@ -71,6 +71,7 @@ jobs:
         run: pnpm exec playwright test tests/e2e/playwright/startup.spec.ts
         env:
           CI: true
+          ORBIT_STARTUP_50K: '1'
 
       - name: Upload traces
         if: failure()

@@ -138,10 +138,9 @@ jobs:
         env:
           CI: true
 
-      # Cold activation: start the real binary with an orbit:// argument (a notification
-      # click / protocol launch) and confirm it opens the record, never Today. Regression
-      # gate for PD-001. Uses the direct-argv harness, not WebDriver.
-      - name: Cold activation on desktop
+      # Direct-process tests use the exact release binary: cold activation, 50k startup,
+      # scheduled backup, CSP, and the WebView network boundary.
+      - name: Cold desktop safety and performance
         run: pnpm run e2e:desktop:cold
         env:
           CI: true
