@@ -2,7 +2,7 @@
 
 Run only in Windows Sandbox or the disposable `OrbitTest` host account. Record PASS, FAIL, or
 NOT RUN; never convert a missing environment into PASS. Candidate hashes belong in
-`C:\OrbitEvidence\candidate.json`.
+`C:\OrbitHarness\evidence\candidate.json`.
 
 ## Sandbox scenarios
 
@@ -22,8 +22,9 @@ NOT RUN; never convert a missing environment into PASS. Candidate hashes belong 
 
 Use `checks.ps1 -Action snapshot`, `-Action foreign-handler`, `-Action protocol
 -ExpectedRecordUri orbit://task/<uuid>`, and `-Action uninstall-snapshot` to capture the
-automatable portions. Copy screenshots and redacted logs into `C:\OrbitEvidence` before closing
-Sandbox; the session is destroyed on close.
+automatable portions. Copy screenshots and redacted logs into `C:\OrbitHarness\evidence` (mapped
+to `tests/installed/evidence` on the host) before closing Sandbox; the session is destroyed on
+close.
 
 ## Disposable host-account scenarios
 

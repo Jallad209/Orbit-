@@ -20,8 +20,9 @@ $metadata = [ordered]@{
   installer = $candidate.Name
   sha256 = $hash
 }
-$metadata | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath 'C:\OrbitEvidence\candidate.json' -Encoding utf8
+New-Item -ItemType Directory -Path 'C:\OrbitHarness\evidence' -Force | Out-Null
+$metadata | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath 'C:\OrbitHarness\evidence\candidate.json' -Encoding utf8
 
 Start-Process -FilePath $localInstaller -ArgumentList '/S' -Wait
 Start-Process -FilePath 'notepad.exe' -ArgumentList 'C:\OrbitHarness\CHECKLIST.md'
-Start-Process -FilePath 'explorer.exe' -ArgumentList 'C:\OrbitEvidence'
+Start-Process -FilePath 'explorer.exe' -ArgumentList 'C:\OrbitHarness\evidence'

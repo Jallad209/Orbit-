@@ -1,7 +1,7 @@
 param(
   [ValidateSet('snapshot', 'foreign-handler', 'protocol', 'uninstall-snapshot')]
   [string]$Action = 'snapshot',
-  [string]$EvidenceDir = 'C:\OrbitEvidence',
+  [string]$EvidenceDir = 'C:\OrbitHarness\evidence',
   [string]$ExpectedRecordUri = ''
 )
 

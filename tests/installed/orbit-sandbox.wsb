@@ -1,22 +1,24 @@
 <Configuration>
+  <!--
+    One read-write mapping. Mapping tests\installed read-only and its own evidence
+    subfolder read-write again is a nested mapping, and the Sandbox session dropped
+    ("The connection to the Windows Sandbox environment was lost") before logon; the
+    harness is disposable with the session, so writable is fine. Evidence written to
+    C:\OrbitHarness\evidence lands in tests\installed\evidence on the host.
+  -->
   <MappedFolders>
     <MappedFolder>
       <HostFolder>C:\Orbit\tests\installed</HostFolder>
       <SandboxFolder>C:\OrbitHarness</SandboxFolder>
-      <ReadOnly>true</ReadOnly>
+      <ReadOnly>false</ReadOnly>
     </MappedFolder>
     <MappedFolder>
       <HostFolder>C:\Orbit\apps\orbit\src-tauri\target\release\bundle\nsis</HostFolder>
       <SandboxFolder>C:\OrbitInstallers</SandboxFolder>
       <ReadOnly>true</ReadOnly>
     </MappedFolder>
-    <MappedFolder>
-      <HostFolder>C:\Orbit\tests\installed\evidence</HostFolder>
-      <SandboxFolder>C:\OrbitEvidence</SandboxFolder>
-      <ReadOnly>false</ReadOnly>
-    </MappedFolder>
   </MappedFolders>
-  <Networking>Enable</Networking>
+  <Networking>Default</Networking>
   <ClipboardRedirection>Disable</ClipboardRedirection>
   <LogonCommand>
     <Command>powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\OrbitHarness\bootstrap.ps1</Command>
