@@ -10,6 +10,7 @@
 
 mod activation;
 mod autostart;
+mod backup;
 mod commands;
 mod logging;
 mod notifications;
@@ -22,6 +23,7 @@ mod tray;
 use std::sync::Mutex;
 
 use serde_json::{json, Map};
+use tauri::webview::PageLoadEvent;
 use tauri::{Manager, RunEvent, WindowEvent};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
@@ -169,6 +171,30 @@ pub fn run() {
             scheduler::start(handle);
             Ok(())
         })
+        // A window loading a new document (a reload, a navigation) has abandoned any transaction
+        // its old document owned; release it now rather than after the 30 s expiry, or the new
+        // document waits on ORBIT_DB_BUSY for that long ("Opening Orbit…").
+        .on_page_load(|webview, payload| {
+            if payload.event() != PageLoadEvent::Started {
+                return;
+            }
+            let Some(db) = webview.try_state::<Db>() else {
+                return;
+            };
+            let released =
+                db.0.lock()
+                    .map_err(|_| "database lock poisoned".to_string())
+                    .and_then(|mut guard| guard.release_window(webview.label()));
+            match released {
+                Ok(true) => {
+                    let mut fields = Map::new();
+                    fields.insert("window".into(), json!(webview.label()));
+                    logging::event(Level::Info, "db", "released-on-reload", fields);
+                }
+                Ok(false) => {}
+                Err(error) => logging::error("db", "released-on-reload", &error),
+            }
+        })
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 match window.label() {
@@ -202,6 +228,7 @@ pub fn run() {
             commands::data_dir::data_dir_default,
             commands::data_dir::data_dir_reveal,
             commands::data_dir::data_backups,
+            backup::data_backup_now,
             commands::data_dir::data_quarantine,
             commands::data_dir::data_restore,
             commands::data_dir::data_restore_backup,
@@ -210,6 +237,7 @@ pub fn run() {
             commands::capture::capture_show,
             commands::capture::capture_hide,
             commands::diagnostics::diagnostics_last_run,
+            commands::diagnostics::diagnostics_integrity,
             commands::diagnostics::diagnostics_log,
             commands::diagnostics::diagnostics_export,
             prefs::prefs_get,
@@ -256,4 +284,56 @@ pub fn run() {
         }
         _ => {}
     });
+}
+
+#[cfg(test)]
+mod command_acl_tests {
+    use std::collections::BTreeSet;
+
+    #[test]
+    fn build_manifest_and_invoke_handler_stay_in_sync() {
+        let build = include_str!("../build.rs");
+        let manifest = build
+            .split("const COMMANDS")
+            .nth(1)
+            .and_then(|value| value.split("];").next())
+            .unwrap()
+            .lines()
+            .filter_map(|line| line.split('"').nth(1))
+            .map(str::to_string)
+            .collect::<BTreeSet<_>>();
+
+        let source = include_str!("lib.rs");
+        let handlers = source
+            .split("tauri::generate_handler![")
+            .nth(1)
+            .and_then(|value| value.split("])").next())
+            .unwrap()
+            .split(',')
+            .filter_map(|entry| entry.trim().split("::").last())
+            .filter(|name| !name.is_empty())
+            .map(str::to_string)
+            .collect::<BTreeSet<_>>();
+
+        assert_eq!(manifest, handlers);
+    }
+
+    #[test]
+    fn capture_capability_excludes_privileged_commands() {
+        let capability = include_str!("../capabilities/capture.json");
+        for permission in [
+            "allow-data-backup-now",
+            "allow-data-restore-backup",
+            "allow-file-read-text",
+            "allow-file-write-text",
+            "allow-diagnostics-export",
+            "allow-resident-hide-main",
+            "allow-resident-quit",
+        ] {
+            assert!(
+                !capability.contains(&format!("\"{permission}\"")),
+                "capture capability must not grant {permission}"
+            );
+        }
+    }
 }

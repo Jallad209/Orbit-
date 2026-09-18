@@ -1,0 +1,32 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "capture",
+  "description": "Quick Capture: only repository access, recovery needed to open it first, diagnostics logging, and its own lifecycle controls.",
+  "windows": ["capture"],
+  "permissions": [
+    "core:path:allow-join",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "core:window:allow-start-dragging",
+    "allow-db-open",
+    "allow-db-close",
+    "allow-db-execute",
+    "allow-db-select",
+    "allow-db-exec",
+    "allow-db-begin",
+    "allow-db-finish",
+    "allow-data-dir-get",
+    "allow-data-dir-set",
+    "allow-data-dir-default",
+    "allow-data-backups",
+    "allow-data-quarantine",
+    "allow-data-restore",
+    "allow-capture-show",
+    "allow-capture-hide",
+    "allow-diagnostics-last-run",
+    "allow-diagnostics-log",
+    "allow-resident-capture-subscribed",
+    "allow-resident-quit-ack",
+    "allow-scheduler-wake"
+  ]
+}

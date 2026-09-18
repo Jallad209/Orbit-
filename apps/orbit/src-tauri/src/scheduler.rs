@@ -42,6 +42,9 @@ use crate::time::now_iso;
 pub const POLL_INTERVAL: Duration = Duration::from_secs(60);
 /// How long Quit waits for a pass that is mid-notification before giving up on the join.
 pub const STOP_DEADLINE: Duration = Duration::from_secs(5);
+/// The daily backup copies and verifies the whole file while holding the connection, so it
+/// waits until the launch has settled instead of competing with the first screen.
+pub const BACKUP_GRACE: Duration = Duration::from_secs(20);
 
 enum Control {
     Wake,
@@ -165,7 +168,7 @@ fn deliver(
         let owner = format!("scheduler-{now}-{index}");
         let next = {
             let Ok(mut state) = db.lock() else { break };
-            if state.begin(owner.clone()).is_err() {
+            if state.begin(owner.clone(), None).is_err() {
                 break;
             }
             let next = take_due(state.connection.as_ref().unwrap(), now)
@@ -253,9 +256,20 @@ pub fn start(app: AppHandle) {
     thread::Builder::new()
         .name("orbit-reminders".into())
         .spawn(move || {
+            let started = Instant::now();
             loop {
                 tick(&handle);
-                match rx.recv_timeout(POLL_INTERVAL) {
+                let settled = started.elapsed() >= BACKUP_GRACE;
+                if settled {
+                    crate::backup::run_daily(&handle);
+                }
+                // Until the grace ends, wake exactly when it does rather than a poll later.
+                let wait = if settled {
+                    POLL_INTERVAL
+                } else {
+                    BACKUP_GRACE.saturating_sub(started.elapsed())
+                };
+                match rx.recv_timeout(wait) {
                     Ok(Control::Wake) | Err(RecvTimeoutError::Timeout) => continue,
                     Ok(Control::Stop) | Err(RecvTimeoutError::Disconnected) => break,
                 }
@@ -409,6 +423,33 @@ mod tests {
     }
 
     #[test]
+    fn direct_sources_fire_without_a_rule() {
+        let db = fresh();
+        db.lock()
+            .unwrap()
+            .connection
+            .as_ref()
+            .unwrap()
+            .execute_batch(
+                "DELETE FROM reminders;
+                 INSERT INTO reminders(id, data) VALUES
+                   ('review', '{\"id\":\"review\",\"title\":\"Continue review\",\"body\":\"\",\"source\":\"review-step\",\"status\":\"pending\",\"fireAt\":\"2026-09-18T06:00:00.000Z\",\"deletedAt\":null,\"key\":\"review-step:today:project\"}'),
+                   ('person', '{\"id\":\"person\",\"title\":\"Follow up\",\"body\":\"\",\"source\":\"person-follow-up\",\"status\":\"pending\",\"fireAt\":\"2026-09-18T07:00:00.000Z\",\"deletedAt\":null,\"key\":\"person-follow-up:omar\"}'),
+                   ('spending', '{\"id\":\"spending\",\"title\":\"Monthly spending\",\"body\":\"\",\"source\":\"monthly-spending\",\"status\":\"pending\",\"fireAt\":\"2026-09-18T08:00:00.000Z\",\"deletedAt\":null,\"key\":\"monthly-spending:2026-08\"}');",
+            )
+            .unwrap();
+        let mut seen = Vec::new();
+        assert_eq!(
+            deliver(&db, "2026-09-18T09:00:00.000Z", |reminder| {
+                seen.push(reminder.id.clone());
+                Ok(())
+            }),
+            3
+        );
+        assert_eq!(seen, ["review", "person", "spending"]);
+    }
+
+    #[test]
     fn old_duplicate_rows_only_deliver_once_per_key() {
         let db = fresh();
         db.lock().unwrap().connection.as_ref().unwrap().execute_batch("INSERT INTO reminders(id, data) SELECT 'duplicate', json_set(data, '$.id', 'duplicate') FROM reminders WHERE id = 'a'").unwrap();
@@ -477,7 +518,7 @@ mod tests {
     fn scheduler_never_joins_ui_transactions_and_owns_delivery() {
         let db = fresh();
         let now = "2026-09-18T09:00:00.000Z";
-        db.lock().unwrap().begin("ui".into()).unwrap();
+        db.lock().unwrap().begin("ui".into(), None).unwrap();
         assert_eq!(deliver(&db, now, |_| panic!("must wait")), 0);
         db.lock().unwrap().finish("ui", false).unwrap();
         assert_eq!(

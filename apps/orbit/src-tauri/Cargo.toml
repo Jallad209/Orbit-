@@ -5,6 +5,7 @@ description = "Orbit — an offline-first personal operating system"
 authors = ["Orbit"]
 edition = "2021"
 rust-version = "1.85"
+publish = false
 
 [lib]
 name = "orbit_lib"

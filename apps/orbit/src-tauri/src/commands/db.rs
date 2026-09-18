@@ -8,7 +8,7 @@ use std::time::{Duration, Instant};
 
 use rusqlite::types::{Value, ValueRef};
 use rusqlite::{params_from_iter, Connection};
-use serde_json::{Map, Value as Json};
+use serde_json::{json, Map, Value as Json};
 use tauri::State;
 
 use crate::logging::{self, Level};
@@ -18,6 +18,9 @@ pub struct Database {
     pub connection: Option<Connection>,
     pub generation: u64,
     owner: Option<(String, Instant)>,
+    /// Label of the webview whose document opened the owned transaction, so a reload of that
+    /// window releases it at once instead of after the 30 s expiry.
+    owner_window: Option<String>,
     /// Shutdown has begun: new independent writes and new transactions are refused with a
     /// clear message; a transaction that already owns the connection may still finish.
     pub quitting: bool,
@@ -70,7 +73,7 @@ impl Database {
         }
     }
 
-    pub fn begin(&mut self, owner: String) -> Result<(), String> {
+    pub fn begin(&mut self, owner: String, window: Option<String>) -> Result<(), String> {
         if self.quitting {
             return Err(QUITTING_MESSAGE.into());
         }
@@ -81,7 +84,24 @@ impl Database {
             .execute_batch("BEGIN IMMEDIATE")
             .map_err(|e| e.to_string())?;
         self.owner = Some((owner, Instant::now()));
+        self.owner_window = window;
         Ok(())
+    }
+
+    /// The document that owned the transaction is gone (the window navigated or reloaded):
+    /// nothing can ever finish it, so roll it back now. True when something was released.
+    pub fn release_window(&mut self, label: &str) -> Result<bool, String> {
+        if self.owner.is_none() || self.owner_window.as_deref() != Some(label) {
+            return Ok(false);
+        }
+        if let Some(conn) = self.connection.as_ref() {
+            if !conn.is_autocommit() {
+                conn.execute_batch("ROLLBACK").map_err(|e| e.to_string())?;
+            }
+        }
+        self.owner = None;
+        self.owner_window = None;
+        Ok(true)
     }
 
     pub fn finish(&mut self, owner: &str, commit: bool) -> Result<(), String> {
@@ -131,17 +151,45 @@ fn from_sql(v: ValueRef<'_>) -> Json {
     }
 }
 
+/// A command that waited for the connection, or ran, at least this long is logged, so a
+/// slow start or a stalled screen can be attributed from the diagnostics bundle.
+const SLOW_COMMAND: Duration = Duration::from_millis(250);
+
+/// Statement shape only (no parameters, so no user data), enough to name the query.
+fn note_slow(command: &str, statement: &str, lock_wait: Duration, exec: Duration) {
+    if lock_wait < SLOW_COMMAND && exec < SLOW_COMMAND {
+        return;
+    }
+    let mut fields = Map::new();
+    fields.insert("command".into(), json!(command));
+    fields.insert(
+        "statement".into(),
+        json!(statement
+            .split_whitespace()
+            .take(6)
+            .collect::<Vec<_>>()
+            .join(" ")),
+    );
+    fields.insert("lockWaitMs".into(), json!(lock_wait.as_millis()));
+    fields.insert("execMs".into(), json!(exec.as_millis()));
+    logging::event(Level::Info, "db", "slow", fields);
+}
+
 fn with_conn<T>(
     state: &State<'_, Db>,
+    command: &str,
+    statement: &str,
     owner: Option<&str>,
     generation: Option<u64>,
     read_only: bool,
     f: impl FnOnce(&Connection) -> rusqlite::Result<T>,
 ) -> Result<T, String> {
+    let waiting = Instant::now();
     let mut guard = state
         .0
         .lock()
         .map_err(|_| "database lock poisoned".to_string())?;
+    let lock_wait = waiting.elapsed();
     guard.check_generation(generation)?;
     if guard.quitting && owner.is_none() && !read_only {
         return Err(QUITTING_MESSAGE.into());
@@ -151,7 +199,9 @@ fn with_conn<T>(
         .connection
         .as_ref()
         .ok_or_else(|| "database is not open".to_string())?;
+    let running = Instant::now();
     let result = f(conn).map_err(|e| e.to_string());
+    note_slow(command, statement, lock_wait, running.elapsed());
     if owner.is_none() && !conn.is_autocommit() {
         conn.execute_batch("ROLLBACK").map_err(|e| e.to_string())?;
         return Err("Use an owned database transaction for BEGIN/COMMIT.".into());
@@ -159,25 +209,39 @@ fn with_conn<T>(
     result
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Opened {
+    pub generation: u64,
+    /// This call opened the file. The window that opens it verifies it and owns recovery;
+    /// a window that finds it already open (the other webview got there first) does neither,
+    /// so the full integrity check runs once per connection, not once per window.
+    pub fresh: bool,
+}
+
 /// Both webviews open the same file. Never replace an active connection on reopen.
 #[tauri::command]
-pub fn db_open(state: State<'_, Db>, path: String) -> Result<u64, String> {
+pub fn db_open(state: State<'_, Db>, path: String) -> Result<Opened, String> {
     let mut guard = state
         .0
         .lock()
         .map_err(|_| "database lock poisoned".to_string())?;
     guard.expire()?;
-    open_connection(&mut guard.connection, &path)?;
-    Ok(guard.generation)
+    let fresh = open_connection(&mut guard.connection, &path)?;
+    Ok(Opened {
+        generation: guard.generation,
+        fresh,
+    })
 }
 
-fn open_connection(active: &mut Option<Connection>, path: &str) -> Result<(), String> {
+/// Opens the file unless it is already the active connection; true when this call opened it.
+fn open_connection(active: &mut Option<Connection>, path: &str) -> Result<bool, String> {
     if let Some(conn) = active {
         let requested = std::fs::canonicalize(path).map_err(|e| e.to_string())?;
         let current = std::fs::canonicalize(conn.path().ok_or("database has no file path")?)
             .map_err(|e| e.to_string())?;
         if requested == current {
-            return Ok(());
+            return Ok(false);
         }
         return Err(
             "A different database is already open. Reload Orbit to use the current data folder."
@@ -188,7 +252,7 @@ fn open_connection(active: &mut Option<Connection>, path: &str) -> Result<(), St
         Ok(conn) => {
             *active = Some(conn);
             logging::event(Level::Info, "db", "open", Map::new());
-            Ok(())
+            Ok(true)
         }
         Err(e) => {
             logging::error("db", "open", &e.to_string());
@@ -223,9 +287,15 @@ pub fn db_execute(
     owner: Option<String>,
     generation: Option<u64>,
 ) -> Result<usize, String> {
-    with_conn(&state, owner.as_deref(), generation, false, |conn| {
-        conn.execute(&sql, params_from_iter(params.iter().map(to_sql)))
-    })
+    with_conn(
+        &state,
+        "db_execute",
+        &sql,
+        owner.as_deref(),
+        generation,
+        false,
+        |conn| conn.execute(&sql, params_from_iter(params.iter().map(to_sql))),
+    )
 }
 
 /// One statement with a result set, rows as JSON objects keyed by column name.
@@ -237,18 +307,26 @@ pub fn db_select(
     owner: Option<String>,
     generation: Option<u64>,
 ) -> Result<Vec<Row>, String> {
-    with_conn(&state, owner.as_deref(), generation, true, |conn| {
-        let mut stmt = conn.prepare(&sql)?;
-        let names: Vec<String> = stmt.column_names().iter().map(|n| n.to_string()).collect();
-        let rows = stmt.query_map(params_from_iter(params.iter().map(to_sql)), |row| {
-            let mut out = Row::new();
-            for (i, name) in names.iter().enumerate() {
-                out.insert(name.clone(), from_sql(row.get_ref(i)?));
-            }
-            Ok(out)
-        })?;
-        rows.collect()
-    })
+    with_conn(
+        &state,
+        "db_select",
+        &sql,
+        owner.as_deref(),
+        generation,
+        true,
+        |conn| {
+            let mut stmt = conn.prepare(&sql)?;
+            let names: Vec<String> = stmt.column_names().iter().map(|n| n.to_string()).collect();
+            let rows = stmt.query_map(params_from_iter(params.iter().map(to_sql)), |row| {
+                let mut out = Row::new();
+                for (i, name) in names.iter().enumerate() {
+                    out.insert(name.clone(), from_sql(row.get_ref(i)?));
+                }
+                Ok(out)
+            })?;
+            rows.collect()
+        },
+    )
 }
 
 /// A script of several statements (migrations, BEGIN / COMMIT). No parameters.
@@ -259,23 +337,35 @@ pub fn db_exec(
     owner: Option<String>,
     generation: Option<u64>,
 ) -> Result<(), String> {
-    with_conn(&state, owner.as_deref(), generation, false, |conn| {
-        conn.execute_batch(&sql)
-    })
+    with_conn(
+        &state,
+        "db_exec",
+        &sql,
+        owner.as_deref(),
+        generation,
+        false,
+        |conn| conn.execute_batch(&sql),
+    )
 }
 
 #[tauri::command]
 pub fn db_begin(
     state: State<'_, Db>,
+    webview: tauri::Webview,
     owner: String,
     generation: Option<u64>,
 ) -> Result<(), String> {
+    let waiting = Instant::now();
     let mut db = state
         .0
         .lock()
         .map_err(|_| "database lock poisoned".to_string())?;
+    let lock_wait = waiting.elapsed();
     db.check_generation(generation)?;
-    db.begin(owner)
+    let running = Instant::now();
+    let result = db.begin(owner, Some(webview.label().to_string()));
+    note_slow("db_begin", "BEGIN IMMEDIATE", lock_wait, running.elapsed());
+    result
 }
 
 #[tauri::command]
@@ -285,12 +375,22 @@ pub fn db_finish(
     commit: bool,
     generation: Option<u64>,
 ) -> Result<(), String> {
+    let waiting = Instant::now();
     let mut db = state
         .0
         .lock()
         .map_err(|_| "database lock poisoned".to_string())?;
+    let lock_wait = waiting.elapsed();
     db.check_generation(generation)?;
-    db.finish(&owner, commit)
+    let running = Instant::now();
+    let result = db.finish(&owner, commit);
+    note_slow(
+        "db_finish",
+        if commit { "COMMIT" } else { "ROLLBACK" },
+        lock_wait,
+        running.elapsed(),
+    );
+    result
 }
 
 #[cfg(test)]
@@ -312,14 +412,20 @@ mod tests {
             connection: Some(Connection::open_in_memory().unwrap()),
             ..Default::default()
         };
-        db.begin("main".into()).unwrap();
+        db.begin("main".into(), Some("main".into())).unwrap();
         db.quitting = true;
         assert!(!db.is_idle(), "the owned transaction is still settling");
-        assert_eq!(db.begin("capture".into()).unwrap_err(), QUITTING_MESSAGE);
+        assert_eq!(
+            db.begin("capture".into(), None).unwrap_err(),
+            QUITTING_MESSAGE
+        );
         db.authorize(Some("main")).unwrap();
         db.finish("main", true).unwrap();
         assert!(db.is_idle());
-        assert_eq!(db.begin("later".into()).unwrap_err(), QUITTING_MESSAGE);
+        assert_eq!(
+            db.begin("later".into(), None).unwrap_err(),
+            QUITTING_MESSAGE
+        );
     }
 
     #[test]
@@ -328,7 +434,7 @@ mod tests {
             connection: Some(Connection::open_in_memory().unwrap()),
             ..Default::default()
         };
-        db.begin("main".into()).unwrap();
+        db.begin("main".into(), Some("main".into())).unwrap();
         assert!(db.authorize(None).unwrap_err().contains("ORBIT_DB_BUSY"));
         assert!(db.authorize(Some("capture")).is_err());
         assert!(db.finish("capture", false).is_err());
@@ -349,7 +455,7 @@ mod tests {
             .unwrap()
             .execute_batch("CREATE TABLE test(id PRIMARY KEY); INSERT INTO test VALUES(1)")
             .unwrap();
-        db.begin("main".into()).unwrap();
+        db.begin("main".into(), Some("main".into())).unwrap();
         assert!(db
             .connection
             .as_ref()
@@ -358,7 +464,7 @@ mod tests {
             .is_err());
         assert!(db.finish("main", true).unwrap_err().contains("rolled back"));
         db.authorize(None).unwrap();
-        db.begin("capture".into()).unwrap();
+        db.begin("capture".into(), Some("capture".into())).unwrap();
         db.finish("capture", true).unwrap();
     }
 
@@ -373,7 +479,7 @@ mod tests {
             .unwrap()
             .execute_batch("CREATE TABLE tasks(id)")
             .unwrap();
-        db.begin("gone".into()).unwrap();
+        db.begin("gone".into(), Some("main".into())).unwrap();
         db.connection
             .as_ref()
             .unwrap()
@@ -393,17 +499,57 @@ mod tests {
     }
 
     #[test]
+    fn reloading_the_owning_window_releases_its_transaction_at_once() {
+        let mut db = Database {
+            connection: Some(Connection::open_in_memory().unwrap()),
+            ..Default::default()
+        };
+        db.connection
+            .as_ref()
+            .unwrap()
+            .execute_batch("CREATE TABLE tasks(id)")
+            .unwrap();
+        db.begin("doc-1".into(), Some("main".into())).unwrap();
+        db.connection
+            .as_ref()
+            .unwrap()
+            .execute_batch("INSERT INTO tasks VALUES (1)")
+            .unwrap();
+        // Another window's document loading changes nothing.
+        assert!(!db.release_window("capture").unwrap());
+        assert!(db.authorize(None).is_err());
+        // The owning window's new document: rolled back, free immediately, no 30 s wait.
+        assert!(db.release_window("main").unwrap());
+        assert!(!db.release_window("main").unwrap());
+        db.authorize(None).unwrap();
+        assert_eq!(
+            db.connection
+                .as_ref()
+                .unwrap()
+                .query_row("SELECT count(*) FROM tasks", [], |r| r.get::<_, i64>(0))
+                .unwrap(),
+            0
+        );
+        assert!(db.finish("doc-1", true).is_err());
+        // A transaction owned from Rust (the scheduler) has no window and is never released this way.
+        db.begin("scheduler".into(), None).unwrap();
+        assert!(!db.release_window("main").unwrap());
+        db.finish("scheduler", false).unwrap();
+    }
+
+    #[test]
     fn another_window_opening_the_same_file_preserves_the_active_transaction() {
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().join("orbit.db");
         let mut active = None;
-        open_connection(&mut active, path.to_str().unwrap()).unwrap();
+        assert!(open_connection(&mut active, path.to_str().unwrap()).unwrap());
         active
             .as_ref()
             .unwrap()
             .execute_batch("CREATE TABLE tasks(id); BEGIN IMMEDIATE; INSERT INTO tasks VALUES (1);")
             .unwrap();
-        open_connection(&mut active, path.to_str().unwrap()).unwrap();
+        // The second window is told the file was already open, so it skips verification.
+        assert!(!open_connection(&mut active, path.to_str().unwrap()).unwrap());
         let conn = active.as_ref().unwrap();
         assert!(!conn.is_autocommit());
         conn.execute_batch("COMMIT").unwrap();

@@ -15,7 +15,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Map;
 use tauri::{AppHandle, Manager, State};
 
+use crate::backup::{classify, BackupKind};
 use crate::logging::{self, Level};
+use crate::time;
 
 use super::db::Db;
 
@@ -156,7 +158,7 @@ pub fn data_dir_relocate(
     Ok(dir.to_string_lossy().into_owned())
 }
 
-fn verify_copy(source: &Connection, copy: &Connection) -> Result<(), String> {
+pub(crate) fn verify_copy(source: &Connection, copy: &Connection) -> Result<(), String> {
     let messages = copy
         .prepare("PRAGMA integrity_check")
         .map_err(|e| e.to_string())?
@@ -194,6 +196,50 @@ fn verify_copy(source: &Connection, copy: &Connection) -> Result<(), String> {
     Ok(())
 }
 
+/// Publish a verified, single-file online backup without ever exposing a partial file.
+pub(crate) fn snapshot_to(
+    source: &Connection,
+    dir: &Path,
+    final_name: &str,
+) -> Result<PathBuf, String> {
+    snapshot_to_with_verify(source, dir, final_name, verify_copy)
+}
+
+fn snapshot_to_with_verify(
+    source: &Connection,
+    dir: &Path,
+    final_name: &str,
+    verify: impl FnOnce(&Connection, &Connection) -> Result<(), String>,
+) -> Result<PathBuf, String> {
+    fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    let target = dir.join(final_name);
+    let staged = tempfile::Builder::new()
+        .prefix(".orbit-snapshot-")
+        .tempfile_in(dir)
+        .map_err(|e| e.to_string())?
+        .into_temp_path();
+    source
+        .backup(MAIN_DB, &staged, None)
+        .map_err(|e| e.to_string())?;
+    {
+        let copy = Connection::open(&staged).map_err(|e| e.to_string())?;
+        verify(source, &copy)?;
+        copy.pragma_update(None, "journal_mode", "DELETE")
+            .map_err(|e| e.to_string())?;
+        copy.close().map_err(|(_, e)| e.to_string())?;
+    }
+    fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(&staged)
+        .and_then(|file| file.sync_all())
+        .map_err(|e| e.to_string())?;
+    staged
+        .persist_noclobber(&target)
+        .map_err(|e| e.to_string())?;
+    Ok(target)
+}
+
 fn relocate_connection(
     active: &mut Option<Connection>,
     dir: &Path,
@@ -225,31 +271,7 @@ fn relocate_connection(
         }
     }
     fs::create_dir_all(dir.join("backups")).map_err(|e| e.to_string())?;
-    let staged = tempfile::Builder::new()
-        .prefix(".orbit-relocate-")
-        .tempfile_in(&dir)
-        .map_err(|e| e.to_string())?
-        .into_temp_path();
-    source
-        .backup(MAIN_DB, &staged, None)
-        .map_err(|e| e.to_string())?;
-    {
-        let copy = Connection::open(&staged).map_err(|e| e.to_string())?;
-        verify_copy(source, &copy)?;
-        // Consolidate the copy into one file before publishing it under orbit.db.
-        copy.pragma_update(None, "journal_mode", "DELETE")
-            .map_err(|e| e.to_string())?;
-        copy.close().map_err(|(_, e)| e.to_string())?;
-    }
-    fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open(&staged)
-        .and_then(|file| file.sync_all())
-        .map_err(|e| e.to_string())?;
-    staged
-        .persist_noclobber(&target)
-        .map_err(|e| e.to_string())?;
+    snapshot_to(source, &dir, DATA_FILE)?;
     let switch = (|| {
         let copy = Connection::open(&target).map_err(|e| e.to_string())?;
         copy.execute_batch(
@@ -295,6 +317,24 @@ pub struct BackupCandidate {
     pub path: String,
     pub modified_at: String,
     pub size_bytes: u64,
+    pub kind: BackupKind,
+}
+
+pub(crate) fn candidate(path: &Path) -> Result<BackupCandidate, String> {
+    let meta = fs::metadata(path).map_err(|e| e.to_string())?;
+    let name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("");
+    Ok(BackupCandidate {
+        path: path.to_string_lossy().into_owned(),
+        modified_at: meta
+            .modified()
+            .map(time::system_time_iso)
+            .unwrap_or_else(|_| "1970-01-01T00:00:00.000Z".into()),
+        size_bytes: meta.len(),
+        kind: classify(name),
+    })
 }
 
 /// Every `*.db` file in `<data dir>/backups`, for the restore path.
@@ -312,19 +352,7 @@ pub fn data_backups(path: String) -> Result<Vec<BackupCandidate>, String> {
         if p.extension().and_then(|x| x.to_str()) != Some("db") {
             continue;
         }
-        let meta = entry.metadata().map_err(|e| e.to_string())?;
-        let secs = meta
-            .modified()
-            .ok()
-            .and_then(|m| m.duration_since(UNIX_EPOCH).ok())
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
-        out.push(BackupCandidate {
-            path: p.to_string_lossy().into_owned(),
-            // Seconds since the epoch, zero-padded so lexical order is chronological.
-            modified_at: format!("{secs:020}"),
-            size_bytes: meta.len(),
-        });
+        out.push(candidate(&p)?);
     }
     Ok(out)
 }
@@ -379,6 +407,12 @@ pub fn data_restore_backup(
         copy_into(source, dest)
     })
     .inspect_err(|e| logging::error("data", "restore", e))?;
+    if let Some(dir) = preserved.parent() {
+        match crate::backup::prune(dir) {
+            Ok(pruned) => crate::backup::log_pruned(pruned),
+            Err(error) => logging::error("backup", "failed", &error),
+        }
+    }
     logging::event(Level::Info, "data", "restore", Map::new());
     guard.generation += 1; // Already-queued work from an old webview must not overwrite restored data.
                            // Reload the other webview as well so cached settings and records are discarded.
@@ -446,27 +480,12 @@ fn restore_connection(
     }
     let backups = live_path.parent().unwrap().join("backups");
     fs::create_dir_all(&backups).map_err(|e| e.to_string())?;
-    let preserved = tempfile::Builder::new()
-        .prefix("before-restore-")
-        .suffix(".db")
-        .tempfile_in(&backups)
-        .map_err(|e| e.to_string())?
-        .into_temp_path();
-    current
-        .backup(MAIN_DB, &preserved, None)
-        .map_err(|e| e.to_string())?;
+    let preserved = snapshot_to(
+        current,
+        &backups,
+        &crate::backup::unique_backup_name(&backups, "before-restore", &time::compact_utc()),
+    )?;
     let original = Connection::open(&preserved).map_err(|e| e.to_string())?;
-    verify_copy(current, &original)?;
-    original
-        .pragma_update(None, "journal_mode", "DELETE")
-        .map_err(|e| e.to_string())?;
-    fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open(&preserved)
-        .and_then(|file| file.sync_all())
-        .map_err(|e| e.to_string())?;
-    let preserved = preserved.keep().map_err(|e| e.to_string())?;
     let restore = apply(&source, current).and_then(|()| verify_copy(&source, current));
     if let Err(error) = restore {
         copy_into(&original, current).map_err(|recovery| format!("{error}. Automatic recovery failed ({recovery}); your original data is preserved at {}", preserved.display()))?;
@@ -515,6 +534,24 @@ mod tests {
             .execute_batch("INSERT INTO tasks VALUES ('new', '{}')")
             .unwrap();
         assert_eq!(count(active.as_ref().unwrap()), 2);
+    }
+
+    #[test]
+    fn failed_snapshot_verification_leaves_no_partial_file() {
+        let temp = tempfile::tempdir().unwrap();
+        let source_dir = temp.path().join("source");
+        let source = seed(&source_dir);
+        let out = temp.path().join("backups");
+
+        let result = snapshot_to_with_verify(&source, &out, "daily-2026-09-17.db", |_, _| {
+            Err("injected verification failure".into())
+        });
+
+        assert!(result
+            .unwrap_err()
+            .contains("injected verification failure"));
+        assert!(!out.join("daily-2026-09-17.db").exists());
+        assert_eq!(fs::read_dir(out).unwrap().count(), 0);
     }
 
     #[test]
@@ -645,17 +682,20 @@ mod tests {
         assert!(table_expected_at("reminders", 2));
         assert!(!table_expected_at("weeklyReviewActions", 2));
         assert!(table_expected_at("weeklyReviews", 3));
+        assert!(!table_expected_at("dailyReviewDrafts", 3));
+        assert!(table_expected_at("dailyReviewDrafts", 4));
+        assert!(table_expected_at("dailyReflections", 4));
         assert!(!table_expected_at("search_fts", 3));
     }
 
     #[test]
-    fn real_old_backups_restore_into_a_schema_3_file_and_migrate_forward() {
-        // A live file at schema 3 holds every table, including the week-12 review stores.
+    fn real_old_backups_restore_into_a_schema_4_file_and_migrate_forward() {
+        // A live file at schema 4 holds every table, including the daily review stores.
         let live_schema = std::fs::read_to_string(
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../tests/fixtures/sqlite/v3.sql"),
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../tests/fixtures/sqlite/v4.sql"),
         )
         .unwrap();
-        for version in [1u32, 2] {
+        for version in [1u32, 2, 3] {
             let temp = tempfile::tempdir().unwrap();
             let live_dir = temp.path().join("live");
             fs::create_dir_all(&live_dir).unwrap();
@@ -689,7 +729,18 @@ mod tests {
                     |r| r.get(0),
                 )
                 .unwrap();
-            assert_eq!(reviews, 0);
+            assert_eq!(reviews, i64::from(version >= 3));
+            let daily_reviews: i64 = conn
+                .query_row(
+                    "SELECT count(*) FROM sqlite_schema WHERE name IN ('dailyReviewDrafts', 'dailyReflections')",
+                    [],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            assert_eq!(
+                daily_reviews, 0,
+                "v{version} predates the v4 daily review stores"
+            );
         }
     }
 

@@ -8,6 +8,7 @@ use std::fs::{self, File};
 use std::io::{self, Write};
 use std::path::Path;
 use std::sync::Mutex;
+use std::time::Instant;
 
 use serde::Serialize;
 use serde_json::{json, Map, Value};
@@ -15,7 +16,68 @@ use tauri::{AppHandle, State};
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipWriter};
 
+use crate::commands::db::Db;
 use crate::logging::{self, LastRun, Level};
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct FreshIntegrity {
+    pub ok: bool,
+    pub messages: Vec<String>,
+    pub fts5: bool,
+    pub duration_ms: u64,
+}
+
+/// Re-run SQLite's integrity check when the user builds a diagnostics report.
+/// The database mutex makes the result a coherent, current view of the live file.
+#[tauri::command]
+pub fn diagnostics_integrity(
+    state: State<'_, Db>,
+    generation: u64,
+) -> Result<FreshIntegrity, String> {
+    let started = Instant::now();
+    let mut guard = state
+        .0
+        .lock()
+        .map_err(|_| "database lock poisoned".to_string())?;
+    guard.check_generation(Some(generation))?;
+    guard.authorize(None)?;
+    let conn = guard
+        .connection
+        .as_ref()
+        .ok_or_else(|| "database is not open".to_string())?;
+
+    let fts5 = conn
+        .prepare("PRAGMA compile_options")
+        .and_then(|mut statement| {
+            statement
+                .query_map([], |row| row.get::<_, String>(0))?
+                .collect::<rusqlite::Result<Vec<_>>>()
+        })
+        .map(|options| options.iter().any(|option| option == "ENABLE_FTS5"))
+        .unwrap_or(false);
+    let messages = conn
+        .prepare("PRAGMA integrity_check")
+        .and_then(|mut statement| {
+            statement
+                .query_map([], |row| row.get::<_, String>(0))?
+                .collect::<rusqlite::Result<Vec<_>>>()
+        })
+        .unwrap_or_else(|error| vec![error.to_string()]);
+    let ok = messages == ["ok"];
+    let duration_ms = started.elapsed().as_millis().try_into().unwrap_or(u64::MAX);
+    let mut fields = Map::new();
+    fields.insert("ok".into(), json!(ok));
+    fields.insert("messages".into(), json!(messages.len()));
+    fields.insert("durationMs".into(), json!(duration_ms));
+    logging::event(Level::Info, "diagnostics", "integrity", fields);
+    Ok(FreshIntegrity {
+        ok,
+        messages,
+        fts5,
+        duration_ms,
+    })
+}
 
 /// What the previous run left; filled in at startup, read by the UI once.
 pub struct LastRunState(pub Mutex<LastRun>);
