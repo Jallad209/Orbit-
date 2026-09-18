@@ -38,12 +38,29 @@ $uninstaller = Join-Path $installRoot 'uninstall.exe'
 
 if ($Action -eq 'protocol') {
   if (-not $ExpectedRecordUri.StartsWith('orbit://')) { throw 'Pass -ExpectedRecordUri orbit://kind/uuid.' }
+  # A protocol launch while Orbit runs starts a second orbit.exe that hands the link to the
+  # running instance and exits, so the count right after Start-Process is always 2. What the
+  # scenario needs is the settled state: the original process (and only it) still there.
+  $before = @(Get-Process Orbit -ErrorAction SilentlyContinue | ForEach-Object { $_.Id })
   Start-Process $ExpectedRecordUri
+  $immediate = @(Get-Process Orbit -ErrorAction SilentlyContinue).Count
+  $started = Get-Date
+  do {
+    Start-Sleep -Milliseconds 250
+    $now = @(Get-Process Orbit -ErrorAction SilentlyContinue | ForEach-Object { $_.Id })
+    $settled = $now.Count -eq 1 -and (-not $before -or ($before -contains $now[0]))
+  } until ($settled -or ((Get-Date) - $started).TotalSeconds -ge 15)
   Save-Evidence 'protocol-dispatch.json' ([ordered]@{
     at = [DateTimeOffset]::UtcNow.ToString('O')
     uriKind = ([uri]$ExpectedRecordUri).Host
-    processCount = @(Get-Process Orbit -ErrorAction SilentlyContinue).Count
+    processesBefore = $before
+    processCountImmediately = $immediate
+    processesAfter = $now
+    settledWithinMs = [int]((Get-Date) - $started).TotalMilliseconds
+    originalProcessSurvived = (-not $before) -or ($before | Where-Object { $now -contains $_ }).Count -eq $before.Count
+    exactlyOneProcess = $now.Count -eq 1
   })
+  if ($now.Count -ne 1) { Write-Warning "$($now.Count) Orbit processes 15 s after the launch" }
   exit 0
 }
 
