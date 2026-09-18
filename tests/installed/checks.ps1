@@ -30,8 +30,10 @@ $commandKey = "$protocolKey\shell\open\command"
 $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 $command = if (Test-Path $commandKey) { (Get-Item $commandKey).GetValue('') } else { $null }
 $run = if (Test-Path $runKey) { (Get-ItemProperty -Path $runKey -Name Orbit -ErrorAction SilentlyContinue).Orbit } else { $null }
-$installRoot = Join-Path $env:LOCALAPPDATA 'Programs\Orbit'
-$exe = Join-Path $installRoot 'Orbit.exe'
+# Tauri's NSIS bundle with installMode "currentUser" installs to %LOCALAPPDATA%\<productName>
+# (not Programs\), and the binary keeps its crate name, orbit.exe.
+$installRoot = Join-Path $env:LOCALAPPDATA 'Orbit'
+$exe = Join-Path $installRoot 'orbit.exe'
 $uninstaller = Join-Path $installRoot 'uninstall.exe'
 
 if ($Action -eq 'protocol') {
@@ -52,7 +54,7 @@ $snapshot = [ordered]@{
   uninstallerExists = Test-Path -LiteralPath $uninstaller
   executableSha256 = if (Test-Path -LiteralPath $exe) { (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash } else { $null }
   protocolCommand = $command
-  protocolOwnsOrbit = $command -and $command.Contains($exe) -and $command.EndsWith('"%1"')
+  protocolOwnsOrbit = $command -and ($command.IndexOf($exe, [StringComparison]::OrdinalIgnoreCase) -ge 0) -and $command.EndsWith('"%1"')
   autostartCommand = $run
   orbitProcesses = @(Get-Process Orbit -ErrorAction SilentlyContinue | Select-Object Id, StartTime, Path)
   dataDirectoryExists = Test-Path -LiteralPath (Join-Path $env:APPDATA 'app.orbit.desktop\data')
