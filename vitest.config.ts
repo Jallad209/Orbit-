@@ -1,8 +1,15 @@
 import { defineConfig } from 'vitest/config';
 
+// Tests run in UTC on every machine. Fixture timestamps are UTC instants while test clocks
+// are built from local wall time, so a day count near midnight differs between a UTC+3
+// developer machine and a UTC runner (the planner golden). Set here, before the workers
+// are spawned, so they inherit it; `env` covers the projects that run in-process.
+process.env.TZ = 'UTC';
+
 export default defineConfig({
   test: {
     projects: ['packages/*', 'apps/*'],
+    env: { TZ: 'UTC' },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

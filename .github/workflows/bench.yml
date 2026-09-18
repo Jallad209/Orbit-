@@ -68,7 +68,7 @@ jobs:
         run: pnpm --filter orbit run build
 
       - name: Measure startup
-        run: pnpm exec playwright test tests/e2e/playwright/startup.spec.ts
+        run: pnpm exec playwright test tests/e2e/playwright/startup.spec.ts --project=chromium
         env:
           CI: true
           ORBIT_STARTUP_50K: '1'

@@ -1,9 +1,10 @@
 /**
  * Engine benchmarks with budgets and regression detection.
  *
- *   pnpm run bench                 # run, compare with bench/baseline.json
- *   pnpm run bench -- --update     # run and rewrite the baseline
+ *   pnpm run bench                 # run, compare with this machine's entry in bench/baseline.json
+ *   pnpm run bench -- --update     # run and write this machine's entry
  *   pnpm run bench -- --tolerance 40
+ *   pnpm run bench -- --adopt bench-results/results.json   # fold in a CI run's artifact
  *
  * Every benchmark has an absolute budget (from DEVOPS-TASKS week 6) and a
  * committed baseline mean. The run fails when a mean is over budget or more
@@ -54,6 +55,59 @@ const RESULTS_PATH = 'bench/results.json';
 const update = process.argv.includes('--update');
 const tolIdx = process.argv.indexOf('--tolerance');
 const tolerance = tolIdx === -1 ? 25 : Number(process.argv[tolIdx + 1]);
+const adoptIdx = process.argv.indexOf('--adopt');
+
+/**
+ * Baselines are per machine: a mean recorded on the developer's laptop says nothing about
+ * a CI runner, so the regression check only compares against a baseline recorded on the
+ * same platform, architecture, and Node major. Budgets are absolute and always enforced.
+ */
+const MACHINE = `${process.platform} ${process.arch} node ${process.version.split('.')[0]}`;
+
+interface MachineBaseline {
+  at: string;
+  results: Record<string, Result>;
+}
+interface Baseline {
+  note: string;
+  machines: Record<string, MachineBaseline>;
+}
+
+function readBaseline(): Baseline {
+  const note =
+    'Means in ms, one entry per machine. Add or refresh this machine with `pnpm run bench -- --update`; fold in a CI run with `pnpm run bench -- --adopt <bench-results/results.json>`.';
+  if (!existsSync(BASELINE_PATH)) return { note, machines: {} };
+  const raw = JSON.parse(readFileSync(BASELINE_PATH, 'utf8')) as Partial<Baseline> & {
+    machine?: string;
+    at?: string;
+    results?: Record<string, Result>;
+  };
+  if (raw.machines) return { note, machines: raw.machines };
+  // The single-machine format from before week 13.
+  const key = raw.machine ? raw.machine.replace(/node v(\d+)\.\d+\.\d+/, 'node v$1') : MACHINE;
+  return { note, machines: { [key]: { at: raw.at ?? '', results: raw.results ?? {} } } };
+}
+
+function writeBaseline(baseline: Baseline) {
+  writeFileSync(BASELINE_PATH, JSON.stringify(baseline, null, 2) + '\n');
+}
+
+if (adoptIdx !== -1) {
+  const file = process.argv[adoptIdx + 1];
+  if (!file) throw new Error('--adopt needs a results.json path');
+  const run = JSON.parse(readFileSync(file, 'utf8')) as {
+    machine?: string;
+    at: string;
+    results: Record<string, Result>;
+  };
+  if (!run.machine)
+    throw new Error(`${file} has no machine field; it predates per-machine baselines`);
+  const adopted = readBaseline();
+  adopted.machines[run.machine] = { at: run.at, results: run.results };
+  writeBaseline(adopted);
+  console.log(`baseline for ${run.machine} adopted from ${file}`);
+  process.exit(0);
+}
 
 const clock = fixedClock(new Date(2026, 8, 12, 9, 0, 0));
 console.log('seeding worlds…');
@@ -246,9 +300,9 @@ for (const task of [...bench.tasks, ...heavy.tasks]) {
   };
 }
 
-const baseline: Record<string, Result> = existsSync(BASELINE_PATH)
-  ? (JSON.parse(readFileSync(BASELINE_PATH, 'utf8')) as { results: Record<string, Result> }).results
-  : {};
+const stored = readBaseline();
+const baseline: Record<string, Result> = stored.machines[MACHINE]?.results ?? {};
+const comparing = MACHINE in stored.machines;
 
 const rows: string[] = [];
 let failed = false;
@@ -266,7 +320,12 @@ for (const e of entries) {
     } | ${delta === null ? '—' : `${delta >= 0 ? '+' : ''}${delta.toFixed(0)}%`} | ${status} |`,
   );
 }
+const heading = comparing
+  ? `Machine \`${MACHINE}\`; regression tolerance ${tolerance} % against its baseline.`
+  : `No baseline for \`${MACHINE}\`: budgets enforced, regression check skipped. Add one with \`pnpm run bench -- --update\` on this machine, or \`--adopt\` the CI artifact.`;
 const table = [
+  heading,
+  '',
   '| Benchmark | mean ms | p99 ms | budget ms | baseline ms | Δ | status |',
   '|---|---:|---:|---:|---:|---:|---|',
   ...rows,
@@ -275,27 +334,16 @@ console.log('\n' + table + '\n');
 
 writeFileSync(
   RESULTS_PATH,
-  JSON.stringify({ at: new Date().toISOString(), results }, null, 2) + '\n',
+  JSON.stringify({ machine: MACHINE, at: new Date().toISOString(), results }, null, 2) + '\n',
 );
 if (process.env.GITHUB_STEP_SUMMARY) {
   appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Engine benchmarks\n\n${table}\n`);
 }
 
 if (update) {
-  writeFileSync(
-    BASELINE_PATH,
-    JSON.stringify(
-      {
-        note: 'Means in ms. Regenerate with `pnpm run bench -- --update` on the reference machine.',
-        machine: `${process.platform} ${process.arch} node ${process.version}`,
-        at: new Date().toISOString(),
-        results,
-      },
-      null,
-      2,
-    ) + '\n',
-  );
-  console.log(`baseline written to ${BASELINE_PATH}`);
+  stored.machines[MACHINE] = { at: new Date().toISOString(), results };
+  writeBaseline(stored);
+  console.log(`baseline for ${MACHINE} written to ${BASELINE_PATH}`);
 } else if (failed) {
   console.error(`benchmark check failed (tolerance ${tolerance}%)`);
   process.exit(1);

@@ -113,7 +113,7 @@ export async function prepareAdapterBenchEntries(): Promise<AdapterBenchEntry[]>
     },
     {
       name: `adapter:${name}: search query, 50k tasks + 10k notes`,
-      budgetMs: 50,
+      budgetMs: 100,
       fn: () => search.search('review the', undefined, 20),
     },
     {

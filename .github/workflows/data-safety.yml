@@ -75,8 +75,10 @@ jobs:
       - name: Build
         run: pnpm --filter orbit run build
 
+      # Chromium only: this job installs one browser; the three-browser run of the same spec
+      # is the E2E workflow.
       - name: Persistence and quota checks
-        run: pnpm exec playwright test tests/e2e/playwright/data-safety.spec.ts
+        run: pnpm exec playwright test tests/e2e/playwright/data-safety.spec.ts --project=chromium
         env:
           CI: true
 
