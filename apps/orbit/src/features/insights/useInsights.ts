@@ -26,6 +26,8 @@ export interface InsightsState {
 }
 
 export const REFRESH_DEBOUNCE_MS = 250;
+/** Let the first route become interactive before scanning a large repository. */
+export const INITIAL_INSIGHTS_DELAY_MS = import.meta.env.MODE === 'test' ? 0 : 3_000;
 /** setTimeout cannot wait longer than this; the timer re-arms after it. */
 const MAX_TIMER_MS = 2_147_000_000;
 
@@ -83,12 +85,18 @@ export function useInsightsEngine(repo: Repository, clock: Clock = systemClock):
     }
   }, [repo, clock]);
 
-  // Local writes, settings saves (they bump too), and explicit retries: debounced.
+  // Local writes, settings saves (they bump too), and explicit retries: debounced. The first
+  // read waits out the initial delay from mount even when boot itself writes (routine
+  // instances, settings creation), so it never competes with the first screen's own load;
+  // an explicit retry is the one thing that skips the wait.
+  const firstReadAt = useRef<number | null>(null);
   useEffect(() => {
-    const timer = setTimeout(
-      () => void compute(),
-      version === 0 && tick === 0 ? 0 : REFRESH_DEBOUNCE_MS,
-    );
+    let delay = REFRESH_DEBOUNCE_MS;
+    if (generation.current === 0 && tick === 0) {
+      firstReadAt.current ??= Date.now() + INITIAL_INSIGHTS_DELAY_MS;
+      delay = Math.max(0, firstReadAt.current - Date.now());
+    }
+    const timer = setTimeout(() => void compute(), delay);
     return () => clearTimeout(timer);
   }, [compute, version, tick]);
 

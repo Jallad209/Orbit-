@@ -99,7 +99,7 @@ export function NavRail() {
                   {hotkey ? (
                     <kbd
                       aria-hidden="true"
-                      className="hidden font-mono text-[11px] text-nav-muted/70 group-hover:text-nav-muted md:inline"
+                      className="hidden font-mono text-[12px] text-nav-muted md:inline"
                     >
                       {hotkey}
                     </kbd>
@@ -111,7 +111,7 @@ export function NavRail() {
         ))}
       </ul>
 
-      <div className="px-4 py-3 text-[11px] text-nav-muted">
+      <div className="px-4 py-3 text-[12px] text-nav-muted">
         <span className="hidden md:inline">Offline · your data stays here</span>
       </div>
     </nav>

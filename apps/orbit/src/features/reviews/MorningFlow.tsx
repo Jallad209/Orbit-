@@ -37,6 +37,7 @@ import {
 } from './MorningCheckIn';
 import {
   clearDailyReviewDraft,
+  clearExpiredDailyReviewDrafts,
   loadDailyReviewDraft,
   saveDailyReviewDraft,
 } from './dailyReviewService';
@@ -96,6 +97,10 @@ export function MorningFlow({ clock = systemClock }: Props) {
   const { data: reviewPrefs } = useRepoQuery((r) => readSettings(r, clock), [clock]);
   const questionOrder = reviewPrefs?.reviews.questionOrder ?? DEFAULT_QUESTIONS;
   const enabledQuestions = reviewPrefs?.reviews.enabledQuestions ?? questionOrder;
+
+  useEffect(() => {
+    void clearExpiredDailyReviewDrafts(repo, toLocalDate(clock.now()));
+  }, [repo, clock]);
   const flowSteps = useMemo<DailyReviewStep[]>(
     () => [
       ...questionOrder.filter((id) => enabledQuestions.includes(id)),
@@ -675,6 +680,30 @@ function AcceptStep({
   createdRefs: ReviewRef[];
 }) {
   const unique = [...new Map(createdRefs.map((ref) => [`${ref.type}:${ref.id}`, ref])).values()];
+  const refKey = unique.map((ref) => `${ref.type}:${ref.id}`).join('|');
+  const { data: labels } = useRepoQuery(
+    async (repo) => {
+      const entries = await Promise.all(
+        unique.map(async (ref): Promise<[string, string]> => {
+          const key = `${ref.type}:${ref.id}`;
+          switch (ref.type) {
+            case 'project':
+              return [key, (await repo.projects.get(ref.id))?.title ?? 'Deleted project'];
+            case 'bill':
+              return [key, (await repo.bills.get(ref.id))?.title ?? 'Deleted bill'];
+            case 'person':
+              return [key, (await repo.people.get(ref.id))?.name ?? 'Deleted person'];
+            case 'task':
+              return [key, (await repo.tasks.get(ref.id))?.title ?? 'Deleted task'];
+            default:
+              return [key, ref.type];
+          }
+        }),
+      );
+      return new Map(entries);
+    },
+    [refKey],
+  );
   const path = (ref: ReviewRef) =>
     ref.type === 'project'
       ? `/projects/${ref.id}`
@@ -712,7 +741,7 @@ function AcceptStep({
                       to={to}
                       className="rounded-md border border-line px-2 py-1 text-[13px] hover:bg-surface-2"
                     >
-                      {ref.type} · {ref.id.slice(0, 8)}
+                      {labels?.get(`${ref.type}:${ref.id}`) ?? 'Loading…'}
                     </Link>
                   ) : (
                     <span className="text-[13px] text-ink-muted">{ref.type}</span>

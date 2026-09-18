@@ -1,7 +1,7 @@
 import { addDays, toLocalDate } from '../dates';
 import type { Id, LocalDate, Milestone, Project, Session, Task } from '../schema';
 import type { ProjectActivity } from './activity';
-import { computeProjectHealth, type ProjectHealth } from './projectHealth';
+import { computeProjectHealth, type ProjectHealth, type ProjectHealthIndex } from './projectHealth';
 
 /**
  * What is slipping. One rule shared by the Today screen and the morning
@@ -20,6 +20,7 @@ export interface AtRiskInput {
   /** Shared staleness threshold and activity map, so the health here matches every other surface. */
   staleAfterDays?: number;
   activity?: ReadonlyMap<Id, ProjectActivity>;
+  healthIndex?: ProjectHealthIndex;
 }
 
 export interface AtRiskOptions {
@@ -81,6 +82,7 @@ export function computeAtRisk(
         now: input.now,
         staleAfterDays: input.staleAfterDays,
         activity: input.activity,
+        index: input.healthIndex,
       }),
     }))
     .filter(

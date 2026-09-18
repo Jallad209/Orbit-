@@ -76,6 +76,25 @@ export async function clearDailyReviewDraft(
   bumpData();
 }
 
+/** Remove abandoned review state and its direct reminders before a new local day starts. */
+export async function clearExpiredDailyReviewDrafts(
+  repo: Repository,
+  today: LocalDate,
+): Promise<number> {
+  const drafts = await repo.dailyReviewDrafts.query((draft) => draft.date < today);
+  if (!drafts.length) return 0;
+  const ids = new Set(drafts.map((draft) => draft.id));
+  await repo.transaction(async (tx) => {
+    for (const draft of drafts) await tx.dailyReviewDrafts.softDelete(draft.id);
+    const reminders = await tx.reminders.query(
+      (reminder) => reminder.source === 'review-step' && ids.has(reminder.entityId),
+    );
+    for (const reminder of reminders) await tx.reminders.softDelete(reminder.id);
+  });
+  bumpData();
+  return drafts.length;
+}
+
 export interface ReflectionInput {
   body: string;
   promptId: string | null;

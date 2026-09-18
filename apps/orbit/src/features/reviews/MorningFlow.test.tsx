@@ -92,6 +92,27 @@ describe('MorningFlow', () => {
     useToastStore.getState().clear();
   });
 
+  it('schedules Later today back to the exact morning question', async () => {
+    const user = userEvent.setup();
+    const { repo } = await seed(false);
+    render(repo);
+
+    await user.click(await screen.findByRole('button', { name: 'Later today' }));
+    await user.type(screen.getByLabelText('Remind me at'), '10:30');
+    await user.click(screen.getByRole('button', { name: 'Schedule and continue' }));
+
+    await waitFor(async () => {
+      expect(await repo.reminders.list()).toEqual([
+        expect.objectContaining({
+          key: `review-step:${DATE}:project`,
+          source: 'review-step',
+          destination: `/review/morning?date=${DATE}&step=project`,
+        }),
+      ]);
+    });
+    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
+  });
+
   it('sets the energy with a hotkey and passes it through to the planner and the commitment', async () => {
     const user = userEvent.setup();
     const { repo, deep } = await seed();

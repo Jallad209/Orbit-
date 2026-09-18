@@ -9,6 +9,7 @@ import type { StorageStatus } from '@/platform/types';
 interface AppState {
   storageStatus: StorageStatus | null;
   storageBannerDismissed: boolean;
+  exportReminderDismissed: boolean;
   offlineReady: boolean;
   updateAvailable: boolean;
   /** Incremented after every write; `useRepoQuery` re-reads when it changes. */
@@ -24,6 +25,7 @@ interface AppState {
   pendingActivation: string | null;
   setStorageStatus: (status: StorageStatus) => void;
   dismissStorageBanner: () => void;
+  dismissExportReminder: () => void;
   setOfflineReady: (ready: boolean) => void;
   setUpdateAvailable: (available: boolean) => void;
   bump: () => void;
@@ -38,6 +40,7 @@ interface AppState {
 // localStorage value is read once by the resident bridge for the migration.
 const REDUCE_MOTION_KEY = 'orbit-reduce-motion';
 const STORAGE_BANNER_KEY = 'orbit-storage-banner-dismissed';
+const EXPORT_REMINDER_KEY = 'orbit-export-reminder-dismissed';
 function readFlag(key: string): boolean {
   try {
     return localStorage.getItem(key) === '1';
@@ -80,6 +83,7 @@ applyReduceMotion(readFlag(REDUCE_MOTION_KEY));
 export const useAppStore = create<AppState>((set) => ({
   storageStatus: null,
   storageBannerDismissed: readSessionFlag(STORAGE_BANNER_KEY),
+  exportReminderDismissed: readSessionFlag(EXPORT_REMINDER_KEY),
   offlineReady: false,
   updateAvailable: false,
   dataVersion: 0,
@@ -93,6 +97,10 @@ export const useAppStore = create<AppState>((set) => ({
   dismissStorageBanner: () => {
     writeSessionFlag(STORAGE_BANNER_KEY);
     set({ storageBannerDismissed: true });
+  },
+  dismissExportReminder: () => {
+    writeSessionFlag(EXPORT_REMINDER_KEY);
+    set({ exportReminderDismissed: true });
   },
   setOfflineReady: (offlineReady) => set({ offlineReady }),
   setUpdateAvailable: (updateAvailable) => set({ updateAvailable }),

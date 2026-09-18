@@ -3,6 +3,7 @@ import { ReminderSchema, createRecord, fixedClock } from '@orbit/core';
 import { createMemoryRepository } from '@orbit/storage';
 import {
   clearDailyReviewDraft,
+  clearExpiredDailyReviewDrafts,
   loadDailyReflectionDraft,
   loadDailyReviewDraft,
   saveDailyReflection,
@@ -12,6 +13,51 @@ import {
 const clock = fixedClock('2026-09-17T08:00:00.000Z');
 
 describe('daily review persistence', () => {
+  it('expires drafts and review-step reminders from days before today', async () => {
+    const repo = createMemoryRepository({ clock });
+    const old = await saveDailyReviewDraft(
+      repo,
+      '2026-09-16',
+      'morning',
+      {
+        step: 'project',
+        formState: {},
+        createdRefs: [],
+        deferredQuestions: ['project'],
+        reminderTime: 600,
+      },
+      clock,
+    );
+    const today = await saveDailyReviewDraft(
+      repo,
+      '2026-09-17',
+      'morning',
+      {
+        step: 'bill',
+        formState: {},
+        createdRefs: [],
+        deferredQuestions: [],
+        reminderTime: null,
+      },
+      clock,
+    );
+    await repo.reminders.upsert(
+      createRecord(ReminderSchema, clock, {
+        key: 'review-step:2026-09-16:project',
+        source: 'review-step',
+        entityType: 'dailyReviewDraft',
+        entityId: old.id,
+        fireAt: '2026-09-16T07:00:00.000Z',
+        title: 'Continue',
+      }),
+    );
+
+    expect(await clearExpiredDailyReviewDrafts(repo, '2026-09-17')).toBe(1);
+    expect((await repo.dailyReviewDrafts.get(old.id))?.deletedAt).not.toBeNull();
+    expect((await repo.dailyReviewDrafts.get(today.id))?.deletedAt).toBeNull();
+    expect(await repo.reminders.list()).toHaveLength(0);
+  });
+
   it('restores the exact morning state and clears its direct reminders only after completion', async () => {
     const repo = createMemoryRepository({ clock });
     const draft = await saveDailyReviewDraft(

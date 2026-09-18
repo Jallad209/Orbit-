@@ -36,6 +36,8 @@ import type {
  * and conflicts live in the application service; nothing here writes.
  */
 
+// Informational persistence metadata for now. Step ids, rather than this number, drive resume and
+// compatibility; keep the version on saved reviews so a future incompatible flow can gate a notice.
 export const WEEKLY_REVIEW_FLOW_VERSION = 2;
 
 export const STEP_LABEL: Record<WeeklyReviewStep, string> = {

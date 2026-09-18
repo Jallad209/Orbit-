@@ -9,7 +9,8 @@
     ".": "./src/index.ts",
     "./search/minisearch": "./src/search/minisearch.ts",
     "./test/contract": "./test/contract.ts",
-    "./test/betterSqliteDriver": "./test/betterSqliteDriver.ts"
+    "./test/betterSqliteDriver": "./test/betterSqliteDriver.ts",
+    "./test/fakeIndexedDb": "./test/fakeIndexedDb.ts"
   },
   "scripts": {
     "type-check": "tsc --noEmit -p tsconfig.json"

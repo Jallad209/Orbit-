@@ -325,7 +325,7 @@ function ReviewSteps({
 
   return (
     <div
-      className="mx-auto flex max-w-4xl flex-col gap-5"
+      className="mx-auto flex max-w-6xl flex-col gap-5"
       data-testid="weekly-flow"
       data-step={step}
     >

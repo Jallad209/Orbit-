@@ -1,6 +1,7 @@
 import { systemClock } from '@orbit/core';
 import type { Clock } from '@orbit/core';
 import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router';
 import { toast } from '@/components/ui/toastStore';
 import { useAppStore } from '@/app/store';
 import { bumpData } from '@/data/useQuery';
@@ -24,6 +25,7 @@ export const REMINDER_POLL_MS = 60_000;
  */
 export function useReminderScheduler(clock: Clock = systemClock): void {
   const repo = useRepository();
+  const navigate = useNavigate();
   const platform = usePlatform();
   const version = useAppStore((s) => s.dataVersion);
   const running = useRef(false);
@@ -55,8 +57,17 @@ export function useReminderScheduler(clock: Clock = systemClock): void {
             variant: 'warning',
             durationMs: 0,
             action: r.destination
-              ? { label: 'Open', onClick: () => window.location.assign(r.destination!) }
+              ? {
+                  label: 'Open',
+                  onClick: () => {
+                    void markReminder(repo, r, 'dismissed');
+                    navigate(r.destination!);
+                  },
+                }
               : { label: 'Dismiss', onClick: () => void markReminder(repo, r, 'dismissed') },
+            secondaryAction: r.destination
+              ? { label: 'Dismiss', onClick: () => void markReminder(repo, r, 'dismissed') }
+              : undefined,
           });
         }
         if (due.length) bumpData();
@@ -81,5 +92,5 @@ export function useReminderScheduler(clock: Clock = systemClock): void {
       document.removeEventListener('visibilitychange', onVisible);
     };
     // `version` re-runs the reconcile after any write (a new bill, a new rule).
-  }, [repo, platform, clock, native, version, desktop]);
+  }, [repo, platform, clock, native, version, desktop, navigate]);
 }

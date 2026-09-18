@@ -37,6 +37,15 @@ describe('AppLayout', () => {
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main');
   });
 
+  it('collapses the navigation rail below 768 px', () => {
+    renderWithProviders(<AppRoutes />, { route: '/today' });
+    const shell = screen.getByTestId('app-shell');
+    expect(shell.className).toContain('grid-cols-[3.5rem_1fr]');
+    expect(shell.className).toContain('md:grid-cols-[14rem_1fr]');
+    expect(screen.getByText('Orbit').className).toContain('hidden');
+    expect(screen.getByText('Orbit').className).toContain('md:inline');
+  });
+
   it('navigates with "g" sequences from the keyboard', async () => {
     const user = userEvent.setup();
     renderWithProviders(<AppRoutes />, { route: '/today' });

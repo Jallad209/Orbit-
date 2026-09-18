@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router';
 import { StorageBanner } from '@/components/StorageBanner';
+import { ExportReminder } from '@/components/ExportReminder';
 import { QuickCaptureOverlay } from '@/features/inbox/QuickCaptureOverlay';
 import { ResidentBridge } from '@/features/desktop/ResidentBridge';
 import { InsightsProvider } from '@/features/insights/InsightsProvider';
@@ -14,7 +15,10 @@ export function AppLayout() {
   // Insights are computed once for every screen in the shell; the capture window has no shell.
   return (
     <InsightsProvider>
-      <div className="grid h-dvh grid-cols-[3.5rem_1fr] bg-surface md:grid-cols-[14rem_1fr]">
+      <div
+        data-testid="app-shell"
+        className="grid h-dvh grid-cols-[3.5rem_1fr] bg-surface md:grid-cols-[14rem_1fr]"
+      >
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-lime focus:px-3 focus:py-1.5 focus:text-lime-ink"
@@ -24,6 +28,7 @@ export function AppLayout() {
         <NavRail />
         <div className="flex min-w-0 flex-col">
           <StorageBanner />
+          <ExportReminder />
           <main
             id="main"
             tabIndex={-1}

@@ -2,6 +2,7 @@ import {
   activeSession,
   addDays,
   buildProjectActivity,
+  buildProjectHealthIndex,
   computeAtRisk,
   computeProjectHealth,
   localRange,
@@ -185,6 +186,7 @@ export async function loadToday(repo: Repository, options: LoadTodayOptions): Pr
     milestones: allMilestones,
     sessions,
   });
+  const healthIndex = buildProjectHealthIndex(allTasks, allMilestones);
   const atRisk = computeAtRisk(
     {
       tasks,
@@ -195,13 +197,22 @@ export async function loadToday(repo: Repository, options: LoadTodayOptions): Pr
       now,
       staleAfterDays,
       activity,
+      healthIndex,
     },
     date,
   );
   const health = new Map(
     projects.map((p) => [
       p.id,
-      computeProjectHealth(p, { milestones, tasks, sessions, now, staleAfterDays, activity }),
+      computeProjectHealth(p, {
+        milestones,
+        tasks,
+        sessions,
+        now,
+        staleAfterDays,
+        activity,
+        index: healthIndex,
+      }),
     ]),
   );
   const active = projects

@@ -170,10 +170,12 @@ export function TodayPage({ clock = systemClock, date: dateProp }: Props) {
 
       {data ? (
         <>
-          <FocusHeader data={data} block={focus} mode={mode} clock={clock} />
-          <InsightsStrip />
-          <div className="grid gap-5 min-[900px]:grid-cols-[minmax(0,1.7fr)_minmax(18rem,0.9fr)]">
-            <div className="flex flex-col gap-5">
+          <FocusHeader
+            data={data}
+            block={focus}
+            mode={mode}
+            clock={clock}
+            actions={
               <ReviewLaunchers
                 date={date}
                 now={data.now}
@@ -181,6 +183,14 @@ export function TodayPage({ clock = systemClock, date: dateProp }: Props) {
                 eveningStartMin={prefs.eveningStartMin}
                 weekly={weekly?.active ? 'resume' : 'start'}
               />
+            }
+          />
+          <InsightsStrip />
+          <div
+            data-testid="today-columns"
+            className="grid gap-5 min-[900px]:grid-cols-[minmax(0,1.7fr)_minmax(18rem,0.9fr)]"
+          >
+            <div className="flex flex-col gap-5">
               <PlanPanel
                 proposal={data.proposal}
                 mode={mode}

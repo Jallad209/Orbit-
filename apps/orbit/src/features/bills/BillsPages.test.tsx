@@ -67,7 +67,7 @@ describe('Bills pages', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Add spending' }));
     const add = async (name: string, amount: string) => {
       await userEvent.type(screen.getByLabelText('Item'), name);
-      await userEvent.type(screen.getByLabelText('Amount (JOD)'), amount);
+      await userEvent.type(screen.getByLabelText('Amount'), amount);
       await userEvent.click(screen.getByRole('button', { name: 'Add item' }));
     };
     await add('Food', '5');

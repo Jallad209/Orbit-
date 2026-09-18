@@ -41,6 +41,7 @@ export function List({
   className,
   children,
   onKeyDown,
+  role = 'listbox',
   ...props
 }: ListProps) {
   const [internal, setInternal] = useState<string | null>(null);
@@ -113,8 +114,10 @@ export function List({
     <ListContext.Provider value={value}>
       <ul
         ref={ulRef}
-        role="listbox"
-        aria-activedescendant={selectedId ? `list-row-${selectedId}` : undefined}
+        role={role}
+        aria-activedescendant={
+          role === 'listbox' && selectedId ? `list-row-${selectedId}` : undefined
+        }
         className={cn('flex flex-col gap-0.5 outline-none', className)}
         onKeyDown={handleKeyDown}
         {...props}
@@ -143,6 +146,7 @@ export function ListRow({
   children,
   onClick,
   onDoubleClick,
+  role = 'option',
   ...props
 }: ListRowProps) {
   const ctx = useContext(ListContext);
@@ -155,8 +159,8 @@ export function ListRow({
   return (
     <li
       id={`list-row-${id}`}
-      role="option"
-      aria-selected={selected}
+      role={role}
+      aria-selected={role === 'option' ? selected : undefined}
       data-list-row={id}
       tabIndex={selected ? 0 : -1}
       className={cn(

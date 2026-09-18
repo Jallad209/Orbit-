@@ -154,6 +154,9 @@ describe('Notes pages', () => {
     'renders Markdown safely: no HTML, no image fetches, blocked schemes as text, internal links resolved',
     { timeout: 20_000 },
     async () => {
+      // Warm the lazy Markdown chunk first: on a saturated full-suite worker its transform and
+      // import alone can outlast any sensible render wait, and that is not what this measures.
+      await import('./NotePreview');
       const { repo, note } = await seed();
       const other = await createNote(repo, { title: 'Target', body: 'x' }, fixedClock(new Date()));
       const hostile = [
@@ -182,7 +185,8 @@ describe('Notes pages', () => {
       renderWithProviders(<AppRoutes />, { repository: repo, route: `/notes/${note.id}` });
       await screen.findByLabelText('Body');
       await userEvent.click(screen.getByRole('button', { name: 'Preview' }));
-      const preview = await screen.findByTestId('note-preview');
+      // The Markdown renderer is a lazy chunk; leave room for a saturated full-suite worker.
+      const preview = await screen.findByTestId('note-preview', {}, { timeout: 5_000 });
       await waitFor(() =>
         expect(within(preview).getByRole('heading', { level: 1 })).toHaveTextContent('Heading'),
       );

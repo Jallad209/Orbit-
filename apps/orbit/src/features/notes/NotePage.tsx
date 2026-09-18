@@ -295,7 +295,7 @@ function Editor({ detail, clock }: { detail: NoteDetail; clock: Clock }) {
 
   return (
     <div
-      className="mx-auto flex max-w-4xl flex-col gap-5"
+      className="mx-auto flex max-w-6xl flex-col gap-5"
       onKeyDown={(e) => {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
           e.preventDefault();

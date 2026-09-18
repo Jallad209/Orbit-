@@ -313,6 +313,7 @@ export function ProjectPage({ clock = systemClock }: ProjectPageProps) {
         ) : (
           <List
             aria-label="Project tasks"
+            role="list"
             onActivate={(tid) => setEditing(tasks.find((t) => t.id === tid) ?? null)}
             className="rounded-lg border border-line bg-surface-2/40 p-1.5"
           >
@@ -322,6 +323,7 @@ export function ProjectPage({ clock = systemClock }: ProjectPageProps) {
                 <ListRow
                   key={t.id}
                   id={t.id}
+                  role="listitem"
                   onActivate={() => setEditing(t)}
                   leading={
                     <Checkbox

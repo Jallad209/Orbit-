@@ -65,7 +65,7 @@ const SECTIONS = [
 /** Settings: planning, rules, data, appearance, shortcuts, with an in-page nav. */
 export function SettingsPage() {
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-5">
+    <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
         <h1 className="text-display font-semibold tracking-tight text-ink">Settings</h1>
         <p className="mt-1 text-ink-muted">

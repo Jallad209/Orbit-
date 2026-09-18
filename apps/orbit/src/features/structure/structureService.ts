@@ -8,6 +8,7 @@ import {
   archiveProjectCascade,
   assertAreaDeletable,
   buildProjectActivity,
+  buildProjectHealthIndex,
   completeTask as completeTaskRecord,
   computeAreaAttention,
   computeGoalAttention,
@@ -83,6 +84,7 @@ export async function loadStructure(
     milestones: allMilestones,
     sessions,
   });
+  const healthIndex = buildProjectHealthIndex(allTasks, allMilestones);
   return {
     areas: areas.sort((a, b) => a.name.localeCompare(b.name)),
     goals,
@@ -93,7 +95,15 @@ export async function loadStructure(
     health: new Map(
       projects.map((p) => [
         p.id,
-        computeProjectHealth(p, { milestones, tasks, sessions, now, staleAfterDays, activity }),
+        computeProjectHealth(p, {
+          milestones,
+          tasks,
+          sessions,
+          now,
+          staleAfterDays,
+          activity,
+          index: healthIndex,
+        }),
       ]),
     ),
     goalAttention: new Map(goals.map((g) => [g.id, computeGoalAttention(g, attentionInput)])),

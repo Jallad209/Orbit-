@@ -1,11 +1,10 @@
-import { exportJson, serializeExport } from '@orbit/storage';
-import { toLocalDate } from '@orbit/core';
 import { Download, HardDrive, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAppStore } from '@/app/store';
 import { usePlatform, useRepository } from '@/platform';
 import { Button } from '@/components/ui/Button';
 import { toast } from '@/components/ui/toastStore';
+import { exportJsonToFile } from '@/features/settings/exportService';
 
 function formatBytes(n: number | null): string | null {
   if (n === null) return null;
@@ -45,10 +44,8 @@ export function StorageBanner() {
   const exportNow = async () => {
     setExporting(true);
     try {
-      const envelope = await exportJson(repo);
-      const name = `orbit-export-${toLocalDate(new Date())}.json`;
-      await platform.exportFile(name, serializeExport(envelope));
-      toast({ title: 'Export saved', description: name });
+      const saved = await exportJsonToFile(platform, repo);
+      if (saved) toast({ title: 'Export saved', description: 'Your JSON export is up to date.' });
     } catch (e) {
       toast({
         title: 'Export failed',
@@ -72,7 +69,7 @@ export function StorageBanner() {
           This browser has not promised to keep Orbit&apos;s data.
         </span>{' '}
         It may clear it under storage pressure. Install Orbit or export regularly.
-        {usage ? <span className="ml-1 text-gold-ink/70">Using {usage}.</span> : null}
+        {usage ? <span className="ml-1 text-gold-ink">Using {usage}.</span> : null}
       </p>
       <Button size="sm" variant="secondary" loading={exporting} onClick={exportNow}>
         <Download className="size-3.5" aria-hidden="true" />

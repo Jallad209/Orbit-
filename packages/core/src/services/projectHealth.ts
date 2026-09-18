@@ -1,7 +1,6 @@
 import { toLocalDate } from '../dates';
 import type { Id, Instant, Milestone, Project, Session, Task } from '../schema';
 import { buildProjectActivity, elapsedDays, type ProjectActivity } from './activity';
-import { isReady } from './dependencies';
 
 export interface ProjectHealth {
   projectId: Id;
@@ -43,6 +42,38 @@ export interface ProjectHealthInput {
    * is not scanned once per project. Built for the one project otherwise.
    */
   activity?: ReadonlyMap<Id, ProjectActivity>;
+  /** Optional indexes avoid rescanning a large world for every project in a list. */
+  index?: ProjectHealthIndex;
+}
+
+export interface ProjectHealthIndex {
+  tasksByProject: ReadonlyMap<Id, readonly Task[]>;
+  milestonesByProject: ReadonlyMap<Id, readonly Milestone[]>;
+  taskById: ReadonlyMap<Id, Task>;
+}
+
+export function buildProjectHealthIndex(
+  tasks: readonly Task[],
+  milestones: readonly Milestone[],
+): ProjectHealthIndex {
+  const tasksByProject = new Map<Id, Task[]>();
+  const milestonesByProject = new Map<Id, Milestone[]>();
+  const taskById = new Map<Id, Task>();
+  for (const task of tasks) {
+    if (task.deletedAt === null) taskById.set(task.id, task);
+    if (task.deletedAt === null && task.projectId) {
+      const rows = tasksByProject.get(task.projectId) ?? [];
+      rows.push(task);
+      tasksByProject.set(task.projectId, rows);
+    }
+  }
+  for (const milestone of milestones) {
+    if (milestone.deletedAt !== null) continue;
+    const rows = milestonesByProject.get(milestone.projectId) ?? [];
+    rows.push(milestone);
+    milestonesByProject.set(milestone.projectId, rows);
+  }
+  return { tasksByProject, milestonesByProject, taskById };
 }
 
 export const DEFAULT_STALE_AFTER_DAYS = 10;
@@ -57,8 +88,12 @@ const DAY_MS = 86_400_000;
  */
 export function computeProjectHealth(project: Project, input: ProjectHealthInput): ProjectHealth {
   const staleAfter = input.staleAfterDays ?? DEFAULT_STALE_AFTER_DAYS;
-  const ms = input.milestones.filter((m) => m.deletedAt === null && m.projectId === project.id);
-  const tasks = input.tasks.filter((t) => t.deletedAt === null && t.projectId === project.id);
+  const ms = input.index
+    ? [...(input.index.milestonesByProject.get(project.id) ?? [])]
+    : input.milestones.filter((m) => m.deletedAt === null && m.projectId === project.id);
+  const tasks = input.index
+    ? [...(input.index.tasksByProject.get(project.id) ?? [])]
+    : input.tasks.filter((t) => t.deletedAt === null && t.projectId === project.id);
   const open = tasks.filter((t) => t.status === 'open' || t.status === 'inbox');
   const done = tasks.filter((t) => t.status === 'done');
 
@@ -78,7 +113,20 @@ export function computeProjectHealth(project: Project, input: ProjectHealthInput
     ? open.find((t) => t.id === project.nextActionTaskId)
     : undefined;
   const noNextAction = project.status === 'active' && !next;
-  const blocked = open.length > 0 && open.every((t) => !isReady(t, input.tasks));
+  const taskById = input.index?.taskById;
+  const blocked =
+    open.length > 0 &&
+    open.every((task) =>
+      task.dependsOn.some((id) => {
+        const dependency = taskById?.get(id) ?? input.tasks.find((row) => row.id === id);
+        return (
+          dependency !== undefined &&
+          dependency.deletedAt === null &&
+          dependency.status !== 'done' &&
+          dependency.status !== 'archived'
+        );
+      }),
+    );
 
   const lastActivity =
     (

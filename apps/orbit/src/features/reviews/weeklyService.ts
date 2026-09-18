@@ -15,6 +15,7 @@ import {
   computeGoalAttention,
   computeProjectHealth,
   buildProjectActivity,
+  buildProjectHealthIndex,
   createRecord,
   deferredRefs,
   discardDraft,
@@ -417,6 +418,7 @@ export async function loadProjectsStep(
     milestones: allMilestones,
     sessions,
   });
+  const healthIndex = buildProjectHealthIndex(allTasks, allMilestones);
   const areaById = new Map(areas.map((a) => [a.id, a]));
   const sorted = [...projects].sort(
     (a, b) => a.title.localeCompare(b.title) || (a.id < b.id ? -1 : 1),
@@ -431,6 +433,7 @@ export async function loadProjectsStep(
         now,
         staleAfterDays: settings.insights.staleProjectDays,
         activity,
+        index: healthIndex,
       }),
       openTasks: tasks.filter((t) => t.projectId === project.id && t.status === 'open'),
       area: areaById.get(project.areaId) ?? null,

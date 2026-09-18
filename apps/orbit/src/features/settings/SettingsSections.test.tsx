@@ -161,7 +161,7 @@ describe('DataSettings', () => {
 
   it('exports JSON or Markdown through the platform with the right file name', async () => {
     const user = userEvent.setup();
-    const exportFile = vi.fn(async () => {});
+    const exportFile = vi.fn(async () => true);
     const platform: Platform = { ...webPlatform, exportFile };
     const repo = createMemoryRepository({ clock });
     const area = createRecord(AreaSchema, clock, { name: 'Study' });
@@ -305,14 +305,26 @@ describe('DataSettings', () => {
         path: 'D:\\Orbit\\backups\\orbit-2026-09-10.db',
         modifiedAt: '2026-09-10T22:00:00.000Z',
         sizeBytes: 4096,
+        kind: 'daily',
       },
       {
         path: 'D:\\Orbit\\backups\\orbit-2026-09-13.db',
         modifiedAt: '2026-09-13T22:00:00.000Z',
         sizeBytes: 8192,
+        kind: 'weekly',
       },
     ];
     const restoreBackup = vi.fn(async () => {});
+    const created: BackupCandidate = {
+      path: 'D:\\Orbit\\backups\\manual-20260917T080000Z.db',
+      modifiedAt: '2026-09-17T08:00:00.000Z',
+      sizeBytes: 12288,
+      kind: 'manual',
+    };
+    const backupNow = vi.fn(async () => {
+      backups.push(created);
+      return created;
+    });
     const platform: Platform = {
       ...webPlatform,
       name: 'desktop',
@@ -335,15 +347,21 @@ describe('DataSettings', () => {
         lastRun: async () => ({ crashedLastTime: false, startedAt: null, crash: null }),
         saveDiagnostics: async () => null,
         logEvent: async () => {},
-        ...fakeResidentApi().api,
+        ...fakeResidentApi({ backupNow }).api,
       },
     };
     renderWithProviders(<DataSettings />, { platform, route: '/settings' });
     const list = await screen.findByRole('list', { name: 'Backups' });
+    expect(within(list).getByText('daily')).toBeInTheDocument();
+    expect(within(list).getByText('weekly')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Back up now' }));
+    await waitFor(() => expect(backupNow).toHaveBeenCalledOnce());
+    expect(await within(list).findByText('manual-20260917T080000Z.db')).toBeInTheDocument();
     const rows = within(list).getAllByRole('listitem');
-    expect(rows[0]).toHaveTextContent('orbit-2026-09-13.db');
-    expect(rows[0]).toHaveTextContent('8 KB');
-    await user.click(within(rows[1]!).getByRole('button', { name: 'Restore orbit-2026-09-10.db' }));
+    expect(rows[0]).toHaveTextContent('manual-20260917T080000Z.db');
+    expect(rows[1]).toHaveTextContent('orbit-2026-09-13.db');
+    expect(rows[1]).toHaveTextContent('8 KB');
+    await user.click(within(list).getByRole('button', { name: 'Restore orbit-2026-09-10.db' }));
     await user.click(await screen.findByRole('button', { name: 'Restore and reload' }));
     await waitFor(() =>
       expect(restoreBackup).toHaveBeenCalledWith('D:\\Orbit\\backups\\orbit-2026-09-10.db'),

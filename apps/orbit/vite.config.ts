@@ -10,10 +10,31 @@ const { version } = JSON.parse(
   readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
 ) as { version: string };
 
+export const WEB_CSP =
+  "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'";
+
 export default defineConfig({
   // The app's own version, for the diagnostics report.
   define: { __ORBIT_VERSION__: JSON.stringify(version) },
   plugins: [
+    {
+      name: 'orbit-web-csp',
+      apply: 'build',
+      transformIndexHtml: process.env.TAURI_ENV_PLATFORM
+        ? undefined
+        : {
+            order: 'pre',
+            handler() {
+              return [
+                {
+                  tag: 'meta',
+                  attrs: { 'http-equiv': 'Content-Security-Policy', content: WEB_CSP },
+                  injectTo: 'head-prepend',
+                },
+              ];
+            },
+          },
+    },
     react(),
     tailwindcss(),
     VitePWA({

@@ -45,6 +45,8 @@ export function TimelineCanvas({
   return (
     <div
       ref={scroller}
+      tabIndex={0}
+      aria-label={`Timeline for ${day.date}`}
       className="relative max-h-[70vh] overflow-y-auto rounded-lg border border-line bg-surface-2/60"
       data-testid="timeline-canvas"
     >

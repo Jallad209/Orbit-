@@ -49,6 +49,11 @@ export interface DiagnosticsBundle {
   bytes: number;
 }
 
+export interface FreshIntegrity extends IntegrityResult {
+  /** Wall-clock time spent checking the live SQLite database. */
+  durationMs: number;
+}
+
 /** Machine-local desktop preferences (week 11); never part of an export. */
 export interface DesktopPrefs {
   closeToTray: boolean;
@@ -115,6 +120,8 @@ export interface QuitCancelled {
 /** Desktop-only operations. Present when `capabilities.dataFolder` is true. */
 export interface DesktopApi {
   dataFileStatus(): DataFileStatus | null;
+  /** Re-run SQLite integrity_check against the current live database. */
+  freshIntegrity(): Promise<FreshIntegrity>;
   /** Native folder picker; returns the chosen folder or null when cancelled. */
   pickDataFolder(): Promise<string | null>;
   /** Copy and verify the live database, preserve the original, then switch folders and reload. */
@@ -123,6 +130,8 @@ export interface DesktopApi {
   /** Native file picker for an Orbit export; returns its text or null when cancelled. */
   pickExportFile(): Promise<string | null>;
   listBackups(): Promise<BackupCandidate[]>;
+  /** Create and verify a manual online backup, then apply its retention cap. */
+  backupNow(): Promise<BackupCandidate>;
   /**
    * Verify the backup, preserve the current data in backups, atomically restore
    * through SQLite, and reload. Failures leave the original connection usable.
@@ -199,7 +208,8 @@ export interface Platform {
   /** Best-effort notification. In-app fallback is the caller's job. */
   notify(title: string, body?: string): Promise<boolean>;
   /** Hand the user a file: download on web, save dialog on desktop. */
-  exportFile(fileName: string, contents: string | Blob, mimeType?: string): Promise<void>;
+  /** Returns false when the user cancels a native save dialog. */
+  exportFile(fileName: string, contents: string | Blob, mimeType?: string): Promise<boolean>;
   /**
    * Open an already-validated http(s)/mailto URL outside the app, after a user
    * action: a new tab on the web, the system handler on desktop. Never called

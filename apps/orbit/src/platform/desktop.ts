@@ -1,4 +1,10 @@
-import { chooseRestore, createSearchService, integrityCheck, openRepository } from '@orbit/storage';
+import {
+  chooseRestore,
+  createSearchService,
+  detectFts5,
+  integrityCheck,
+  openRepository,
+} from '@orbit/storage';
 import type { BackupCandidate, Repository, SqlDriver } from '@orbit/storage';
 import { recordEvent } from '@/lib/diagnostics';
 import { tauriSqlDriver, type Invoke } from './tauriSqlDriver';
@@ -8,6 +14,7 @@ import type {
   DesktopApi,
   DesktopPrefs,
   DiagnosticsBundle,
+  FreshIntegrity,
   LastRun,
   Platform,
   QuitPrepareRequest,
@@ -91,9 +98,19 @@ export async function openDesktopRepository(deps: Pick<Deps, 'invoke' | 'join'>)
   const path = await join(dir, DATA_FILE);
 
   const open = async () => {
-    const generation = (await invoke<number>('db_open', { path })) ?? 0;
+    const opened = await invoke<{ generation: number; fresh: boolean } | undefined>('db_open', {
+      path,
+    });
+    const generation = opened?.generation ?? 0;
     const driver = tauriSqlDriver(invoke, generation);
-    return { driver, integrity: await integrityCheck(driver), generation };
+    // The window that opens the file verifies it (`quick_check` reads the whole file) and
+    // owns recovery. The other webview finds it already open and trusts that: one
+    // check per connection, and never two windows quarantining the same file.
+    const integrity =
+      opened?.fresh === false
+        ? { ok: true, messages: ['ok'], fts5: await detectFts5(driver) }
+        : await integrityCheck(driver);
+    return { driver, integrity, generation };
   };
 
   let { driver, integrity, generation } = await open();
@@ -120,6 +137,11 @@ export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Pla
 
   const desktop: DesktopApi = {
     dataFileStatus: () => status,
+    async freshIntegrity() {
+      const d = await ready();
+      if (!status) throw new Error('The data file is not open.');
+      return d.invoke<FreshIntegrity>('diagnostics_integrity', { generation });
+    },
     async pickDataFolder() {
       const d = await ready();
       return d.openDialog({ directory: true, title: 'Choose where Orbit keeps its data' });
@@ -145,6 +167,11 @@ export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Pla
     async listBackups() {
       const d = await ready();
       return status ? d.invoke<BackupCandidate[]>('data_backups', { path: status.dir }) : [];
+    },
+    async backupNow() {
+      const d = await ready();
+      if (!status) throw new Error('The data file is not open.');
+      return d.invoke<BackupCandidate>('data_backup_now', { generation });
     },
     async restoreBackup(backupPath) {
       const d = await ready();
@@ -300,9 +327,10 @@ export function createDesktopPlatform(load: () => Promise<Deps> = loadDeps): Pla
     async exportFile(fileName, contents) {
       const d = await ready();
       const path = await d.saveDialog({ defaultPath: fileName, title: 'Save Orbit export' });
-      if (!path) return;
+      if (!path) return false;
       const text = contents instanceof Blob ? await contents.text() : contents;
       await d.invoke<void>('file_write_text', { path, contents: text });
+      return true;
     },
 
     async openExternal(url) {

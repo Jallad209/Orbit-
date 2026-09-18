@@ -122,7 +122,7 @@ describe('diagnostics report', () => {
 
   it('downloads a JSON file on the web and a zip through the desktop shell', async () => {
     const repo = await sensitiveRepo();
-    const exportFile = vi.fn<Platform['exportFile']>(async () => {});
+    const exportFile = vi.fn<Platform['exportFile']>(async () => true);
     const web: Platform = { ...webPlatform, exportFile };
     const report = await buildDiagnosticsReport({ platform: web, repo, clock });
     expect(await saveDiagnostics(web, report, clock)).toEqual({
@@ -141,12 +141,19 @@ describe('diagnostics report', () => {
       files: ['report.json', 'logs/orbit-2026-09-14.000.log'],
       bytes: 1234,
     }));
-    const desktop = desktopWith({ saveDiagnostics: saveDiagnosticsNative });
+    const freshIntegrity = vi.fn(async () => ({
+      ok: false,
+      messages: ['page 7 is damaged'],
+      fts5: true,
+      durationMs: 7,
+    }));
+    const desktop = desktopWith({ saveDiagnostics: saveDiagnosticsNative, freshIntegrity });
     const desktopReport = await buildDiagnosticsReport({ platform: desktop, repo, clock });
     expect(desktopReport.desktop).toEqual({
-      integrity: { ok: true, messages: 1, fts5: true },
+      integrity: { ok: false, messages: 1, fts5: true, durationMs: 7 },
       recovered: false,
     });
+    expect(freshIntegrity).toHaveBeenCalledOnce();
     expect(JSON.stringify(desktopReport)).not.toContain('AppData'); // no paths either
     expect(await saveDiagnostics(desktop, desktopReport, clock)).toEqual({
       location: 'D:\\bundle.zip',
@@ -170,7 +177,7 @@ describe('DiagnosticsSettings', () => {
   it('saves a bundle and shows where it went, or the failure', async () => {
     const user = userEvent.setup();
     const repo = await sensitiveRepo();
-    const exportFile = vi.fn(async () => {});
+    const exportFile = vi.fn(async () => true);
     renderWithProviders(<DiagnosticsSettings clock={clock} />, {
       repository: repo,
       platform: { ...webPlatform, exportFile },

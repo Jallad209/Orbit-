@@ -40,9 +40,11 @@ export interface WeeklyTrendReport {
   };
   coverage: { completedTasks: number; timedCompletedTasks: number; text: string };
   spending: {
-    total: number;
-    currency: 'JOD';
-    items: Array<{ name: string; count: number; total: number }>;
+    currencies: Array<{
+      currency: string;
+      total: number;
+      items: Array<{ name: string; count: number; total: number }>;
+    }>;
   };
   fingerprint: string;
 }
@@ -174,25 +176,30 @@ export function buildWeeklyTrendReport(
     (task) => tasksWithAnyClosedSession.has(task.id) || task.actualMin !== null,
   ).length;
 
-  const spendingItems = new Map<string, { name: string; count: number; total: number }>();
+  const spendingItems = new Map<
+    string,
+    { currency: string; name: string; count: number; total: number }
+  >();
   const expenses = (input.bills ?? []).filter(
     (item) =>
       item.kind === 'expense' &&
       item.deletedAt === null &&
-      item.currency === 'JOD' &&
       item.dueAt !== null &&
       item.dueAt >= weekStart &&
       item.dueAt <= weekEnd,
   );
   for (const expense of expenses) {
-    const key = expense.title.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+    const currency = expense.currency.trim().toUpperCase();
+    const name = expense.title.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+    const key = `${currency}:${name}`;
     const current = spendingItems.get(key);
     if (current) {
       current.count += 1;
       current.total += expense.amount;
     } else {
       spendingItems.set(key, {
-        name: key.replace(/(^|\s)\p{L}/gu, (letter) => letter.toLocaleUpperCase()),
+        currency,
+        name: name.replace(/(^|\s)\p{L}/gu, (letter) => letter.toLocaleUpperCase()),
         count: 1,
         total: expense.amount,
       });
@@ -230,11 +237,19 @@ export function buildWeeklyTrendReport(
       text: `${timedCompletedTasks} of ${completed.length} completed tasks have recorded time.`,
     },
     spending: {
-      total: expenses.reduce((sum, item) => sum + item.amount, 0),
-      currency: 'JOD',
-      items: [...spendingItems.values()].sort(
-        (a, b) => b.total - a.total || a.name.localeCompare(b.name),
-      ),
+      currencies: [...new Set([...spendingItems.values()].map((item) => item.currency))]
+        .sort()
+        .map((currency) => {
+          const items = [...spendingItems.values()]
+            .filter((item) => item.currency === currency)
+            .map(({ name, count, total }) => ({ name, count, total }))
+            .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+          return {
+            currency,
+            total: items.reduce((sum, item) => sum + item.total, 0),
+            items,
+          };
+        }),
     },
     fingerprint: subjectsFingerprint([
       ...input.sessions,

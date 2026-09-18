@@ -4,7 +4,9 @@ import { usePlatform, useRepository } from '@/platform';
 import { SearchContext, useSearchRefresh } from './searchService';
 
 /** How long after the app opens the index starts building; the first screen renders first. */
-export const SEARCH_WARMUP_DELAY_MS = 400;
+// A 50k workspace needs the first route's IndexedDB reads more than it needs a speculative
+// search index. Start after the startup budget; an early Ctrl+K still awaits ready() directly.
+export const SEARCH_WARMUP_DELAY_MS = 3_000;
 
 interface Props {
   /** Supply a ready service (tests). Otherwise the platform builds one. */

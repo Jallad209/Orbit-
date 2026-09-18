@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { useAppStore } from '@/app/store';
 import { slideUp, transition } from '@/styles/motion';
 import { useToastStore, type ToastVariant } from './toastStore';
 
@@ -25,7 +26,8 @@ const accents: Record<ToastVariant, string> = {
 export function Toaster() {
   const toasts = useToastStore((s) => s.toasts);
   const dismiss = useToastStore((s) => s.dismiss);
-  const reduced = useReducedMotion();
+  const appReduced = useAppStore((s) => s.reduceMotion);
+  const reduced = useReducedMotion() || appReduced;
 
   return (
     <div
@@ -60,17 +62,22 @@ export function Toaster() {
                 {t.description ? (
                   <p className="mt-0.5 text-[13px] text-nav-muted">{t.description}</p>
                 ) : null}
-                {t.action ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      t.action?.onClick();
-                      dismiss(t.id);
-                    }}
-                    className="mt-1.5 text-[13px] font-medium text-lime hover:underline focus-visible:outline-lime-2"
-                  >
-                    {t.action.label}
-                  </button>
+                {t.action || t.secondaryAction ? (
+                  <div className="mt-1.5 flex gap-3">
+                    {[t.action, t.secondaryAction].filter(Boolean).map((action) => (
+                      <button
+                        key={action!.label}
+                        type="button"
+                        onClick={() => {
+                          action!.onClick();
+                          dismiss(t.id);
+                        }}
+                        className="text-[13px] font-medium text-lime hover:underline focus-visible:outline-lime-2"
+                      >
+                        {action!.label}
+                      </button>
+                    ))}
+                  </div>
                 ) : null}
               </div>
               <button

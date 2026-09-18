@@ -77,7 +77,6 @@ export function AreasPage() {
           const projects = data.projects.filter(
             (p) => p.areaId === area.id && p.status === 'active',
           ).length;
-          const hasChildren = goals > 0 || projects > 0;
           return (
             <li key={area.id}>
               <Card className="flex flex-col gap-3" data-testid={`area-${area.id}`}>
@@ -122,7 +121,7 @@ export function AreasPage() {
                     }
                     title={confirmDeleteId === area.id ? 'Click again to confirm' : 'Delete area'}
                     onClick={() => {
-                      if (hasChildren || confirmDeleteId === area.id) {
+                      if (confirmDeleteId === area.id) {
                         setConfirmDeleteId(null);
                         void remove(area.id);
                       } else {

@@ -94,8 +94,8 @@ describe('ProjectPage', () => {
     await waitFor(async () => expect(await repo.milestones.count()).toBe(5));
     await user.type(screen.getByRole('textbox', { name: 'Task title' }), 'Book the room{Enter}');
     await waitFor(async () => expect(await repo.tasks.count()).toBe(3));
-    const list = screen.getByRole('listbox', { name: 'Project tasks' });
-    expect(await within(list).findByRole('option', { name: /Book the room/ })).toBeInTheDocument();
+    const list = screen.getByRole('list', { name: 'Project tasks' });
+    expect(await within(list).findByText('Book the room')).toBeInTheDocument();
   });
 
   it('links a note through the picker, filtered by type', async () => {

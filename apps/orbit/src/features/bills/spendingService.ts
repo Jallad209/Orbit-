@@ -15,6 +15,7 @@ import { createDirectReminder } from '@/features/reminders/reminderService';
 export interface SpendingGroup {
   key: string;
   label: string;
+  currency: string;
   count: number;
   total: number;
 }
@@ -23,7 +24,7 @@ export interface SpendingSummary {
   month?: string;
   start: LocalDate;
   endExclusive: LocalDate;
-  total: number;
+  totals: Array<{ currency: string; total: number }>;
   groups: SpendingGroup[];
   entries: Bill[];
 }
@@ -75,22 +76,29 @@ export function summarizeSpending(
         a.id.localeCompare(b.id),
     );
   const grouped = new Map<string, SpendingGroup>();
+  const totals = new Map<string, number>();
   for (const item of entries) {
-    const key = normalizeSpendingName(item.title);
+    const currency = item.currency.trim().toUpperCase();
+    const name = normalizeSpendingName(item.title);
+    const key = `${currency}:${name}`;
+    totals.set(currency, (totals.get(currency) ?? 0) + item.amount);
     const existing = grouped.get(key);
     if (existing) {
       existing.count += 1;
       existing.total += item.amount;
     } else {
-      grouped.set(key, { key, label: titleCase(key), count: 1, total: item.amount });
+      grouped.set(key, { key, label: titleCase(name), currency, count: 1, total: item.amount });
     }
   }
   return {
     start,
     endExclusive,
-    total: entries.reduce((sum, item) => sum + item.amount, 0),
+    totals: [...totals.entries()]
+      .map(([currency, total]) => ({ currency, total }))
+      .sort((a, b) => a.currency.localeCompare(b.currency)),
     groups: [...grouped.values()].sort(
-      (a, b) => b.total - a.total || a.label.localeCompare(b.label),
+      (a, b) =>
+        a.currency.localeCompare(b.currency) || b.total - a.total || a.label.localeCompare(b.label),
     ),
     entries,
   };
@@ -129,26 +137,31 @@ function reminderBody(summary: SpendingSummary): string {
   if (!summary.groups.length) return 'No spending was logged.';
   const items = summary.groups
     .slice(0, 6)
-    .map((item) => `${item.label} ${item.total.toFixed(2)} JOD`)
+    .map((item) => `${item.label} ${item.total.toFixed(2)} ${item.currency}`)
     .join(' · ');
   const more = summary.groups.length > 6 ? ` · +${summary.groups.length - 6} more` : '';
-  return `${summary.total.toFixed(2)} JOD total · ${items}${more}`;
+  const totals = summary.totals
+    .map((item) => `${item.total.toFixed(2)} ${item.currency || '(currency not set)'}`)
+    .join(' · ');
+  return `${totals} total · ${items}${more}`;
 }
 
 export async function createSpendingItem(
   repo: Repository,
-  input: { name: string; amount: number; spentOn: LocalDate },
+  input: { name: string; amount: number; currency: string; spentOn: LocalDate },
   clock: Clock = systemClock,
 ): Promise<Bill> {
   const name = input.name.trim().replace(/\s+/g, ' ');
   if (!name) throw new Error('Name the item.');
   if (!Number.isFinite(input.amount) || input.amount <= 0)
     throw new Error('Enter an amount greater than zero.');
+  const currency = input.currency.trim().toUpperCase();
+  if (!currency) throw new Error('Enter a currency.');
   const item = createRecord(BillSchema, clock, {
     kind: 'expense',
     title: name,
     amount: Math.round(input.amount * 100) / 100,
-    currency: 'JOD',
+    currency,
     dueAt: input.spentOn,
     dueTime: null,
     recurrence: null,
@@ -173,7 +186,7 @@ export async function createSpendingItem(
         fireAt: fireAt.toISOString(),
         title: `${month.slice(0, 7)} spending summary`,
         body: reminderBody(summary),
-        destination: `/bills?month=${month.slice(0, 7)}`,
+        destination: '/bills',
       },
       clock,
     );

@@ -291,29 +291,45 @@ export interface IntegrityResult {
   fts5: boolean;
 }
 
-/** `PRAGMA integrity_check`, plus FTS5 detection, on an open connection. */
-export async function integrityCheck(driver: SqlDriver): Promise<IntegrityResult> {
-  let fts5 = false;
+/** Whether the bundled SQLite can do full-text search (week 10). Cheap: one pragma. */
+export async function detectFts5(driver: SqlDriver): Promise<boolean> {
   try {
     const opts = await driver.select<{ compile_options: string }>('PRAGMA compile_options');
-    fts5 = opts.some((o) => o.compile_options === 'ENABLE_FTS5');
+    return opts.some((o) => o.compile_options === 'ENABLE_FTS5');
   } catch {
-    /* older builds without the pragma */
+    return false; // older builds without the pragma
   }
+}
+
+/**
+ * The open-time check: `PRAGMA quick_check`, plus FTS5 detection, on an open connection.
+ *
+ * `quick_check` reads every page and finds what the restore path exists for — a file that is
+ * not a database, torn or malformed pages, broken cells and freelists — in a fraction of the
+ * time of `integrity_check`, which additionally proves every index matches its table and so
+ * scans the file once per index (about 0.9 s on a 90 MB file at every launch). The full check
+ * still runs where its cost is not on the first screen: on every backup copy the desktop
+ * verifies (`verify_copy`) and on demand from Diagnostics (`freshIntegrity`).
+ */
+export async function integrityCheck(driver: SqlDriver): Promise<IntegrityResult> {
+  const fts5 = await detectFts5(driver);
   try {
-    const rows = await driver.select<{ integrity_check: string }>('PRAGMA integrity_check');
-    const messages = rows.map((r) => r.integrity_check);
+    const rows = await driver.select<{ quick_check: string }>('PRAGMA quick_check');
+    const messages = rows.map((r) => r.quick_check);
     return { ok: messages.length === 1 && messages[0] === 'ok', messages, fts5 };
   } catch (e) {
     return { ok: false, messages: [e instanceof Error ? e.message : String(e)], fts5 };
   }
 }
 
+export type BackupKind = 'daily' | 'weekly' | 'manual' | 'before-restore' | 'other';
+
 export interface BackupCandidate {
   path: string;
   /** ISO instant or anything that sorts chronologically. */
   modifiedAt: string;
   sizeBytes: number;
+  kind: BackupKind;
 }
 
 /**

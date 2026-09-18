@@ -57,6 +57,22 @@ describe('Toast', () => {
     expect(toasts[0]?.title).toBe('Second');
   });
 
+  it('renders a secondary action', () => {
+    render(<Toaster />);
+    const secondary = vi.fn();
+    act(() => {
+      toast({
+        title: 'Reminder',
+        durationMs: 0,
+        action: { label: 'Open', onClick: vi.fn() },
+        secondaryAction: { label: 'Dismiss', onClick: secondary },
+      });
+    });
+    act(() => screen.getAllByRole('button', { name: 'Dismiss' })[0]!.click());
+    expect(secondary).toHaveBeenCalledOnce();
+    expect(useToastStore.getState().toasts).toHaveLength(0);
+  });
+
   it('caps the visible stack', () => {
     act(() => {
       for (let i = 0; i < 6; i++) toast({ title: `t${i}` });

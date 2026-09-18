@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, waitFor } from '@testing-library/react';
-import { BillSchema, RuleSchema, createRecord, fixedClock } from '@orbit/core';
+import { act, screen, waitFor } from '@testing-library/react';
+import { BillSchema, ReminderSchema, RuleSchema, createRecord, fixedClock } from '@orbit/core';
 import { createMemoryRepository } from '@orbit/storage';
+import { useLocation } from 'react-router';
 import { useToastStore } from '@/components/ui/toastStore';
 import { webPlatform, type Platform } from '@/platform';
 import { renderWithProviders } from '@/test/render';
@@ -13,6 +14,11 @@ const clock = fixedClock(new Date(2026, 8, 14, 10, 0, 0));
 function Bridge() {
   useReminderScheduler(clock);
   return null;
+}
+
+function LocationProbe() {
+  const location = useLocation();
+  return <span data-testid="location">{location.pathname + location.search}</span>;
 }
 
 async function seed() {
@@ -80,6 +86,40 @@ describe('useReminderScheduler', () => {
     expect(await repo.reminders.count()).toBe(2);
     expect(useToastStore.getState().toasts).toHaveLength(1);
     clock.set(new Date(2026, 8, 14, 10, 0, 0));
+  });
+
+  it('opens a direct reminder with router navigation and keeps a dismiss action', async () => {
+    const repo = createMemoryRepository({ clock });
+    const reminder = await repo.reminders.upsert(
+      createRecord(ReminderSchema, clock, {
+        key: 'review-step:2026-09-14:project',
+        source: 'review-step',
+        entityType: 'dailyReviewDraft',
+        entityId: '01a0a1b6-3ad4-7678-92cc-ae55e388b0a6',
+        fireAt: '2026-09-14T06:00:00.000Z',
+        title: 'Morning briefing · Projects',
+        destination: '/review/morning?date=2026-09-14&step=project',
+      }),
+    );
+    renderWithProviders(
+      <>
+        <Bridge />
+        <LocationProbe />
+      </>,
+      { repository: repo, route: '/today' },
+    );
+
+    await waitFor(() => expect(useToastStore.getState().toasts).toHaveLength(1));
+    const shown = useToastStore.getState().toasts[0]!;
+    expect(shown.action?.label).toBe('Open');
+    expect(shown.secondaryAction?.label).toBe('Dismiss');
+    await act(async () => shown.action!.onClick());
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/review/morning?date=2026-09-14&step=project',
+    );
+    await waitFor(async () =>
+      expect((await repo.reminders.get(reminder.id))?.status).toBe('dismissed'),
+    );
   });
 
   it('on desktop only fills the queue; the Rust scheduler delivers', async () => {

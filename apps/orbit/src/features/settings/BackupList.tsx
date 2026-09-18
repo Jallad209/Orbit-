@@ -2,6 +2,7 @@ import type { BackupCandidate } from '@orbit/storage';
 import { Archive, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 import {
   Dialog,
   DialogContent,
@@ -27,18 +28,22 @@ function fileName(path: string): string {
 export function BackupList() {
   const platform = usePlatform();
   const desktop = platform.desktop;
-  const { data: backups } = useRepoQuery(async () => (desktop ? desktop.listBackups() : []), []);
+  const { data: backups, refresh } = useRepoQuery(
+    async () => (desktop ? desktop.listBackups() : []),
+    [],
+  );
   const [restoring, setRestoring] = useState<BackupCandidate | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [restoreBusy, setRestoreBusy] = useState(false);
+  const [backupBusy, setBackupBusy] = useState(false);
   if (!desktop) return null;
 
   const restore = async () => {
     if (!restoring) return;
-    setBusy(true);
+    setRestoreBusy(true);
     try {
       await desktop.restoreBackup(restoring.path);
     } catch (e) {
-      setBusy(false);
+      setRestoreBusy(false);
       toast({
         title: 'Restore failed',
         description: e instanceof Error ? e.message : String(e),
@@ -47,11 +52,37 @@ export function BackupList() {
     }
   };
 
+  const backupNow = async () => {
+    setBackupBusy(true);
+    try {
+      const created = await desktop.backupNow();
+      toast({
+        title: 'Backup created',
+        description: fileName(created.path),
+        variant: 'success',
+      });
+      refresh();
+    } catch (error) {
+      toast({
+        title: 'Backup failed',
+        description: error instanceof Error ? error.message : String(error),
+        variant: 'danger',
+      });
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
   const rows = [...(backups ?? [])].sort((a, b) => (a.modifiedAt < b.modifiedAt ? 1 : -1));
 
   return (
     <div className="mt-4 border-t border-line pt-4" data-testid="backup-list">
-      <p className="text-[13px] font-medium text-ink">Backups</p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[13px] font-medium text-ink">Backups</p>
+        <Button size="sm" variant="secondary" loading={backupBusy} onClick={backupNow}>
+          Back up now
+        </Button>
+      </div>
       <p className="text-[12px] text-ink-faint">
         Copies in the <code className="font-mono">backups</code> folder next to your data file.
         Restoring verifies the backup, saves a copy of the current data here, and reloads Orbit.
@@ -66,6 +97,7 @@ export function BackupList() {
               <span className="min-w-0 flex-1 truncate font-mono text-[13px]">
                 {fileName(b.path)}
               </span>
+              <Badge tone="outline">{b.kind.replace('-', ' ')}</Badge>
               <span className="text-[12px] text-ink-faint tnum">
                 {b.modifiedAt.slice(0, 16).replace('T', ' ')} · {sizeLabel(b.sizeBytes)}
               </span>
@@ -90,10 +122,10 @@ export function BackupList() {
             data is saved in the backups folder first, and Orbit reloads.
           </DialogDescription>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setRestoring(null)} disabled={busy}>
+            <Button variant="ghost" onClick={() => setRestoring(null)} disabled={restoreBusy}>
               Cancel
             </Button>
-            <Button variant="danger" onClick={restore} loading={busy}>
+            <Button variant="danger" onClick={restore} loading={restoreBusy}>
               Restore and reload
             </Button>
           </DialogFooter>

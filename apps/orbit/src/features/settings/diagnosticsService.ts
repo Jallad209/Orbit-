@@ -33,7 +33,7 @@ export interface DiagnosticsReport {
   data: Record<string, { live: number; total: number }>;
   search: { backend: string } | null;
   desktop: {
-    integrity: { ok: boolean; messages: number; fts5: boolean };
+    integrity: { ok: boolean; messages: number; fts5: boolean; durationMs: number };
     recovered: boolean;
   } | null;
   lastRun: LastRun | null;
@@ -59,7 +59,9 @@ export async function buildDiagnosticsReport(input: BuildReportInput): Promise<D
     const [live, total] = await Promise.all([store.count(), store.count({ includeDeleted: true })]);
     data[name] = { live, total };
   }
-  const status = platform.desktop?.dataFileStatus() ?? null;
+  const desktop = platform.desktop;
+  const status = desktop?.dataFileStatus() ?? null;
+  const freshIntegrity = status && desktop ? await desktop.freshIntegrity() : null;
   const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent;
   return {
     generatedAt: clock.now().toISOString(),
@@ -85,9 +87,10 @@ export async function buildDiagnosticsReport(input: BuildReportInput): Promise<D
     desktop: status
       ? {
           integrity: {
-            ok: status.integrity.ok,
-            messages: status.integrity.messages.length,
-            fts5: status.integrity.fts5,
+            ok: freshIntegrity!.ok,
+            messages: freshIntegrity!.messages.length,
+            fts5: freshIntegrity!.fts5,
+            durationMs: freshIntegrity!.durationMs,
           },
           recovered: status.recovery !== null,
         }

@@ -46,6 +46,8 @@ function fakeDesktop(
   opts: {
     corrupt?: boolean;
     backups?: Array<{ path: string; modifiedAt: string; sizeBytes: number }>;
+    /** The other webview already opened the file (db_open reports it as not fresh). */
+    alreadyOpen?: boolean;
   } = {},
 ) {
   let corrupt = opts.corrupt ?? false;
@@ -62,11 +64,11 @@ function fakeDesktop(
         dataDir = String(args?.path);
         return dataDir;
       case 'db_open':
-        return undefined;
+        return { generation: 0, fresh: !opts.alreadyOpen };
       case 'db_select': {
         const sql = String(args?.sql);
-        if (corrupt && /integrity_check/.test(sql)) throw new Error('file is not a database');
-        if (/integrity_check/.test(sql)) return [{ integrity_check: 'ok' }];
+        if (corrupt && /quick_check/.test(sql)) throw new Error('file is not a database');
+        if (/quick_check/.test(sql)) return [{ quick_check: 'ok' }];
         if (/compile_options/.test(sql)) return [{ compile_options: 'ENABLE_FTS5' }];
         if (/user_version/.test(sql)) return [{ user_version: 1 }];
         if (/journal_mode/.test(sql)) return [{ journal_mode: 'wal' }];
@@ -125,9 +127,46 @@ describe('openDesktopRepository', () => {
     expect(status.recovery?.restoredFrom).toBeNull();
     expect(fake.calls).not.toContain('data_restore');
   });
+
+  it('trusts a connection the other window already opened instead of re-checking it', async () => {
+    const fake = fakeDesktop({ alreadyOpen: true });
+    const { status } = await openDesktopRepository(fake as never);
+    expect(status.integrity).toEqual({ ok: true, messages: ['ok'], fts5: true });
+    expect(status.recovery).toBeNull();
+    const selects = fake.invoke.mock.calls
+      .filter(([cmd]) => cmd === 'db_select')
+      .map(([, args]) => String((args as { sql?: unknown } | undefined)?.sql));
+    expect(selects.some((sql) => /quick_check|integrity_check/.test(sql))).toBe(false);
+  });
 });
 
 describe('desktop platform', () => {
+  it('creates a manual backup with the current database generation', async () => {
+    const fake = fakeDesktop();
+    const platform = createDesktopPlatform(async () => ({
+      ...fake,
+      invoke: fake.invoke as never,
+      reload: vi.fn(),
+      openDialog: async () => null,
+      saveDialog: async () => null,
+      notification: {
+        isPermissionGranted: async () => false,
+        requestPermission: async () => 'denied',
+        send: vi.fn(),
+      },
+      window: { startDragging: async () => {} },
+      openUrl: async () => {},
+      listen: async () => () => {},
+    }));
+    await platform.createRepository();
+    fake.invoke.mockClear();
+    await platform.desktop!.backupNow();
+    expect(fake.invoke).toHaveBeenCalledExactlyOnceWith('data_backup_now', { generation: 0 });
+    fake.invoke.mockClear();
+    await platform.desktop!.freshIntegrity();
+    expect(fake.invoke).toHaveBeenCalledExactlyOnceWith('diagnostics_integrity', { generation: 0 });
+  });
+
   it('restores with one atomic native command and never closes or quarantines on failure', async () => {
     const fake = fakeDesktop();
     const reload = vi.fn();

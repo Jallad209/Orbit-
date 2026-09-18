@@ -1,7 +1,7 @@
 import type { Clock, ProposedBlock, Task } from '@orbit/core';
 import { formatDuration, formatMinute } from '@orbit/core';
 import { Check, Play, Square } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Button } from '@/components/ui/Button';
 import { toast } from '@/components/ui/toastStore';
@@ -14,10 +14,11 @@ interface Props {
   block: ProposedBlock | null;
   mode: 'proposal' | 'committed';
   clock: Clock;
+  actions?: ReactNode;
 }
 
 /** The one dominant element: what to do next, with Start and Done. */
-export function FocusHeader({ data, block, mode, clock }: Props) {
+export function FocusHeader({ data, block, mode, clock, actions }: Props) {
   const timer = useTimer(clock);
   const [busy, setBusy] = useState(false);
   const [completing, setCompleting] = useState<Task | null>(null);
@@ -109,6 +110,7 @@ export function FocusHeader({ data, block, mode, clock }: Props) {
           Timer running on “{elsewhere.task?.title ?? 'a task'}” · {timer.elapsed}
         </p>
       ) : null}
+      {actions ? <div className="mt-3">{actions}</div> : null}
       <CompleteTaskDialog task={completing} onClose={() => setCompleting(null)} clock={clock} />
     </section>
   );

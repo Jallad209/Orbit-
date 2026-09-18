@@ -15,6 +15,7 @@ export interface Toast {
   /** 0 keeps the toast until dismissed. */
   durationMs: number;
   action?: ToastAction;
+  secondaryAction?: ToastAction;
 }
 
 export interface ToastInput {
@@ -23,6 +24,7 @@ export interface ToastInput {
   variant?: ToastVariant;
   durationMs?: number;
   action?: ToastAction;
+  secondaryAction?: ToastAction;
   /** Reuse an id to replace an existing toast instead of stacking. */
   id?: string;
 }
@@ -51,6 +53,7 @@ export const useToastStore = create<ToastState>((set, get) => ({
       variant: input.variant ?? 'neutral',
       durationMs: input.durationMs ?? DEFAULT_DURATION_MS,
       action: input.action,
+      secondaryAction: input.secondaryAction,
     };
     const existing = timers.get(id);
     if (existing) clearTimeout(existing);

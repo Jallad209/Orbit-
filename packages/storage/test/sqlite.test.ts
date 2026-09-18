@@ -315,9 +315,9 @@ describe('integrity', () => {
 
     expect(
       chooseRestore([
-        { path: 'a.db', modifiedAt: '2026-09-10T00:00:00Z', sizeBytes: 100 },
-        { path: 'b.db', modifiedAt: '2026-09-12T00:00:00Z', sizeBytes: 0 },
-        { path: 'c.db', modifiedAt: '2026-09-11T00:00:00Z', sizeBytes: 100 },
+        { path: 'a.db', modifiedAt: '2026-09-10T00:00:00Z', sizeBytes: 100, kind: 'daily' },
+        { path: 'b.db', modifiedAt: '2026-09-12T00:00:00Z', sizeBytes: 0, kind: 'weekly' },
+        { path: 'c.db', modifiedAt: '2026-09-11T00:00:00Z', sizeBytes: 100, kind: 'manual' },
       ])?.path,
     ).toBe('c.db');
     expect(chooseRestore([])).toBeNull();

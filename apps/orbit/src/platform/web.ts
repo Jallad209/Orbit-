@@ -53,6 +53,7 @@ export const webPlatform: Platform = {
       // Give the browser a tick to start the download before revoking.
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
+    return true;
   },
 
   async openExternal(url) {

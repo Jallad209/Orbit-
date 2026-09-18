@@ -94,6 +94,14 @@ describe('weekly trends', () => {
         }),
         createRecord(BillSchema, clock, {
           kind: 'expense',
+          title: 'Train',
+          amount: 8,
+          currency: 'USD',
+          dueAt: '2026-09-10',
+          paid: true,
+        }),
+        createRecord(BillSchema, clock, {
+          kind: 'expense',
           title: ' food ',
           amount: 15,
           currency: 'JOD',
@@ -116,9 +124,10 @@ describe('weekly trends', () => {
     expect(report.energy.low).toBe(1);
     expect(report.reflections).toMatchObject({ moodAverage: 4, stressAverage: 2, sleepAverage: 3 });
     expect(report.spending).toEqual({
-      total: 20,
-      currency: 'JOD',
-      items: [{ name: 'Food', count: 2, total: 20 }],
+      currencies: [
+        { currency: 'JOD', total: 20, items: [{ name: 'Food', count: 2, total: 20 }] },
+        { currency: 'USD', total: 8, items: [{ name: 'Train', count: 1, total: 8 }] },
+      ],
     });
   });
 

@@ -48,7 +48,7 @@ export function ReviewDashboard({ clock = systemClock }: { clock?: Clock }) {
     .sort((a, b) => b.reviewWeekStart.localeCompare(a.reviewWeekStart))
     .slice(0, 5);
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-5" data-testid="review-dashboard">
+    <div className="mx-auto flex max-w-6xl flex-col gap-5" data-testid="review-dashboard">
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-0 flex-1">
           <h1 className="text-display font-semibold tracking-tight text-ink">Reviews</h1>

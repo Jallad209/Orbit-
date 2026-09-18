@@ -141,7 +141,7 @@ export function SearchPage({ clock = systemClock }: Props) {
   };
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-5">
+    <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
         <h1 className="text-display font-semibold tracking-tight text-ink">Search</h1>
         <p className="mt-1 text-ink-muted">Everything you have written down, in one place.</p>

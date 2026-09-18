@@ -1,4 +1,4 @@
-import { exportJson, exportMarkdown, markdownAnchor, serializeExport } from '@orbit/storage';
+import { exportMarkdown, markdownAnchor } from '@orbit/storage';
 import { systemClock, toLocalDate } from '@orbit/core';
 import type { Clock } from '@orbit/core';
 import { Download, FileText, FolderOpen, HardDrive, ShieldCheck, ShieldAlert } from 'lucide-react';
@@ -11,6 +11,7 @@ import { useAppStore } from '@/app/store';
 import { usePlatform, useRepository } from '@/platform';
 import { BackupList } from './BackupList';
 import { ImportSettings } from './ImportSettings';
+import { exportJsonToFile } from './exportService';
 
 /**
  * Data section of Settings. Desktop: the data folder and integrity status
@@ -30,16 +31,17 @@ export function DataSettings({ clock = systemClock }: { clock?: Clock } = {}) {
     try {
       const date = toLocalDate(clock.now());
       const name = format === 'json' ? `orbit-export-${date}.json` : `orbit-export-${date}.md`;
+      let saved: boolean;
       if (format === 'json') {
-        await platform.exportFile(name, serializeExport(await exportJson(repo)));
+        saved = await exportJsonToFile(platform, repo, clock);
       } else {
-        await platform.exportFile(
+        saved = await platform.exportFile(
           name,
           bundleMarkdown(await exportMarkdown(repo, { singleDocument: true })),
           'text/markdown',
         );
       }
-      toast({ title: 'Export saved', description: name, variant: 'success' });
+      if (saved) toast({ title: 'Export saved', description: name, variant: 'success' });
     } catch (e) {
       toast({
         title: 'Export failed',

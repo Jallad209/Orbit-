@@ -11,8 +11,12 @@ import { useRepoQuery } from '@/data/useQuery';
 import { useRepository } from '@/platform';
 import { createSpendingItem, loadSpending, type SpendingSummary } from './spendingService';
 
-function money(value: number): string {
-  return `${value.toFixed(2)} JOD`;
+function money(value: number, currency: string): string {
+  return `${value.toFixed(2)} ${currency || '(currency not set)'}`;
+}
+
+function totals(summary: SpendingSummary): string {
+  return summary.totals.map((item) => money(item.total, item.currency)).join(' · ');
 }
 
 function monthLabel(month: string): string {
@@ -25,7 +29,7 @@ function monthLabel(month: string): string {
 function Breakdown({ summary, label }: { summary: SpendingSummary; label: string }) {
   return (
     <Card className="flex flex-col gap-2">
-      <SectionHeader title={label} meta={money(summary.total)} />
+      <SectionHeader title={label} meta={totals(summary)} />
       {summary.groups.length ? (
         <ul className="flex flex-col gap-1 text-sm" aria-label={`${label} spending breakdown`}>
           {summary.groups.map((item) => (
@@ -36,7 +40,9 @@ function Breakdown({ summary, label }: { summary: SpendingSummary; label: string
                   {item.count} item{item.count === 1 ? '' : 's'}
                 </span>
               </span>
-              <strong className="shrink-0 font-medium tnum">{money(item.total)}</strong>
+              <strong className="shrink-0 font-medium tnum">
+                {money(item.total, item.currency)}
+              </strong>
             </li>
           ))}
         </ul>
@@ -54,20 +60,25 @@ export function SpendingPanel({ clock = systemClock }: { clock?: Clock }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
+  const [currency, setCurrency] = useState('JOD');
   const [spentOn, setSpentOn] = useState(() => toLocalDate(clock.now()));
   const [busy, setBusy] = useState(false);
   const parsedAmount = Number(amount);
-  const valid = name.trim().length > 0 && Number.isFinite(parsedAmount) && parsedAmount > 0;
+  const valid =
+    name.trim().length > 0 &&
+    Number.isFinite(parsedAmount) &&
+    parsedAmount > 0 &&
+    currency.trim().length > 0;
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!valid) return;
     setBusy(true);
     try {
-      await createSpendingItem(repo, { name, amount: parsedAmount, spentOn }, clock);
+      await createSpendingItem(repo, { name, amount: parsedAmount, currency, spentOn }, clock);
       toast({
         title: 'Spending added',
-        description: `${name.trim()} · ${money(parsedAmount)}`,
+        description: `${name.trim()} · ${money(parsedAmount, currency.trim().toUpperCase())}`,
         variant: 'success',
       });
       setName('');
@@ -96,7 +107,7 @@ export function SpendingPanel({ clock = systemClock }: { clock?: Clock }) {
       {open ? (
         <Card className="border-lime/40 bg-lime/5">
           <form
-            className="grid items-end gap-3 md:grid-cols-[minmax(0,1fr)_10rem_11rem_auto]"
+            className="grid items-end gap-3 md:grid-cols-[minmax(0,1fr)_9rem_7rem_11rem_auto]"
             onSubmit={submit}
           >
             <div>
@@ -110,7 +121,7 @@ export function SpendingPanel({ clock = systemClock }: { clock?: Clock }) {
               />
             </div>
             <div>
-              <Label htmlFor="spending-amount">Amount (JOD)</Label>
+              <Label htmlFor="spending-amount">Amount</Label>
               <Input
                 id="spending-amount"
                 type="number"
@@ -120,6 +131,16 @@ export function SpendingPanel({ clock = systemClock }: { clock?: Clock }) {
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
                 placeholder="0.00"
+              />
+            </div>
+            <div>
+              <Label htmlFor="spending-currency">Currency</Label>
+              <Input
+                id="spending-currency"
+                value={currency}
+                onChange={(event) => setCurrency(event.target.value.toUpperCase())}
+                placeholder="JOD"
+                maxLength={8}
               />
             </div>
             <div>
@@ -151,11 +172,11 @@ export function SpendingPanel({ clock = systemClock }: { clock?: Clock }) {
               <p className="text-[12px] font-semibold tracking-wide text-gold-ink uppercase">
                 Last month’s spending
               </p>
-              <p className="mt-1 text-h1 font-semibold tnum">{money(data.previousMonth.total)}</p>
+              <p className="mt-1 text-h1 font-semibold tnum">{totals(data.previousMonth)}</p>
               <p className="mt-1 text-[13px] text-ink-muted">
                 {data.previousMonth.groups.length
                   ? data.previousMonth.groups
-                      .map((item) => `${item.label} ${money(item.total)}`)
+                      .map((item) => `${item.label} ${money(item.total, item.currency)}`)
                       .join(' · ')
                   : 'No spending was logged last month.'}
               </p>
@@ -176,7 +197,9 @@ export function SpendingPanel({ clock = systemClock }: { clock?: Clock }) {
                   >
                     <span className="min-w-0 flex-1 truncate font-medium">{item.title}</span>
                     <span className="text-[12px] text-ink-faint tnum">{item.dueAt}</span>
-                    <strong className="font-medium tnum">{money(item.amount)}</strong>
+                    <strong className="font-medium tnum">
+                      {money(item.amount, item.currency)}
+                    </strong>
                   </li>
                 ))}
               </ul>

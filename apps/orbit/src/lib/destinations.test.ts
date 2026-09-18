@@ -75,6 +75,23 @@ describe('canonical routes', () => {
       path: `/bills/${bill.id}`,
       destination: { type: 'reminder', id: reminder.id },
     });
+    const reviewReminder = await repo.reminders.upsert(
+      createRecord(ReminderSchema, clock, {
+        key: 'review-step:2026-09-12:project',
+        source: 'review-step',
+        entityType: 'dailyReviewDraft',
+        entityId: ID,
+        fireAt: '2026-09-12T10:00:00.000Z',
+        title: 'Morning briefing · Projects',
+        destination: '/review/morning?date=2026-09-12&step=project',
+      }),
+    );
+    expect(
+      await resolveDestination(repo, { type: 'reminder', id: reviewReminder.id }),
+    ).toMatchObject({
+      kind: 'route',
+      path: '/review/morning?date=2026-09-12&step=project',
+    });
     // Deleted or unknown records land on the missing page, never on a different record.
     await repo.bills.softDelete(bill.id);
     expect(await resolveDestination(repo, { type: 'reminder', id: reminder.id })).toMatchObject({

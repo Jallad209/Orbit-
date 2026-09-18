@@ -102,6 +102,16 @@ describe('TodayPage', () => {
     expect(within(left).getByText('Blocked')).toBeInTheDocument();
   });
 
+  it('keeps Today single-column below 900 px', async () => {
+    const { repo } = await seed();
+    render(repo);
+    const columns = await screen.findByTestId('today-columns');
+    expect(columns.className).not.toMatch(/(^|\s)grid-cols-/);
+    expect(columns.className).toContain(
+      'min-[900px]:grid-cols-[minmax(0,1.7fr)_minmax(18rem,0.9fr)]',
+    );
+  });
+
   it('opens a "why" popover listing the explanation components', async () => {
     const user = userEvent.setup();
     const { repo } = await seed();

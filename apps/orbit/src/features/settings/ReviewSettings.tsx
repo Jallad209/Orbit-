@@ -75,7 +75,7 @@ function ReviewSettingsForm({
   };
   return (
     <Card data-testid="review-settings">
-      <SectionHeader title="Morning briefing" meta="Desktop · stored locally" />
+      <SectionHeader title="Morning briefing" meta="Stored locally" />
       <div className="flex flex-col gap-4">
         <div>
           <p className="text-[13px] font-medium text-ink">Questions</p>

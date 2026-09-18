@@ -37,6 +37,7 @@ function RootShell() {
     <HotkeyProvider>
       <AppRoutes />
       <DraftGuard />
+      <ReminderBridge />
     </HotkeyProvider>
   );
 }
@@ -53,7 +54,6 @@ export function App() {
               <RouterProvider router={router} />
               <Toaster />
               <PwaBridge />
-              <ReminderBridge />
               <DiagnosticsBridge />
             </TooltipProvider>
           </CommandRegistryProvider>

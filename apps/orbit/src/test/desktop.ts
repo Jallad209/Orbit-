@@ -21,6 +21,8 @@ export function fakeResidentApi(
       | 'showMain'
       | 'hideMain'
       | 'wakeScheduler'
+      | 'backupNow'
+      | 'freshIntegrity'
       | 'prefs'
       | 'autostart'
       | 'onShellEvent'
@@ -57,6 +59,13 @@ export function fakeResidentApi(
     mainVisible: true,
   });
   const api = {
+    freshIntegrity: async () => ({ ok: true, messages: ['ok'], fts5: true, durationMs: 1 }),
+    backupNow: async () => ({
+      path: 'C:\\Orbit\\backups\\manual-test.db',
+      modifiedAt: '2026-09-17T08:00:00.000Z',
+      sizeBytes: 1,
+      kind: 'manual' as const,
+    }),
     residentStatus: async () => status(),
     markReady: async () => {},
     quit: async () => {},

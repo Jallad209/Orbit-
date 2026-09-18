@@ -32,7 +32,7 @@
     "verify:backup": "tsx scripts/verify-backup.ts",
     "seed": "tsx scripts/seed.ts",
     "bench": "tsx scripts/bench.ts",
-    "e2e:startup": "playwright test tests/e2e/playwright/startup.spec.ts",
+    "e2e:startup": "playwright test tests/e2e/playwright/startup.spec.ts --workers=1",
     "e2e:desktop": "wdio run tests/e2e/tauri/wdio.conf.ts",
     "e2e:desktop:cold": "vitest run --config tests/e2e/desktop/vitest.config.ts",
     "edge:driver": "tsx scripts/edge-driver.ts",
@@ -54,6 +54,7 @@
     ]
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
     "@eslint/js": "^10.0.1",

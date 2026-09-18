@@ -52,23 +52,34 @@ export function PatternsStep({ session }: { session: StepSession }) {
           <h3 className="text-[13px] font-semibold tracking-wide text-ink-muted uppercase">
             Spending
           </h3>
-          <p className="mt-2 text-h2 font-semibold tnum">
-            {report.spending.total.toFixed(2)} {report.spending.currency}
-          </p>
-          {report.spending.items.length ? (
-            <ul className="mt-2 flex flex-col gap-1 text-sm" aria-label="Weekly spending by item">
-              {report.spending.items.map((item) => (
-                <li key={item.name} className="flex justify-between gap-3">
-                  <span>
-                    {item.name}
-                    <span className="ml-1 text-[12px] text-ink-faint">
-                      {item.count} item{item.count === 1 ? '' : 's'}
-                    </span>
-                  </span>
-                  <span className="tnum text-ink-faint">{item.total.toFixed(2)} JOD</span>
-                </li>
+          {report.spending.currencies.length ? (
+            <div className="mt-2 flex flex-col gap-3">
+              {report.spending.currencies.map((group) => (
+                <div key={group.currency || 'unset'}>
+                  <p className="text-h2 font-semibold tnum">
+                    {group.total.toFixed(2)} {group.currency || '(currency not set)'}
+                  </p>
+                  <ul
+                    className="mt-1 flex flex-col gap-1 text-sm"
+                    aria-label="Weekly spending by item"
+                  >
+                    {group.items.map((item) => (
+                      <li key={item.name} className="flex justify-between gap-3">
+                        <span>
+                          {item.name}
+                          <span className="ml-1 text-[12px] text-ink-faint">
+                            {item.count} item{item.count === 1 ? '' : 's'}
+                          </span>
+                        </span>
+                        <span className="tnum text-ink-faint">
+                          {item.total.toFixed(2)} {group.currency || '(currency not set)'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
-            </ul>
+            </div>
           ) : (
             <p className="mt-2 text-sm text-ink-muted">No spending logged this week.</p>
           )}

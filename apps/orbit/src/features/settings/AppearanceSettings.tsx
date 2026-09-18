@@ -19,8 +19,8 @@ export function AppearanceSettings() {
           />
         </div>
         <p className="text-[13px] text-ink-muted">
-          Colours follow the Orbit palette: charcoal navigation, a warm workspace, lime for action.
-          A dark workspace arrives with the visual polish in week 13.
+          Colours follow the Orbit palette: charcoal navigation, a warm workspace, and lime reserved
+          for primary action and what is happening now.
         </p>
       </div>
     </Card>

@@ -50,10 +50,25 @@ describe('Areas → Goals → Projects', () => {
     );
     renderWithProviders(<AppRoutes />, { repository: repo, route: '/areas' });
     await user.click(await screen.findByRole('button', { name: 'Delete Study' }));
+    expect(screen.getByRole('button', { name: 'Confirm delete Study' })).toBeInTheDocument();
+    expect(useToastStore.getState().toasts).toHaveLength(0);
+    await user.click(screen.getByRole('button', { name: 'Confirm delete Study' }));
     await waitFor(() =>
       expect(useToastStore.getState().toasts.map((t) => t.title)).toContain('Area is not empty'),
     );
     expect(await repo.areas.count()).toBe(1);
+  });
+
+  it('also confirms before deleting a childless area', async () => {
+    const user = userEvent.setup();
+    const repo = createMemoryRepository({ clock });
+    const area = await repo.areas.upsert(createRecord(AreaSchema, clock, { name: 'Health' }));
+    renderWithProviders(<AppRoutes />, { repository: repo, route: '/areas' });
+
+    await user.click(await screen.findByRole('button', { name: 'Delete Health' }));
+    expect(await repo.areas.get(area.id)).toBeDefined();
+    await user.click(screen.getByRole('button', { name: 'Confirm delete Health' }));
+    await waitFor(async () => expect((await repo.areas.get(area.id))?.deletedAt).not.toBeNull());
   });
 
   it('goal detail edits importance and lists its projects', async () => {

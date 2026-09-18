@@ -152,7 +152,7 @@ export function InsightsPage({ clock = systemClock }: { clock?: Clock }) {
     .filter((n): n is string => n !== null);
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-5">
+    <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-display font-semibold tracking-tight text-ink">Insights</h1>
