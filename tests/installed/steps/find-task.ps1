@@ -20,3 +20,4 @@ if (-not $hits) { "no task titled '$Title' found in $dir"; exit 1 }
 "task '$Title':"
 $hits
 "next: C:\OrbitHarness\steps\03-protocol-opens-task.ps1 $($hits | Select-Object -Last 1)"
+$hits | Select-Object -Last 1 | Set-Content 'C:\OrbitHarness\evidence\task-id.txt'
