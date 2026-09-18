@@ -15,7 +15,13 @@
  *   tests/fixtures/idb/v<INDEXEDDB_SCHEMA_VERSION>.json   — raw Dexie rows per store
  *   tests/fixtures/sqlite/v<SQLITE_SCHEMA_VERSION>.sql      — a SQL dump at that schema version
  *   tests/fixtures/db/v<SQLITE_SCHEMA_VERSION>.db           — that dump loaded into a real SQLite file
+ *
+ * Generated in UTC on every machine: the seeded world builds its timestamps from local wall
+ * time, and CI regenerates the fixtures to prove they are current, so a UTC+3 developer
+ * machine and the UTC runner must produce the same bytes.
  */
+process.env.TZ = 'UTC';
+
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { fixedClock, seedWorld } from '@orbit/core';
 import type { BaseRecord } from '@orbit/core';

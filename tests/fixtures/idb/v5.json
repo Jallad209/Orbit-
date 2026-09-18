@@ -4,8 +4,8 @@
     "areas": [
       {
         "id": "021fe227-94fe-70f9-b398-0edfc0fe7703",
-        "createdAt": "2026-08-31T06:00:00.000Z",
-        "updatedAt": "2026-08-31T06:00:00.000Z",
+        "createdAt": "2026-08-31T09:00:00.000Z",
+        "updatedAt": "2026-08-31T09:00:00.000Z",
         "deletedAt": null,
         "name": "Work",
         "color": "#D4A93A",
@@ -13,8 +13,8 @@
       },
       {
         "id": "4a923ac4-0196-7125-9e90-34cffc4464ad",
-        "createdAt": "2026-08-31T06:00:00.000Z",
-        "updatedAt": "2026-08-31T06:00:00.000Z",
+        "createdAt": "2026-08-31T09:00:00.000Z",
+        "updatedAt": "2026-08-31T09:00:00.000Z",
         "deletedAt": null,
         "name": "Health",
         "color": "#D4A93A",
@@ -22,8 +22,8 @@
       },
       {
         "id": "e105cb6f-aa50-7f2f-b472-f9dc978cc9af",
-        "createdAt": "2026-08-31T06:00:00.000Z",
-        "updatedAt": "2026-08-31T06:00:00.000Z",
+        "createdAt": "2026-08-31T09:00:00.000Z",
+        "updatedAt": "2026-08-31T09:00:00.000Z",
         "deletedAt": null,
         "name": "Study",
         "color": "#D4A93A",
@@ -31,8 +31,8 @@
       },
       {
         "id": "e8317fd3-5bd3-79e0-a2a9-3352e5065eda",
-        "createdAt": "2026-08-31T06:00:00.000Z",
-        "updatedAt": "2026-08-31T06:00:00.000Z",
+        "createdAt": "2026-08-31T09:00:00.000Z",
+        "updatedAt": "2026-08-31T09:00:00.000Z",
         "deletedAt": null,
         "name": "Home",
         "color": "#D4A93A",
@@ -42,8 +42,8 @@
     "goals": [
       {
         "id": "2040a609-0616-7578-ad67-2bcca5bb2bb8",
-        "createdAt": "2026-09-01T06:00:00.000Z",
-        "updatedAt": "2026-09-01T06:00:00.000Z",
+        "createdAt": "2026-09-01T09:00:00.000Z",
+        "updatedAt": "2026-09-01T09:00:00.000Z",
         "deletedAt": null,
         "title": "Goal 3",
         "areaId": "021fe227-94fe-70f9-b398-0edfc0fe7703",
@@ -53,8 +53,8 @@
       },
       {
         "id": "2298ed66-e456-773a-9118-844fac09a217",
-        "createdAt": "2026-09-01T06:00:00.000Z",
-        "updatedAt": "2026-09-01T06:00:00.000Z",
+        "createdAt": "2026-09-01T09:00:00.000Z",
+        "updatedAt": "2026-09-01T09:00:00.000Z",
         "deletedAt": null,
         "title": "Goal 6",
         "areaId": "e105cb6f-aa50-7f2f-b472-f9dc978cc9af",
@@ -64,8 +64,8 @@
       },
       {
         "id": "5177234a-b513-7dee-a246-f84f768cc3f2",
-        "createdAt": "2026-09-01T06:00:00.000Z",
-        "updatedAt": "2026-09-01T06:00:00.000Z",
+        "createdAt": "2026-09-01T09:00:00.000Z",
+        "updatedAt": "2026-09-01T09:00:00.000Z",
         "deletedAt": null,
         "title": "Goal 2",
         "areaId": "e105cb6f-aa50-7f2f-b472-f9dc978cc9af",
@@ -75,8 +75,8 @@
       },
       {
         "id": "71cbebdb-2332-7ae4-a860-e6666386a26d",
-        "createdAt": "2026-09-01T06:00:00.000Z",
-        "updatedAt": "2026-09-01T06:00:00.000Z",
+        "createdAt": "2026-09-01T09:00:00.000Z",
+        "updatedAt": "2026-09-01T09:00:00.000Z",
         "deletedAt": null,
         "title": "Goal 7",
         "areaId": "021fe227-94fe-70f9-b398-0edfc0fe7703",
@@ -86,8 +86,8 @@
       },
       {
         "id": "7301f2df-1225-7e14-899f-589ae86ab256",
-        "createdAt": "2026-09-01T06:00:00.000Z",
-        "updatedAt": "2026-09-01T06:00:00.000Z",
+        "createdAt": "2026-09-01T09:00:00.000Z",
+        "updatedAt": "2026-09-01T09:00:00.000Z",
         "deletedAt": null,
         "title": "Goal 1",
         "areaId": "4a923ac4-0196-7125-9e90-34cffc4464ad",
@@ -97,8 +97,8 @@
       },
       {
         "id": "8889bf66-be0f-7825-b9de-fe45b25a6d52",
-        "createdAt": "2026-09-01T06:00:00.000Z",
-        "updatedAt": "2026-09-01T06:00:00.000Z",
+        "createdAt": "2026-09-01T09:00:00.000Z",
+        "updatedAt": "2026-09-01T09:00:00.000Z",
         "deletedAt": null,
         "title": "Goal 4",
         "areaId": "e8317fd3-5bd3-79e0-a2a9-3352e5065eda",
@@ -108,8 +108,8 @@
       },
       {
         "id": "c38082c8-a8f5-76fe-b8df-f028316181d9",
-        "createdAt": "2026-09-01T06:00:00.000Z",
-        "updatedAt": "2026-09-01T06:00:00.000Z",
+        "createdAt": "2026-09-01T09:00:00.000Z",
+        "updatedAt": "2026-09-01T09:00:00.000Z",
         "deletedAt": null,
         "title": "Goal 5",
         "areaId": "4a923ac4-0196-7125-9e90-34cffc4464ad",
@@ -119,8 +119,8 @@
       },
       {
         "id": "fe5a706b-cb5f-7555-897d-cb406658c174",
-        "createdAt": "2026-09-01T06:00:00.000Z",
-        "updatedAt": "2026-09-01T06:00:00.000Z",
+        "createdAt": "2026-09-01T09:00:00.000Z",
+        "updatedAt": "2026-09-01T09:00:00.000Z",
         "deletedAt": null,
         "title": "Goal 8",
         "areaId": "e8317fd3-5bd3-79e0-a2a9-3352e5065eda",
@@ -132,8 +132,8 @@
     "projects": [
       {
         "id": "0131bd1f-f160-72bb-a1f4-07cf97d6c6e9",
-        "createdAt": "2026-09-02T06:00:00.000Z",
-        "updatedAt": "2026-09-02T06:00:00.000Z",
+        "createdAt": "2026-09-02T09:00:00.000Z",
+        "updatedAt": "2026-09-02T09:00:00.000Z",
         "deletedAt": null,
         "title": "Project 1",
         "goalId": null,
@@ -145,8 +145,8 @@
       },
       {
         "id": "15c58dff-35cb-7749-80f2-68deec03e62f",
-        "createdAt": "2026-09-02T06:00:00.000Z",
-        "updatedAt": "2026-09-02T06:00:00.000Z",
+        "createdAt": "2026-09-02T09:00:00.000Z",
+        "updatedAt": "2026-09-02T09:00:00.000Z",
         "deletedAt": null,
         "title": "Project 10",
         "goalId": "5177234a-b513-7dee-a246-f84f768cc3f2",
@@ -158,8 +158,8 @@
       },
       {
         "id": "3b16c4e1-5d2c-7300-8880-6462692ac3b0",
-        "createdAt": "2026-09-02T06:00:00.000Z",
-        "updatedAt": "2026-09-02T06:00:00.000Z",
+        "createdAt": "2026-09-02T09:00:00.000Z",
+        "updatedAt": "2026-09-02T09:00:00.000Z",
         "deletedAt": null,
         "title": "Project 9",
         "goalId": null,
@@ -171,8 +171,8 @@
       },
       {
         "id": "5baf99a8-5d8e-7969-b027-e3acf4854eb4",
-        "createdAt": "2026-09-02T06:00:00.000Z",
-        "updatedAt": "2026-09-02T06:00:00.000Z",
+        "createdAt": "2026-09-02T09:00:00.000Z",
+        "updatedAt": "2026-09-02T09:00:00.000Z",
         "deletedAt": null,
         "title": "Project 8",
         "goalId": "fe5a706b-cb5f-7555-897d-cb406658c174",
@@ -184,8 +184,8 @@
       },
       {
         "id": "639b4491-fb43-735a-812e-21a1f7c6dfa5",
-        "createdAt": "2026-09-02T06:00:00.000Z",
-        "updatedAt": "2026-09-02T06:00:00.000Z",
+        "createdAt": "2026-09-02T09:00:00.000Z",
+        "updatedAt": "2026-09-02T09:00:00.000Z",
         "deletedAt": null,
         "title": "Project 7",
         "goalId": "71cbebdb-2332-7ae4-a860-e6666386a26d",
@@ -197,8 +197,8 @@
       },
       {
         "id": "94ff2fa5-2cf3-7065-9234-b0dfa6bcf33e",
-        "createdAt": "2026-09-02T06:00:00.000Z",
-        "updatedAt": "2026-09-02T06:00:00.000Z",
+        "createdAt": "2026-09-02T09:00:00.000Z",
+        "updatedAt": "2026-09-02T09:00:00.000Z",
         "deletedAt": null,
         "title": "Project 6",
         "goalId": "2298ed66-e456-773a-9118-844fac09a217",
@@ -210,8 +210,8 @@
       },
       {
         "id": "b4a88e85-be02-7235-af69-3890ae62ceab",
-        "createdAt": "2026-09-02T06:00:00.000Z",
-        "updatedAt": "2026-09-02T06:00:00.000Z",
+        "createdAt": "2026-09-02T09:00:00.000Z",
+        "updatedAt": "2026-09-02T09:00:00.000Z",
         "deletedAt": null,
         "title": "Project 11",
         "goalId": "2040a609-0616-7578-ad67-2bcca5bb2bb8",
@@ -223,8 +223,8 @@
       },
       {
         "id": "b66ca7cb-7a8b-77a6-afc6-bbb093ae6a16",
-        "createdAt": "2026-09-02T06:00:00.000Z",
-        "updatedAt": "2026-09-02T06:00:00.000Z",
+        "createdAt": "2026-09-02T09:00:00.000Z",
+        "updatedAt": "2026-09-02T09:00:00.000Z",
         "deletedAt": null,
         "title": "Project 4",
         "goalId": "8889bf66-be0f-7825-b9de-fe45b25a6d52",
@@ -236,8 +236,8 @@
       },
       {
         "id": "b9b13bf9-3de3-7643-9e75-63f6968061c1",
-        "createdAt": "2026-09-02T06:00:00.000Z",
-        "updatedAt": "2026-09-02T06:00:00.000Z",
+        "createdAt": "2026-09-02T09:00:00.000Z",
+        "updatedAt": "2026-09-02T09:00:00.000Z",
         "deletedAt": null,
         "title": "Project 12",
         "goalId": "8889bf66-be0f-7825-b9de-fe45b25a6d52",
@@ -249,8 +249,8 @@
       },
       {
         "id": "d9b6df45-8fb6-7147-adef-b2f7f354e8e8",
-        "createdAt": "2026-09-02T06:00:00.000Z",
-        "updatedAt": "2026-09-02T06:00:00.000Z",
+        "createdAt": "2026-09-02T09:00:00.000Z",
+        "updatedAt": "2026-09-02T09:00:00.000Z",
         "deletedAt": null,
         "title": "Project 5",
         "goalId": "c38082c8-a8f5-76fe-b8df-f028316181d9",
@@ -262,8 +262,8 @@
       },
       {
         "id": "e68e61d6-2060-7b3e-beb4-6b9c5ff364ef",
-        "createdAt": "2026-09-02T06:00:00.000Z",
-        "updatedAt": "2026-09-02T06:00:00.000Z",
+        "createdAt": "2026-09-02T09:00:00.000Z",
+        "updatedAt": "2026-09-02T09:00:00.000Z",
         "deletedAt": null,
         "title": "Project 2",
         "goalId": "5177234a-b513-7dee-a246-f84f768cc3f2",
@@ -275,8 +275,8 @@
       },
       {
         "id": "ed442775-663d-7865-8ab9-ee82931f163e",
-        "createdAt": "2026-09-02T06:00:00.000Z",
-        "updatedAt": "2026-09-02T06:00:00.000Z",
+        "createdAt": "2026-09-02T09:00:00.000Z",
+        "updatedAt": "2026-09-02T09:00:00.000Z",
         "deletedAt": null,
         "title": "Project 3",
         "goalId": "2040a609-0616-7578-ad67-2bcca5bb2bb8",
@@ -290,8 +290,8 @@
     "milestones": [
       {
         "id": "03f35540-f2e2-7917-b466-52264e2b98b7",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "639b4491-fb43-735a-812e-21a1f7c6dfa5",
         "title": "Milestone 1",
@@ -300,8 +300,8 @@
       },
       {
         "id": "06924ca6-15e8-7d53-9fce-76cad2473357",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "94ff2fa5-2cf3-7065-9234-b0dfa6bcf33e",
         "title": "Milestone 3",
@@ -310,8 +310,8 @@
       },
       {
         "id": "137c26c2-3fca-7e6e-86ed-6b8ae2cf4f9c",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "5baf99a8-5d8e-7969-b027-e3acf4854eb4",
         "title": "Milestone 3",
@@ -320,8 +320,8 @@
       },
       {
         "id": "1496d61c-806f-7e9d-8cf3-3b1153f4eb50",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "b4a88e85-be02-7235-af69-3890ae62ceab",
         "title": "Milestone 1",
@@ -330,8 +330,8 @@
       },
       {
         "id": "15821d19-3fb3-726b-8edc-ee6460864409",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "e68e61d6-2060-7b3e-beb4-6b9c5ff364ef",
         "title": "Milestone 2",
@@ -340,8 +340,8 @@
       },
       {
         "id": "1f83bd57-63e6-7484-9047-dabc7fb31049",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "b4a88e85-be02-7235-af69-3890ae62ceab",
         "title": "Milestone 5",
@@ -350,8 +350,8 @@
       },
       {
         "id": "2c0a20bc-dc0f-726e-906f-a828a6245321",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "5baf99a8-5d8e-7969-b027-e3acf4854eb4",
         "title": "Milestone 2",
@@ -360,8 +360,8 @@
       },
       {
         "id": "347fac09-cc18-760c-8df6-cfef5c6f230b",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "3b16c4e1-5d2c-7300-8880-6462692ac3b0",
         "title": "Milestone 2",
@@ -370,8 +370,8 @@
       },
       {
         "id": "3a4cb1b6-c3e0-76f4-bb07-3d5aa30b537a",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "15c58dff-35cb-7749-80f2-68deec03e62f",
         "title": "Milestone 1",
@@ -380,8 +380,8 @@
       },
       {
         "id": "3e46d39f-9229-7c9e-9e50-d4a282c29b93",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "15c58dff-35cb-7749-80f2-68deec03e62f",
         "title": "Milestone 2",
@@ -390,8 +390,8 @@
       },
       {
         "id": "41cc2e32-b184-7ca9-8a7a-10e12bd5f119",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "b66ca7cb-7a8b-77a6-afc6-bbb093ae6a16",
         "title": "Milestone 3",
@@ -400,8 +400,8 @@
       },
       {
         "id": "46bae562-2de7-79ad-92d7-75ccd81877f2",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "b4a88e85-be02-7235-af69-3890ae62ceab",
         "title": "Milestone 4",
@@ -410,8 +410,8 @@
       },
       {
         "id": "4a9eb463-08b3-7ee2-876b-f0ae432c54cb",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "ed442775-663d-7865-8ab9-ee82931f163e",
         "title": "Milestone 2",
@@ -420,8 +420,8 @@
       },
       {
         "id": "4c8c5373-d6d8-7135-984f-5efca3a90468",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "d9b6df45-8fb6-7147-adef-b2f7f354e8e8",
         "title": "Milestone 3",
@@ -430,8 +430,8 @@
       },
       {
         "id": "4cf5ef69-a793-7fd7-878d-e2101fdb75a9",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "ed442775-663d-7865-8ab9-ee82931f163e",
         "title": "Milestone 1",
@@ -440,8 +440,8 @@
       },
       {
         "id": "57019d72-ebb5-7572-9497-0a39522dbe7d",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "b66ca7cb-7a8b-77a6-afc6-bbb093ae6a16",
         "title": "Milestone 2",
@@ -450,8 +450,8 @@
       },
       {
         "id": "630e2241-9e59-7a6c-bf9a-08a8b4da66e4",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "639b4491-fb43-735a-812e-21a1f7c6dfa5",
         "title": "Milestone 2",
@@ -460,8 +460,8 @@
       },
       {
         "id": "752d7003-288f-789b-b46a-b866f0858cf9",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "94ff2fa5-2cf3-7065-9234-b0dfa6bcf33e",
         "title": "Milestone 4",
@@ -470,8 +470,8 @@
       },
       {
         "id": "7ca91a8e-03d6-7096-a093-807986865ecd",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "0131bd1f-f160-72bb-a1f4-07cf97d6c6e9",
         "title": "Milestone 1",
@@ -480,8 +480,8 @@
       },
       {
         "id": "7e30dfa3-34fa-7c68-bbe8-b8672a109a9c",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "0131bd1f-f160-72bb-a1f4-07cf97d6c6e9",
         "title": "Milestone 2",
@@ -490,8 +490,8 @@
       },
       {
         "id": "8115bbb5-2284-7326-9f70-7a487bbb8a54",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "3b16c4e1-5d2c-7300-8880-6462692ac3b0",
         "title": "Milestone 1",
@@ -500,8 +500,8 @@
       },
       {
         "id": "870f8807-69be-7c79-9fc5-e6d75972042d",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "15c58dff-35cb-7749-80f2-68deec03e62f",
         "title": "Milestone 5",
@@ -510,8 +510,8 @@
       },
       {
         "id": "8938ec93-1301-7ad5-be14-4c3eea033247",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "b66ca7cb-7a8b-77a6-afc6-bbb093ae6a16",
         "title": "Milestone 1",
@@ -520,8 +520,8 @@
       },
       {
         "id": "8d92b30c-afcf-70f1-a8e6-216c0c3edd69",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "b4a88e85-be02-7235-af69-3890ae62ceab",
         "title": "Milestone 3",
@@ -530,8 +530,8 @@
       },
       {
         "id": "8e1c5ad7-fe7a-74d2-94b3-69925e3a71ce",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "94ff2fa5-2cf3-7065-9234-b0dfa6bcf33e",
         "title": "Milestone 1",
@@ -540,8 +540,8 @@
       },
       {
         "id": "949cc9f8-7a48-7ed5-a385-09ab006fdd11",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "94ff2fa5-2cf3-7065-9234-b0dfa6bcf33e",
         "title": "Milestone 2",
@@ -550,8 +550,8 @@
       },
       {
         "id": "95e23a82-876e-70c4-a9d8-55cd3e8bff8e",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "e68e61d6-2060-7b3e-beb4-6b9c5ff364ef",
         "title": "Milestone 1",
@@ -560,8 +560,8 @@
       },
       {
         "id": "97fef16e-b6dd-732f-8d35-03ad80c32f23",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "d9b6df45-8fb6-7147-adef-b2f7f354e8e8",
         "title": "Milestone 1",
@@ -570,8 +570,8 @@
       },
       {
         "id": "a7327004-8948-7b17-bbc2-dd1820af12c7",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "639b4491-fb43-735a-812e-21a1f7c6dfa5",
         "title": "Milestone 3",
@@ -580,8 +580,8 @@
       },
       {
         "id": "a86778e3-884e-7476-85d0-472352c0a322",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "b9b13bf9-3de3-7643-9e75-63f6968061c1",
         "title": "Milestone 2",
@@ -590,8 +590,8 @@
       },
       {
         "id": "ad1616c6-6ccc-7e13-a8c4-2b62428d5357",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "639b4491-fb43-735a-812e-21a1f7c6dfa5",
         "title": "Milestone 4",
@@ -600,8 +600,8 @@
       },
       {
         "id": "b29e57d2-f3a3-7ea6-8e5b-84da241c0740",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "b4a88e85-be02-7235-af69-3890ae62ceab",
         "title": "Milestone 2",
@@ -610,8 +610,8 @@
       },
       {
         "id": "bbb24217-2d6f-70b9-9565-baa3c7e58e15",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "b9b13bf9-3de3-7643-9e75-63f6968061c1",
         "title": "Milestone 1",
@@ -620,8 +620,8 @@
       },
       {
         "id": "bc2d606d-4868-7195-af1f-de605f4c67ca",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "15c58dff-35cb-7749-80f2-68deec03e62f",
         "title": "Milestone 4",
@@ -630,8 +630,8 @@
       },
       {
         "id": "c5babda0-96f8-7e30-8881-11f72eb4ea36",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "e68e61d6-2060-7b3e-beb4-6b9c5ff364ef",
         "title": "Milestone 3",
@@ -640,8 +640,8 @@
       },
       {
         "id": "e7beafe7-8459-7ccb-919c-2100822a43ee",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "5baf99a8-5d8e-7969-b027-e3acf4854eb4",
         "title": "Milestone 1",
@@ -650,8 +650,8 @@
       },
       {
         "id": "e9a04ba9-37d2-77c7-b1ba-b1b2140fa4bf",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "d9b6df45-8fb6-7147-adef-b2f7f354e8e8",
         "title": "Milestone 2",
@@ -660,8 +660,8 @@
       },
       {
         "id": "ec499391-b099-703d-b9c5-4a1db2722d85",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "15c58dff-35cb-7749-80f2-68deec03e62f",
         "title": "Milestone 3",
@@ -670,8 +670,8 @@
       },
       {
         "id": "fce23ccf-fc8d-768a-844e-c7cf3dee21b3",
-        "createdAt": "2026-09-03T06:00:00.000Z",
-        "updatedAt": "2026-09-03T06:00:00.000Z",
+        "createdAt": "2026-09-03T09:00:00.000Z",
+        "updatedAt": "2026-09-03T09:00:00.000Z",
         "deletedAt": null,
         "projectId": "3b16c4e1-5d2c-7300-8880-6462692ac3b0",
         "title": "Milestone 3",
@@ -682,8 +682,8 @@
     "tasks": [
       {
         "id": "006cec09-aa85-7b69-89f0-e1327d05185e",
-        "createdAt": "2026-09-12T06:00:00.000Z",
-        "updatedAt": "2026-09-12T06:00:00.000Z",
+        "createdAt": "2026-09-12T09:00:00.000Z",
+        "updatedAt": "2026-09-12T09:00:00.000Z",
         "deletedAt": null,
         "title": "Fix the garage 29",
         "projectId": null,
@@ -702,8 +702,8 @@
       },
       {
         "id": "063e7d55-63c5-7268-8144-28eea63dd59d",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "title": "Fix test results 4",
         "projectId": "d9b6df45-8fb6-7147-adef-b2f7f354e8e8",
@@ -718,12 +718,12 @@
         "energy": "low",
         "dependsOn": [],
         "notes": "",
-        "completedAt": "2026-09-09T06:00:00.000Z"
+        "completedAt": "2026-09-09T09:00:00.000Z"
       },
       {
         "id": "0857a6d9-7ce5-7716-ac59-e6481468069c",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "title": "Draft the budget 58",
         "projectId": "b4a88e85-be02-7235-af69-3890ae62ceab",
@@ -742,8 +742,8 @@
       },
       {
         "id": "0b209705-d39c-7892-804b-d8a0fc9a956d",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "title": "Call the slides 43",
         "projectId": "15c58dff-35cb-7749-80f2-68deec03e62f",
@@ -758,12 +758,12 @@
         "energy": "high",
         "dependsOn": [],
         "notes": "",
-        "completedAt": "2026-09-10T06:00:00.000Z"
+        "completedAt": "2026-09-10T09:00:00.000Z"
       },
       {
         "id": "0d63b2ad-a90d-7da6-82ff-78befb30ef1a",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "title": "Write flash cards 59",
         "projectId": "3b16c4e1-5d2c-7300-8880-6462692ac3b0",
@@ -782,8 +782,8 @@
       },
       {
         "id": "113fbb93-015f-726b-88fb-644f9b0fd985",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "title": "Write the proposal 52",
         "projectId": "ed442775-663d-7865-8ab9-ee82931f163e",
@@ -794,7 +794,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-10-12T06:00:00.000Z",
+        "dueAt": "2026-10-12T09:00:00.000Z",
         "energy": "low",
         "dependsOn": [],
         "notes": "",
@@ -802,8 +802,8 @@
       },
       {
         "id": "121a029f-893a-7a6f-b53f-fa047f13f8f4",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "title": "Draft test results 37",
         "projectId": "0131bd1f-f160-72bb-a1f4-07cf97d6c6e9",
@@ -822,8 +822,8 @@
       },
       {
         "id": "18498d98-0c03-7847-82bb-e1a010dcf883",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "title": "Clean the slides 36",
         "projectId": "b9b13bf9-3de3-7643-9e75-63f6968061c1",
@@ -842,8 +842,8 @@
       },
       {
         "id": "1acf5311-8e25-747c-965a-65483d70f89d",
-        "createdAt": "2026-09-12T06:00:00.000Z",
-        "updatedAt": "2026-09-12T06:00:00.000Z",
+        "createdAt": "2026-09-12T09:00:00.000Z",
+        "updatedAt": "2026-09-12T09:00:00.000Z",
         "deletedAt": null,
         "title": "Book chapter two 60",
         "projectId": "5baf99a8-5d8e-7969-b027-e3acf4854eb4",
@@ -854,7 +854,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-09-23T06:00:00.000Z",
+        "dueAt": "2026-09-23T09:00:00.000Z",
         "energy": "high",
         "dependsOn": [
           "728832e0-7cc7-7115-9c11-c4d2f7ff4b1f"
@@ -864,8 +864,8 @@
       },
       {
         "id": "22b90f5e-b091-7ad0-aae1-cb7ddfe5b99f",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "title": "Book chapter two 2",
         "projectId": "e68e61d6-2060-7b3e-beb4-6b9c5ff364ef",
@@ -880,12 +880,12 @@
         "energy": "high",
         "dependsOn": [],
         "notes": "",
-        "completedAt": "2026-09-09T06:00:00.000Z"
+        "completedAt": "2026-09-09T09:00:00.000Z"
       },
       {
         "id": "2d29f79d-1cc0-7567-8ddb-b112ac51429f",
-        "createdAt": "2026-09-12T06:00:00.000Z",
-        "updatedAt": "2026-09-12T06:00:00.000Z",
+        "createdAt": "2026-09-12T09:00:00.000Z",
+        "updatedAt": "2026-09-12T09:00:00.000Z",
         "deletedAt": null,
         "title": "Write the invoice 14",
         "projectId": "5baf99a8-5d8e-7969-b027-e3acf4854eb4",
@@ -900,12 +900,12 @@
         "energy": "high",
         "dependsOn": [],
         "notes": "",
-        "completedAt": "2026-09-12T06:00:00.000Z"
+        "completedAt": "2026-09-12T09:00:00.000Z"
       },
       {
         "id": "2f5094e8-6eb4-7b4e-ae54-00dc2984df13",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "title": "Write the garage 30",
         "projectId": null,
@@ -916,7 +916,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-10-20T06:00:00.000Z",
+        "dueAt": "2026-10-20T09:00:00.000Z",
         "energy": "high",
         "dependsOn": [],
         "notes": "",
@@ -924,8 +924,8 @@
       },
       {
         "id": "331f2216-d9af-7a22-9e54-0b58f74e8eae",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "title": "Write the budget 49",
         "projectId": "b4a88e85-be02-7235-af69-3890ae62ceab",
@@ -940,12 +940,12 @@
         "energy": "high",
         "dependsOn": [],
         "notes": "",
-        "completedAt": "2026-09-06T06:00:00.000Z"
+        "completedAt": "2026-09-06T09:00:00.000Z"
       },
       {
         "id": "34b17bdb-a19c-744d-be76-4a2c43596a0b",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "title": "Fix test results 34",
         "projectId": null,
@@ -956,7 +956,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-09-16T06:00:00.000Z",
+        "dueAt": "2026-09-16T09:00:00.000Z",
         "energy": "high",
         "dependsOn": [],
         "notes": "",
@@ -964,8 +964,8 @@
       },
       {
         "id": "34c4074c-b6a4-72d9-be41-131fc3573f01",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "title": "Draft test results 35",
         "projectId": "15c58dff-35cb-7749-80f2-68deec03e62f",
@@ -976,7 +976,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-09-29T06:00:00.000Z",
+        "dueAt": "2026-09-29T09:00:00.000Z",
         "energy": "high",
         "dependsOn": [],
         "notes": "",
@@ -984,8 +984,8 @@
       },
       {
         "id": "4152349e-2c16-7f55-8850-c4d454447fb2",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "title": "Draft test results 1",
         "projectId": "15c58dff-35cb-7749-80f2-68deec03e62f",
@@ -1004,8 +1004,8 @@
       },
       {
         "id": "4a9750b0-b9b8-7491-9b95-1297f293a251",
-        "createdAt": "2026-09-07T06:00:00.000Z",
-        "updatedAt": "2026-09-07T06:00:00.000Z",
+        "createdAt": "2026-09-07T09:00:00.000Z",
+        "updatedAt": "2026-09-07T09:00:00.000Z",
         "deletedAt": null,
         "title": "Write the garage 24",
         "projectId": "d9b6df45-8fb6-7147-adef-b2f7f354e8e8",
@@ -1016,16 +1016,16 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-10-01T06:00:00.000Z",
+        "dueAt": "2026-10-01T09:00:00.000Z",
         "energy": "high",
         "dependsOn": [],
         "notes": "",
-        "completedAt": "2026-09-07T06:00:00.000Z"
+        "completedAt": "2026-09-07T09:00:00.000Z"
       },
       {
         "id": "4afff948-adf4-717f-9fe8-11fc6f8cf46a",
-        "createdAt": "2026-09-12T06:00:00.000Z",
-        "updatedAt": "2026-09-12T06:00:00.000Z",
+        "createdAt": "2026-09-12T09:00:00.000Z",
+        "updatedAt": "2026-09-12T09:00:00.000Z",
         "deletedAt": null,
         "title": "Draft the slides 22",
         "projectId": "e68e61d6-2060-7b3e-beb4-6b9c5ff364ef",
@@ -1040,12 +1040,12 @@
         "energy": "low",
         "dependsOn": [],
         "notes": "",
-        "completedAt": "2026-09-12T06:00:00.000Z"
+        "completedAt": "2026-09-12T09:00:00.000Z"
       },
       {
         "id": "591eadc8-1be0-7656-9a94-a3033b9bca5d",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "title": "Draft the proposal 6",
         "projectId": "b9b13bf9-3de3-7643-9e75-63f6968061c1",
@@ -1064,8 +1064,8 @@
       },
       {
         "id": "61c1d90d-859f-71fa-b615-a6d9c3bef6e0",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "title": "Write the garage 38",
         "projectId": "ed442775-663d-7865-8ab9-ee82931f163e",
@@ -1084,8 +1084,8 @@
       },
       {
         "id": "66d476e8-a599-7a4d-a40e-5e60aa35263b",
-        "createdAt": "2026-09-08T06:00:00.000Z",
-        "updatedAt": "2026-09-08T06:00:00.000Z",
+        "createdAt": "2026-09-08T09:00:00.000Z",
+        "updatedAt": "2026-09-08T09:00:00.000Z",
         "deletedAt": null,
         "title": "Read the intro 33",
         "projectId": "ed442775-663d-7865-8ab9-ee82931f163e",
@@ -1100,12 +1100,12 @@
         "energy": "low",
         "dependsOn": [],
         "notes": "",
-        "completedAt": "2026-09-08T06:00:00.000Z"
+        "completedAt": "2026-09-08T09:00:00.000Z"
       },
       {
         "id": "6df46a05-08ce-71fc-b5be-4b217eca990d",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "title": "Plan flash cards 46",
         "projectId": "e68e61d6-2060-7b3e-beb4-6b9c5ff364ef",
@@ -1124,8 +1124,8 @@
       },
       {
         "id": "6e1da84c-27f1-7292-89b1-86d71e4163e6",
-        "createdAt": "2026-09-12T06:00:00.000Z",
-        "updatedAt": "2026-09-12T06:00:00.000Z",
+        "createdAt": "2026-09-12T09:00:00.000Z",
+        "updatedAt": "2026-09-12T09:00:00.000Z",
         "deletedAt": null,
         "title": "Review the proposal 55",
         "projectId": "15c58dff-35cb-7749-80f2-68deec03e62f",
@@ -1136,7 +1136,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-09-28T06:00:00.000Z",
+        "dueAt": "2026-09-28T09:00:00.000Z",
         "energy": "high",
         "dependsOn": [],
         "notes": "",
@@ -1144,8 +1144,8 @@
       },
       {
         "id": "728832e0-7cc7-7115-9c11-c4d2f7ff4b1f",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "title": "Read flash cards 48",
         "projectId": "5baf99a8-5d8e-7969-b027-e3acf4854eb4",
@@ -1164,8 +1164,8 @@
       },
       {
         "id": "770679dc-21aa-75c5-ad36-e4cd54572a4f",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "title": "Send the budget 16",
         "projectId": null,
@@ -1176,7 +1176,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-09-12T06:00:00.000Z",
+        "dueAt": "2026-09-12T09:00:00.000Z",
         "energy": "medium",
         "dependsOn": [],
         "notes": "",
@@ -1184,8 +1184,8 @@
       },
       {
         "id": "7b2a212c-dcf3-746d-b0cc-17cf42cbdd20",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "title": "Plan the intro 11",
         "projectId": "b4a88e85-be02-7235-af69-3890ae62ceab",
@@ -1200,12 +1200,12 @@
         "energy": "medium",
         "dependsOn": [],
         "notes": "",
-        "completedAt": "2026-09-10T06:00:00.000Z"
+        "completedAt": "2026-09-10T09:00:00.000Z"
       },
       {
         "id": "80b5a81c-01b6-76fb-943a-d7f3daf59147",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "title": "Write test results 23",
         "projectId": null,
@@ -1224,8 +1224,8 @@
       },
       {
         "id": "81f6d1fa-a2d0-7e8f-80b6-43d8fc46b49f",
-        "createdAt": "2026-09-07T06:00:00.000Z",
-        "updatedAt": "2026-09-07T06:00:00.000Z",
+        "createdAt": "2026-09-07T09:00:00.000Z",
+        "updatedAt": "2026-09-07T09:00:00.000Z",
         "deletedAt": null,
         "title": "Plan the contract 7",
         "projectId": "94ff2fa5-2cf3-7065-9234-b0dfa6bcf33e",
@@ -1244,8 +1244,8 @@
       },
       {
         "id": "8c091e8a-d687-713b-91c1-a4e35a12ad04",
-        "createdAt": "2026-09-12T06:00:00.000Z",
-        "updatedAt": "2026-09-12T06:00:00.000Z",
+        "createdAt": "2026-09-12T09:00:00.000Z",
+        "updatedAt": "2026-09-12T09:00:00.000Z",
         "deletedAt": null,
         "title": "Review the budget 57",
         "projectId": "b66ca7cb-7a8b-77a6-afc6-bbb093ae6a16",
@@ -1256,7 +1256,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-09-25T06:00:00.000Z",
+        "dueAt": "2026-09-25T09:00:00.000Z",
         "energy": "high",
         "dependsOn": [],
         "notes": "",
@@ -1264,8 +1264,8 @@
       },
       {
         "id": "8f33cf84-7f18-7400-afaa-6ea0f5a8f96a",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "title": "Read flash cards 47",
         "projectId": "15c58dff-35cb-7749-80f2-68deec03e62f",
@@ -1284,8 +1284,8 @@
       },
       {
         "id": "8fb722c8-ecde-74f8-b1ca-1533fb774ba0",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "title": "Send the garage 56",
         "projectId": null,
@@ -1296,7 +1296,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-10-08T06:00:00.000Z",
+        "dueAt": "2026-10-08T09:00:00.000Z",
         "energy": "medium",
         "dependsOn": [],
         "notes": "",
@@ -1304,8 +1304,8 @@
       },
       {
         "id": "8fecad46-b549-7f41-8be3-a0b86d328b07",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "title": "Write flash cards 21",
         "projectId": "639b4491-fb43-735a-812e-21a1f7c6dfa5",
@@ -1316,7 +1316,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-09-24T06:00:00.000Z",
+        "dueAt": "2026-09-24T09:00:00.000Z",
         "energy": "high",
         "dependsOn": [],
         "notes": "",
@@ -1324,8 +1324,8 @@
       },
       {
         "id": "940bd751-6474-7ca6-a60f-5c04d9c58ad7",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "title": "Clean the slides 17",
         "projectId": "639b4491-fb43-735a-812e-21a1f7c6dfa5",
@@ -1340,12 +1340,12 @@
         "energy": "high",
         "dependsOn": [],
         "notes": "",
-        "completedAt": "2026-09-09T06:00:00.000Z"
+        "completedAt": "2026-09-09T09:00:00.000Z"
       },
       {
         "id": "99fc2849-d5ed-70d9-a33b-8a8f5d04d2a9",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "title": "Book the contract 32",
         "projectId": null,
@@ -1360,12 +1360,12 @@
         "energy": "low",
         "dependsOn": [],
         "notes": "",
-        "completedAt": "2026-09-06T06:00:00.000Z"
+        "completedAt": "2026-09-06T09:00:00.000Z"
       },
       {
         "id": "9cb1f32c-366a-75aa-b131-7574cae63ca8",
-        "createdAt": "2026-09-12T06:00:00.000Z",
-        "updatedAt": "2026-09-12T06:00:00.000Z",
+        "createdAt": "2026-09-12T09:00:00.000Z",
+        "updatedAt": "2026-09-12T09:00:00.000Z",
         "deletedAt": null,
         "title": "Review chapter two 53",
         "projectId": null,
@@ -1384,8 +1384,8 @@
       },
       {
         "id": "a00caa94-5ca7-7772-865f-9819cae47360",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "title": "Call flash cards 51",
         "projectId": "639b4491-fb43-735a-812e-21a1f7c6dfa5",
@@ -1404,8 +1404,8 @@
       },
       {
         "id": "a24fdfbb-c12d-7a93-b464-54be772690db",
-        "createdAt": "2026-09-08T06:00:00.000Z",
-        "updatedAt": "2026-09-08T06:00:00.000Z",
+        "createdAt": "2026-09-08T09:00:00.000Z",
+        "updatedAt": "2026-09-08T09:00:00.000Z",
         "deletedAt": null,
         "title": "Read chapter two 13",
         "projectId": "ed442775-663d-7865-8ab9-ee82931f163e",
@@ -1416,7 +1416,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-09-30T06:00:00.000Z",
+        "dueAt": "2026-09-30T09:00:00.000Z",
         "energy": "medium",
         "dependsOn": [
           "c4f2b77e-265f-77b4-9b28-012c2d032cf7"
@@ -1426,8 +1426,8 @@
       },
       {
         "id": "a842f283-59e7-7abb-a5c1-e0d40015807c",
-        "createdAt": "2026-09-07T06:00:00.000Z",
-        "updatedAt": "2026-09-07T06:00:00.000Z",
+        "createdAt": "2026-09-07T09:00:00.000Z",
+        "updatedAt": "2026-09-07T09:00:00.000Z",
         "deletedAt": null,
         "title": "Book the slides 27",
         "projectId": "3b16c4e1-5d2c-7300-8880-6462692ac3b0",
@@ -1448,8 +1448,8 @@
       },
       {
         "id": "aca5f30b-7431-7cbb-8856-9f4b0b2e43bf",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "title": "Send the intro 26",
         "projectId": "ed442775-663d-7865-8ab9-ee82931f163e",
@@ -1464,12 +1464,12 @@
         "energy": "medium",
         "dependsOn": [],
         "notes": "",
-        "completedAt": "2026-09-11T06:00:00.000Z"
+        "completedAt": "2026-09-11T09:00:00.000Z"
       },
       {
         "id": "af20a259-5552-7264-9a56-d5286d27deb5",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "title": "Write the contract 12",
         "projectId": null,
@@ -1488,8 +1488,8 @@
       },
       {
         "id": "b210f839-f69a-7fa9-b1bb-60c9f4e0e97d",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "title": "Review flash cards 25",
         "projectId": "b9b13bf9-3de3-7643-9e75-63f6968061c1",
@@ -1500,7 +1500,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-09-29T06:00:00.000Z",
+        "dueAt": "2026-09-29T09:00:00.000Z",
         "energy": "high",
         "dependsOn": [],
         "notes": "",
@@ -1508,8 +1508,8 @@
       },
       {
         "id": "b6477d9c-966a-72b1-813f-1eb2f6722422",
-        "createdAt": "2026-09-12T06:00:00.000Z",
-        "updatedAt": "2026-09-12T06:00:00.000Z",
+        "createdAt": "2026-09-12T09:00:00.000Z",
+        "updatedAt": "2026-09-12T09:00:00.000Z",
         "deletedAt": null,
         "title": "Read the intro 5",
         "projectId": "b4a88e85-be02-7235-af69-3890ae62ceab",
@@ -1528,8 +1528,8 @@
       },
       {
         "id": "bcffee46-3cd4-7c23-a66e-098a7894f27f",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "title": "Clean the invoice 3",
         "projectId": null,
@@ -1544,12 +1544,12 @@
         "energy": "medium",
         "dependsOn": [],
         "notes": "",
-        "completedAt": "2026-09-10T06:00:00.000Z"
+        "completedAt": "2026-09-10T09:00:00.000Z"
       },
       {
         "id": "c2cf4f8d-2491-72b8-bafc-33cac08ef1dc",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "title": "Plan flash cards 18",
         "projectId": null,
@@ -1564,12 +1564,12 @@
         "energy": "low",
         "dependsOn": [],
         "notes": "",
-        "completedAt": "2026-09-06T06:00:00.000Z"
+        "completedAt": "2026-09-06T09:00:00.000Z"
       },
       {
         "id": "c43fc027-d5ac-791a-9a03-30030813cf36",
-        "createdAt": "2026-09-07T06:00:00.000Z",
-        "updatedAt": "2026-09-07T06:00:00.000Z",
+        "createdAt": "2026-09-07T09:00:00.000Z",
+        "updatedAt": "2026-09-07T09:00:00.000Z",
         "deletedAt": null,
         "title": "Send chapter two 31",
         "projectId": "94ff2fa5-2cf3-7065-9234-b0dfa6bcf33e",
@@ -1588,8 +1588,8 @@
       },
       {
         "id": "c4f2b77e-265f-77b4-9b28-012c2d032cf7",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "title": "Call the contract 9",
         "projectId": "b66ca7cb-7a8b-77a6-afc6-bbb093ae6a16",
@@ -1608,8 +1608,8 @@
       },
       {
         "id": "c65bde37-c37f-74cd-a23f-f48ee5c5cda6",
-        "createdAt": "2026-09-07T06:00:00.000Z",
-        "updatedAt": "2026-09-07T06:00:00.000Z",
+        "createdAt": "2026-09-07T09:00:00.000Z",
+        "updatedAt": "2026-09-07T09:00:00.000Z",
         "deletedAt": null,
         "title": "Clean the slides 41",
         "projectId": "ed442775-663d-7865-8ab9-ee82931f163e",
@@ -1620,7 +1620,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-09-12T06:00:00.000Z",
+        "dueAt": "2026-09-12T09:00:00.000Z",
         "energy": "high",
         "dependsOn": [],
         "notes": "",
@@ -1628,8 +1628,8 @@
       },
       {
         "id": "cb34f0d4-9d1a-78f3-bd08-b6fca73fdae8",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "title": "Clean the garage 20",
         "projectId": "0131bd1f-f160-72bb-a1f4-07cf97d6c6e9",
@@ -1648,8 +1648,8 @@
       },
       {
         "id": "d390c52a-154f-7de7-9f9e-945aa602a2f7",
-        "createdAt": "2026-09-12T06:00:00.000Z",
-        "updatedAt": "2026-09-12T06:00:00.000Z",
+        "createdAt": "2026-09-12T09:00:00.000Z",
+        "updatedAt": "2026-09-12T09:00:00.000Z",
         "deletedAt": null,
         "title": "Clean test results 10",
         "projectId": "0131bd1f-f160-72bb-a1f4-07cf97d6c6e9",
@@ -1660,7 +1660,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-10-13T06:00:00.000Z",
+        "dueAt": "2026-10-13T09:00:00.000Z",
         "energy": "low",
         "dependsOn": [],
         "notes": "",
@@ -1668,8 +1668,8 @@
       },
       {
         "id": "d8347b4e-d2ec-7815-8e0e-2f2e6083071d",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "title": "Draft chapter two 45",
         "projectId": null,
@@ -1688,8 +1688,8 @@
       },
       {
         "id": "ded96983-7acb-7e6e-8492-a09095655f88",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "title": "Draft the garage 44",
         "projectId": "15c58dff-35cb-7749-80f2-68deec03e62f",
@@ -1700,7 +1700,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-10-21T06:00:00.000Z",
+        "dueAt": "2026-10-21T09:00:00.000Z",
         "energy": "low",
         "dependsOn": [],
         "notes": "",
@@ -1708,8 +1708,8 @@
       },
       {
         "id": "e00161c1-0d02-7f6e-be88-fc1e19c04cbd",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "title": "Call the intro 15",
         "projectId": "ed442775-663d-7865-8ab9-ee82931f163e",
@@ -1720,7 +1720,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-10-01T06:00:00.000Z",
+        "dueAt": "2026-10-01T09:00:00.000Z",
         "energy": "low",
         "dependsOn": [],
         "notes": "",
@@ -1728,8 +1728,8 @@
       },
       {
         "id": "e18b1d10-88a9-7a8e-8f2d-078cf353c325",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "title": "Send the contract 28",
         "projectId": "b66ca7cb-7a8b-77a6-afc6-bbb093ae6a16",
@@ -1740,7 +1740,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-10-18T06:00:00.000Z",
+        "dueAt": "2026-10-18T09:00:00.000Z",
         "energy": "high",
         "dependsOn": [],
         "notes": "",
@@ -1748,8 +1748,8 @@
       },
       {
         "id": "e5d391dd-25fe-7231-a903-bd3f4213a564",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "title": "Plan the intro 40",
         "projectId": "94ff2fa5-2cf3-7065-9234-b0dfa6bcf33e",
@@ -1760,7 +1760,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-09-12T06:00:00.000Z",
+        "dueAt": "2026-09-12T09:00:00.000Z",
         "energy": "medium",
         "dependsOn": [
           "8fecad46-b549-7f41-8be3-a0b86d328b07"
@@ -1770,8 +1770,8 @@
       },
       {
         "id": "ebd2cf9e-b96c-7933-99f4-ed5bf00cd4b2",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "title": "Review the slides 50",
         "projectId": null,
@@ -1790,8 +1790,8 @@
       },
       {
         "id": "f43e5fb7-d717-7ffc-be6b-4f68e88892f0",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "title": "Call test results 19",
         "projectId": "0131bd1f-f160-72bb-a1f4-07cf97d6c6e9",
@@ -1810,8 +1810,8 @@
       },
       {
         "id": "f736c9b4-3403-7995-9d00-70cbdc014b38",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "title": "Fix flash cards 42",
         "projectId": "b9b13bf9-3de3-7643-9e75-63f6968061c1",
@@ -1822,7 +1822,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-10-11T06:00:00.000Z",
+        "dueAt": "2026-10-11T09:00:00.000Z",
         "energy": "medium",
         "dependsOn": [],
         "notes": "",
@@ -1830,8 +1830,8 @@
       },
       {
         "id": "f98c0a5b-4c68-7323-a72e-e2ec304628f6",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "title": "Plan the slides 54",
         "projectId": "e68e61d6-2060-7b3e-beb4-6b9c5ff364ef",
@@ -1850,8 +1850,8 @@
       },
       {
         "id": "fc6f4084-0aa8-720a-bb9a-9850430216c1",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "title": "Clean the budget 39",
         "projectId": "3b16c4e1-5d2c-7300-8880-6462692ac3b0",
@@ -1870,8 +1870,8 @@
       },
       {
         "id": "ff7a4885-a520-7a29-937a-4d8a32c81bbf",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "title": "Call the slides 8",
         "projectId": "5baf99a8-5d8e-7969-b027-e3acf4854eb4",
@@ -1882,7 +1882,7 @@
         "preferredDate": null,
         "preferredStartMin": null,
         "actualMin": null,
-        "dueAt": "2026-09-07T06:00:00.000Z",
+        "dueAt": "2026-09-07T09:00:00.000Z",
         "energy": "low",
         "dependsOn": [],
         "notes": "",
@@ -1892,67 +1892,67 @@
     "events": [
       {
         "id": "02653cdf-66cc-7429-ade4-d3a48d7aa842",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "title": "Meeting 6",
-        "startAt": "2026-09-24T13:00:00.000Z",
-        "endAt": "2026-09-24T14:00:00.000Z",
+        "startAt": "2026-09-24T16:00:00.000Z",
+        "endAt": "2026-09-24T17:00:00.000Z",
         "source": "manual",
         "locked": true
       },
       {
         "id": "21f245ca-571d-799d-bbcd-b35627b7a14c",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "title": "Meeting 3",
-        "startAt": "2026-09-06T11:30:00.000Z",
-        "endAt": "2026-09-06T12:30:00.000Z",
+        "startAt": "2026-09-06T14:30:00.000Z",
+        "endAt": "2026-09-06T15:30:00.000Z",
         "source": "manual",
         "locked": true
       },
       {
         "id": "46fb49c6-d7cd-736f-acae-d9f3b8762e49",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "title": "Meeting 4",
-        "startAt": "2026-09-13T09:00:00.000Z",
-        "endAt": "2026-09-13T09:30:00.000Z",
+        "startAt": "2026-09-13T12:00:00.000Z",
+        "endAt": "2026-09-13T12:30:00.000Z",
         "source": "manual",
         "locked": true
       },
       {
         "id": "8ca5e5bb-0f11-7f2e-b192-931fe4b8483b",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "title": "Meeting 2",
-        "startAt": "2026-09-22T09:00:00.000Z",
-        "endAt": "2026-09-22T10:00:00.000Z",
+        "startAt": "2026-09-22T12:00:00.000Z",
+        "endAt": "2026-09-22T13:00:00.000Z",
         "source": "manual",
         "locked": true
       },
       {
         "id": "934323f4-d0c3-7272-8cc4-2e3269ffb02f",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "title": "Meeting 1",
-        "startAt": "2026-09-08T07:00:00.000Z",
-        "endAt": "2026-09-08T07:30:00.000Z",
+        "startAt": "2026-09-08T10:00:00.000Z",
+        "endAt": "2026-09-08T10:30:00.000Z",
         "source": "manual",
         "locked": true
       },
       {
         "id": "e45fdbdf-d4df-711a-8ee6-e7d0b2b737c0",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "title": "Meeting 5",
-        "startAt": "2026-09-19T06:00:00.000Z",
-        "endAt": "2026-09-19T06:30:00.000Z",
+        "startAt": "2026-09-19T09:00:00.000Z",
+        "endAt": "2026-09-19T09:30:00.000Z",
         "source": "manual",
         "locked": true
       }
@@ -1960,8 +1960,8 @@
     "routines": [
       {
         "id": "31b2e1ec-8f22-7d19-bc6d-3784f357592e",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "title": "Morning run",
         "recurrence": {
@@ -1987,8 +1987,8 @@
       },
       {
         "id": "86434670-8b22-7194-9504-7e321672d809",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "title": "Review inbox",
         "recurrence": {
@@ -2009,8 +2009,8 @@
     "routineInstances": [
       {
         "id": "0207b0e0-da61-7b84-a266-db640ad75fab",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "routineId": "31b2e1ec-8f22-7d19-bc6d-3784f357592e",
         "date": "2026-09-11",
@@ -2018,8 +2018,8 @@
       },
       {
         "id": "119ded17-b269-79b8-b437-a5ed1f7ff1b4",
-        "createdAt": "2026-09-12T06:00:00.000Z",
-        "updatedAt": "2026-09-12T06:00:00.000Z",
+        "createdAt": "2026-09-12T09:00:00.000Z",
+        "updatedAt": "2026-09-12T09:00:00.000Z",
         "deletedAt": null,
         "routineId": "86434670-8b22-7194-9504-7e321672d809",
         "date": "2026-09-12",
@@ -2027,8 +2027,8 @@
       },
       {
         "id": "2abdd1f8-9925-70d7-ae79-e04b3b6fec1a",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "routineId": "86434670-8b22-7194-9504-7e321672d809",
         "date": "2026-09-06",
@@ -2036,8 +2036,8 @@
       },
       {
         "id": "2b606d70-5ce6-7a9a-9a97-fefef55d2a33",
-        "createdAt": "2026-09-08T06:00:00.000Z",
-        "updatedAt": "2026-09-08T06:00:00.000Z",
+        "createdAt": "2026-09-08T09:00:00.000Z",
+        "updatedAt": "2026-09-08T09:00:00.000Z",
         "deletedAt": null,
         "routineId": "86434670-8b22-7194-9504-7e321672d809",
         "date": "2026-09-08",
@@ -2045,8 +2045,8 @@
       },
       {
         "id": "58d8d3ba-6f8c-73e7-b733-1b2dc0951a79",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "routineId": "86434670-8b22-7194-9504-7e321672d809",
         "date": "2026-09-10",
@@ -2054,8 +2054,8 @@
       },
       {
         "id": "63dba325-b67e-70d9-81ca-87db21653af5",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "routineId": "31b2e1ec-8f22-7d19-bc6d-3784f357592e",
         "date": "2026-09-09",
@@ -2063,8 +2063,8 @@
       },
       {
         "id": "70ce6989-f1b3-706c-9a87-06e093fac3da",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "routineId": "86434670-8b22-7194-9504-7e321672d809",
         "date": "2026-09-05",
@@ -2072,8 +2072,8 @@
       },
       {
         "id": "7d060310-5ea7-7985-8810-41b055b69885",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "routineId": "31b2e1ec-8f22-7d19-bc6d-3784f357592e",
         "date": "2026-09-05",
@@ -2081,8 +2081,8 @@
       },
       {
         "id": "7f9d3fb1-adeb-7652-851e-d580ce0b0d31",
-        "createdAt": "2026-09-07T06:00:00.000Z",
-        "updatedAt": "2026-09-07T06:00:00.000Z",
+        "createdAt": "2026-09-07T09:00:00.000Z",
+        "updatedAt": "2026-09-07T09:00:00.000Z",
         "deletedAt": null,
         "routineId": "86434670-8b22-7194-9504-7e321672d809",
         "date": "2026-09-07",
@@ -2090,8 +2090,8 @@
       },
       {
         "id": "908a0817-db79-71f4-a1e1-20a52f62ea74",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "routineId": "31b2e1ec-8f22-7d19-bc6d-3784f357592e",
         "date": "2026-09-10",
@@ -2099,8 +2099,8 @@
       },
       {
         "id": "94d7e969-669a-747b-be98-4c7fb80bde81",
-        "createdAt": "2026-09-12T06:00:00.000Z",
-        "updatedAt": "2026-09-12T06:00:00.000Z",
+        "createdAt": "2026-09-12T09:00:00.000Z",
+        "updatedAt": "2026-09-12T09:00:00.000Z",
         "deletedAt": null,
         "routineId": "31b2e1ec-8f22-7d19-bc6d-3784f357592e",
         "date": "2026-09-12",
@@ -2108,8 +2108,8 @@
       },
       {
         "id": "9ac41dc1-2181-7b8a-badb-833bd1d5d7ed",
-        "createdAt": "2026-09-07T06:00:00.000Z",
-        "updatedAt": "2026-09-07T06:00:00.000Z",
+        "createdAt": "2026-09-07T09:00:00.000Z",
+        "updatedAt": "2026-09-07T09:00:00.000Z",
         "deletedAt": null,
         "routineId": "31b2e1ec-8f22-7d19-bc6d-3784f357592e",
         "date": "2026-09-07",
@@ -2117,8 +2117,8 @@
       },
       {
         "id": "a177b544-e768-711c-9803-df6381fad67e",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "routineId": "86434670-8b22-7194-9504-7e321672d809",
         "date": "2026-09-09",
@@ -2126,8 +2126,8 @@
       },
       {
         "id": "d5f9f74c-7ca0-70ec-9fc1-7aafb6d30cc5",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "routineId": "31b2e1ec-8f22-7d19-bc6d-3784f357592e",
         "date": "2026-09-06",
@@ -2135,8 +2135,8 @@
       },
       {
         "id": "da1b1caf-e43e-7416-9f0f-1d0395e4a337",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "routineId": "86434670-8b22-7194-9504-7e321672d809",
         "date": "2026-09-11",
@@ -2144,8 +2144,8 @@
       },
       {
         "id": "efcdb82f-bcfd-7881-ae2d-2dfde9e8e563",
-        "createdAt": "2026-09-08T06:00:00.000Z",
-        "updatedAt": "2026-09-08T06:00:00.000Z",
+        "createdAt": "2026-09-08T09:00:00.000Z",
+        "updatedAt": "2026-09-08T09:00:00.000Z",
         "deletedAt": null,
         "routineId": "31b2e1ec-8f22-7d19-bc6d-3784f357592e",
         "date": "2026-09-08",
@@ -2155,8 +2155,8 @@
     "notes": [
       {
         "id": "134e5ce5-5533-7682-a2c4-86efe6be2910",
-        "createdAt": "2026-09-12T06:00:00.000Z",
-        "updatedAt": "2026-09-12T06:00:00.000Z",
+        "createdAt": "2026-09-12T09:00:00.000Z",
+        "updatedAt": "2026-09-12T09:00:00.000Z",
         "deletedAt": null,
         "title": "Note 11",
         "body": "Some thoughts about the contract.\nSome thoughts about the contract.\nSome thoughts about the contract.\nSome thoughts about the contract.\nSome thoughts about the contract.\nSome thoughts about the contract.\nSome thoughts about the contract.\nSome thoughts about the contract.\nSome thoughts about the contract.\n",
@@ -2165,8 +2165,8 @@
       },
       {
         "id": "199e2b02-59db-7659-9672-60710fd08008",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "title": "Note 12",
         "body": "Some thoughts about test results.\nSome thoughts about test results.\nSome thoughts about test results.\nSome thoughts about test results.\nSome thoughts about test results.\n",
@@ -2175,8 +2175,8 @@
       },
       {
         "id": "1f93381c-34c9-7975-8d17-8c0ec8b26590",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "title": "Note 10",
         "body": "Some thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\n",
@@ -2185,8 +2185,8 @@
       },
       {
         "id": "2404125f-27ae-7aa5-a51a-d49b1e4f62e4",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "title": "Note 6",
         "body": "Some thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\nSome thoughts about the invoice.\n",
@@ -2195,8 +2195,8 @@
       },
       {
         "id": "6e55b01d-a14f-7e47-a01c-db2062969d18",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "title": "Note 8",
         "body": "Some thoughts about the budget.\nSome thoughts about the budget.\nSome thoughts about the budget.\nSome thoughts about the budget.\nSome thoughts about the budget.\nSome thoughts about the budget.\n",
@@ -2205,8 +2205,8 @@
       },
       {
         "id": "7cf013e2-6baa-70ec-b420-2dce0cec7bc3",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "title": "Note 2",
         "body": "Some thoughts about chapter two.\nSome thoughts about chapter two.\n",
@@ -2215,8 +2215,8 @@
       },
       {
         "id": "7f1d7660-182b-772b-919c-33496656f88e",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "title": "Note 5",
         "body": "Some thoughts about the budget.\nSome thoughts about the budget.\nSome thoughts about the budget.\nSome thoughts about the budget.\nSome thoughts about the budget.\nSome thoughts about the budget.\n",
@@ -2225,8 +2225,8 @@
       },
       {
         "id": "95bfb53a-ffb5-70ec-8abf-7b5c933d6d6b",
-        "createdAt": "2026-09-07T06:00:00.000Z",
-        "updatedAt": "2026-09-07T06:00:00.000Z",
+        "createdAt": "2026-09-07T09:00:00.000Z",
+        "updatedAt": "2026-09-07T09:00:00.000Z",
         "deletedAt": null,
         "title": "Note 4",
         "body": "Some thoughts about test results.\nSome thoughts about test results.\nSome thoughts about test results.\nSome thoughts about test results.\nSome thoughts about test results.\nSome thoughts about test results.\nSome thoughts about test results.\n",
@@ -2235,8 +2235,8 @@
       },
       {
         "id": "a3bc7e13-493b-7885-92bb-8b07abc2f203",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "title": "Note 7",
         "body": "Some thoughts about flash cards.\n",
@@ -2245,8 +2245,8 @@
       },
       {
         "id": "ba058a63-ac49-7f18-a435-b21cdb7d7959",
-        "createdAt": "2026-09-12T06:00:00.000Z",
-        "updatedAt": "2026-09-12T06:00:00.000Z",
+        "createdAt": "2026-09-12T09:00:00.000Z",
+        "updatedAt": "2026-09-12T09:00:00.000Z",
         "deletedAt": null,
         "title": "Note 3",
         "body": "Some thoughts about test results.\nSome thoughts about test results.\nSome thoughts about test results.\nSome thoughts about test results.\nSome thoughts about test results.\n",
@@ -2255,8 +2255,8 @@
       },
       {
         "id": "bc55cc9f-0b0c-7cc1-beec-aa7bca211e90",
-        "createdAt": "2026-09-12T06:00:00.000Z",
-        "updatedAt": "2026-09-12T06:00:00.000Z",
+        "createdAt": "2026-09-12T09:00:00.000Z",
+        "updatedAt": "2026-09-12T09:00:00.000Z",
         "deletedAt": null,
         "title": "Note 9",
         "body": "Some thoughts about test results.\nSome thoughts about test results.\nSome thoughts about test results.\n",
@@ -2265,8 +2265,8 @@
       },
       {
         "id": "d7c7ca09-63e3-77cc-8edb-866adfec45d1",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "title": "Note 1",
         "body": "Some thoughts about the slides.\nSome thoughts about the slides.\nSome thoughts about the slides.\nSome thoughts about the slides.\nSome thoughts about the slides.\nSome thoughts about the slides.\nSome thoughts about the slides.\n",
@@ -2277,8 +2277,8 @@
     "people": [
       {
         "id": "17aa5d68-3d9d-7734-aa03-a81bd4893c51",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "name": "Person 4",
         "contact": "",
@@ -2288,8 +2288,8 @@
       },
       {
         "id": "4028af1b-419c-7938-b4d1-a95679191a5f",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "name": "Person 3",
         "contact": "",
@@ -2299,8 +2299,8 @@
       },
       {
         "id": "596c2c41-07a2-7505-bec4-c394d28fdd14",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "name": "Person 1",
         "contact": "",
@@ -2310,8 +2310,8 @@
       },
       {
         "id": "d41210a0-43cf-7b3c-b07c-87e08a348854",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "name": "Person 5",
         "contact": "",
@@ -2321,8 +2321,8 @@
       },
       {
         "id": "eebc5ce4-94e8-7f2c-a2e9-5ef19c4361fb",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "name": "Person 2",
         "contact": "",
@@ -2334,19 +2334,19 @@
     "commitments": [
       {
         "id": "1bac4c99-e712-79e4-b7b5-b5082683d8b7",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "personId": "596c2c41-07a2-7505-bec4-c394d28fdd14",
         "text": "Send the proposal to Person 1",
-        "dueAt": "2026-09-20T06:00:00.000Z",
+        "dueAt": "2026-09-20T09:00:00.000Z",
         "status": "open",
         "direction": "owed-to-me"
       },
       {
         "id": "9fa0fe54-81ea-7c0e-907a-ab22a01e7393",
-        "createdAt": "2026-09-04T06:00:00.000Z",
-        "updatedAt": "2026-09-04T06:00:00.000Z",
+        "createdAt": "2026-09-04T09:00:00.000Z",
+        "updatedAt": "2026-09-04T09:00:00.000Z",
         "deletedAt": null,
         "personId": "4028af1b-419c-7938-b4d1-a95679191a5f",
         "text": "Send the budget to Person 3",
@@ -2356,8 +2356,8 @@
       },
       {
         "id": "aac8e648-687a-7d78-bcf4-fcc305aaa41b",
-        "createdAt": "2026-09-02T06:00:00.000Z",
-        "updatedAt": "2026-09-02T06:00:00.000Z",
+        "createdAt": "2026-09-02T09:00:00.000Z",
+        "updatedAt": "2026-09-02T09:00:00.000Z",
         "deletedAt": null,
         "personId": "17aa5d68-3d9d-7734-aa03-a81bd4893c51",
         "text": "Send chapter two to Person 4",
@@ -2367,23 +2367,23 @@
       },
       {
         "id": "e37c92b4-abc0-7bd6-9683-726f0b619cc6",
-        "createdAt": "2026-09-04T06:00:00.000Z",
-        "updatedAt": "2026-09-04T06:00:00.000Z",
+        "createdAt": "2026-09-04T09:00:00.000Z",
+        "updatedAt": "2026-09-04T09:00:00.000Z",
         "deletedAt": null,
         "personId": "eebc5ce4-94e8-7f2c-a2e9-5ef19c4361fb",
         "text": "Send the garage to Person 2",
-        "dueAt": "2026-09-19T06:00:00.000Z",
+        "dueAt": "2026-09-19T09:00:00.000Z",
         "status": "open",
         "direction": "owed-by-me"
       },
       {
         "id": "e7f31821-8cd0-7724-9546-8cf11e5cc471",
-        "createdAt": "2026-09-04T06:00:00.000Z",
-        "updatedAt": "2026-09-04T06:00:00.000Z",
+        "createdAt": "2026-09-04T09:00:00.000Z",
+        "updatedAt": "2026-09-04T09:00:00.000Z",
         "deletedAt": null,
         "personId": "d41210a0-43cf-7b3c-b07c-87e08a348854",
         "text": "Send the garage to Person 5",
-        "dueAt": "2026-09-18T06:00:00.000Z",
+        "dueAt": "2026-09-18T09:00:00.000Z",
         "status": "open",
         "direction": "owed-by-me"
       }
@@ -2391,8 +2391,8 @@
     "bills": [
       {
         "id": "2a8b1501-de96-76db-b6e1-cc466be56a17",
-        "createdAt": "2026-08-23T06:00:00.000Z",
-        "updatedAt": "2026-08-23T06:00:00.000Z",
+        "createdAt": "2026-08-23T09:00:00.000Z",
+        "updatedAt": "2026-08-23T09:00:00.000Z",
         "deletedAt": null,
         "kind": "bill",
         "title": "Bill 3",
@@ -2412,8 +2412,8 @@
       },
       {
         "id": "4e86c015-928f-7b05-b27d-ef4277de07c3",
-        "createdAt": "2026-08-23T06:00:00.000Z",
-        "updatedAt": "2026-08-23T06:00:00.000Z",
+        "createdAt": "2026-08-23T09:00:00.000Z",
+        "updatedAt": "2026-08-23T09:00:00.000Z",
         "deletedAt": null,
         "kind": "bill",
         "title": "Bill 2",
@@ -2433,8 +2433,8 @@
       },
       {
         "id": "6c50c26b-87f5-759c-91cb-fd2dfbd3ca81",
-        "createdAt": "2026-08-03T06:00:00.000Z",
-        "updatedAt": "2026-08-03T06:00:00.000Z",
+        "createdAt": "2026-08-03T09:00:00.000Z",
+        "updatedAt": "2026-08-03T09:00:00.000Z",
         "deletedAt": null,
         "kind": "bill",
         "title": "Gym (legacy)",
@@ -2461,8 +2461,8 @@
       },
       {
         "id": "8c8a73cc-81f4-767a-821d-390e6a20e051",
-        "createdAt": "2026-08-23T06:00:00.000Z",
-        "updatedAt": "2026-08-23T06:00:00.000Z",
+        "createdAt": "2026-08-23T09:00:00.000Z",
+        "updatedAt": "2026-08-23T09:00:00.000Z",
         "deletedAt": null,
         "kind": "bill",
         "title": "Bill 1",
@@ -2482,8 +2482,8 @@
       },
       {
         "id": "b7cdd8fd-e412-786c-9118-3e2e172e0d47",
-        "createdAt": "2026-08-17T06:00:00.000Z",
-        "updatedAt": "2026-08-17T06:00:00.000Z",
+        "createdAt": "2026-08-17T09:00:00.000Z",
+        "updatedAt": "2026-08-17T09:00:00.000Z",
         "deletedAt": null,
         "kind": "bill",
         "title": "Rent",
@@ -2510,8 +2510,8 @@
       },
       {
         "id": "f3b3af80-b09e-74b9-afa8-0d57f4697297",
-        "createdAt": "2026-08-15T06:00:00.000Z",
-        "updatedAt": "2026-08-15T06:00:00.000Z",
+        "createdAt": "2026-08-15T09:00:00.000Z",
+        "updatedAt": "2026-08-15T09:00:00.000Z",
         "deletedAt": null,
         "kind": "bill",
         "title": "Rent",
@@ -2532,7 +2532,7 @@
         "recurrenceAnchor": "2026-08-10",
         "occurrenceIndex": 0,
         "scheduledFor": "2026-08-10",
-        "paidAt": "2026-08-17T06:00:00.000Z",
+        "paidAt": "2026-08-17T09:00:00.000Z",
         "nextBillId": "b7cdd8fd-e412-786c-9118-3e2e172e0d47",
         "repeatStopped": false
       }
@@ -2540,8 +2540,8 @@
     "blocks": [
       {
         "id": "1431d01d-c85c-756a-8730-ebe354b864fc",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-10",
         "startMin": 540,
@@ -2554,8 +2554,8 @@
       },
       {
         "id": "524b17b5-1041-7f57-80aa-758efe533552",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-09",
         "startMin": 540,
@@ -2568,8 +2568,8 @@
       },
       {
         "id": "5812ce5b-5db5-78fc-a9aa-3105bbba7fde",
-        "createdAt": "2026-09-08T06:00:00.000Z",
-        "updatedAt": "2026-09-08T06:00:00.000Z",
+        "createdAt": "2026-09-08T09:00:00.000Z",
+        "updatedAt": "2026-09-08T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-08",
         "startMin": 540,
@@ -2582,8 +2582,8 @@
       },
       {
         "id": "7904c645-4172-7f93-9199-424b3a55db2b",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-05",
         "startMin": 540,
@@ -2596,8 +2596,8 @@
       },
       {
         "id": "8182edd7-4512-7dc5-9b90-41ce5b805f7f",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-09",
         "startMin": 645,
@@ -2610,8 +2610,8 @@
       },
       {
         "id": "9393f89d-f5e2-7551-8d0c-aa0c9c920c4e",
-        "createdAt": "2026-09-07T06:00:00.000Z",
-        "updatedAt": "2026-09-07T06:00:00.000Z",
+        "createdAt": "2026-09-07T09:00:00.000Z",
+        "updatedAt": "2026-09-07T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-07",
         "startMin": 540,
@@ -2624,8 +2624,8 @@
       },
       {
         "id": "996585d1-914a-7215-bc99-51b4bbcea353",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-11",
         "startMin": 540,
@@ -2638,8 +2638,8 @@
       },
       {
         "id": "abf5ebf6-0a42-74b9-86d4-66a47632906e",
-        "createdAt": "2026-09-08T06:00:00.000Z",
-        "updatedAt": "2026-09-08T06:00:00.000Z",
+        "createdAt": "2026-09-08T09:00:00.000Z",
+        "updatedAt": "2026-09-08T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-08",
         "startMin": 615,
@@ -2652,8 +2652,8 @@
       },
       {
         "id": "b3c11fc4-a2b4-7d4d-a2cf-77b8f391af0e",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-05",
         "startMin": 645,
@@ -2666,8 +2666,8 @@
       },
       {
         "id": "d90e21dc-b67e-7e1f-9c2e-bbe1dbeb6028",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-06",
         "startMin": 540,
@@ -2680,8 +2680,8 @@
       },
       {
         "id": "f043091e-5c9a-78ec-8f68-c142a8d32358",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-11",
         "startMin": 615,
@@ -2694,8 +2694,8 @@
       },
       {
         "id": "fd10ea36-ef36-7d7e-a395-431db84de348",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-10",
         "startMin": 585,
@@ -2710,8 +2710,8 @@
     "dayCommitments": [
       {
         "id": "03ba05f0-f49c-7a77-883e-e2e6560ad509",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-10",
         "acceptedTaskIds": [
@@ -2719,12 +2719,12 @@
           "728832e0-7cc7-7115-9c11-c4d2f7ff4b1f"
         ],
         "energy": "low",
-        "acceptedAt": "2026-09-10T06:00:00.000Z"
+        "acceptedAt": "2026-09-10T09:00:00.000Z"
       },
       {
         "id": "18815d93-0f11-705a-81f8-bc4c2268530b",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-09",
         "acceptedTaskIds": [
@@ -2732,12 +2732,12 @@
           "99fc2849-d5ed-70d9-a33b-8a8f5d04d2a9"
         ],
         "energy": "high",
-        "acceptedAt": "2026-09-09T06:00:00.000Z"
+        "acceptedAt": "2026-09-09T09:00:00.000Z"
       },
       {
         "id": "1b16ccd0-0481-7e74-8663-0042288eea2b",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-05",
         "acceptedTaskIds": [
@@ -2745,24 +2745,24 @@
           "331f2216-d9af-7a22-9e54-0b58f74e8eae"
         ],
         "energy": "medium",
-        "acceptedAt": "2026-09-05T06:00:00.000Z"
+        "acceptedAt": "2026-09-05T09:00:00.000Z"
       },
       {
         "id": "bcef9ecd-3a24-73d0-9c19-8b862baf1f81",
-        "createdAt": "2026-09-07T06:00:00.000Z",
-        "updatedAt": "2026-09-07T06:00:00.000Z",
+        "createdAt": "2026-09-07T09:00:00.000Z",
+        "updatedAt": "2026-09-07T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-07",
         "acceptedTaskIds": [
           "940bd751-6474-7ca6-a60f-5c04d9c58ad7"
         ],
         "energy": "low",
-        "acceptedAt": "2026-09-07T06:00:00.000Z"
+        "acceptedAt": "2026-09-07T09:00:00.000Z"
       },
       {
         "id": "eb071356-cb6d-7e09-b4d8-f0c0ceceaef0",
-        "createdAt": "2026-09-08T06:00:00.000Z",
-        "updatedAt": "2026-09-08T06:00:00.000Z",
+        "createdAt": "2026-09-08T09:00:00.000Z",
+        "updatedAt": "2026-09-08T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-08",
         "acceptedTaskIds": [
@@ -2770,12 +2770,12 @@
           "8c091e8a-d687-713b-91c1-a4e35a12ad04"
         ],
         "energy": "high",
-        "acceptedAt": "2026-09-08T06:00:00.000Z"
+        "acceptedAt": "2026-09-08T09:00:00.000Z"
       },
       {
         "id": "f85ee453-e8d1-7c30-8522-a4187844929d",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-11",
         "acceptedTaskIds": [
@@ -2783,136 +2783,136 @@
           "4afff948-adf4-717f-9fe8-11fc6f8cf46a"
         ],
         "energy": "medium",
-        "acceptedAt": "2026-09-11T06:00:00.000Z"
+        "acceptedAt": "2026-09-11T09:00:00.000Z"
       },
       {
         "id": "fc36ddce-933b-71fb-8d46-0796a7ee990f",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "date": "2026-09-06",
         "acceptedTaskIds": [
           "940bd751-6474-7ca6-a60f-5c04d9c58ad7"
         ],
         "energy": "low",
-        "acceptedAt": "2026-09-06T06:00:00.000Z"
+        "acceptedAt": "2026-09-06T09:00:00.000Z"
       }
     ],
     "sessions": [
       {
         "id": "09181e18-9859-7fd7-99c1-2952e1d64942",
-        "createdAt": "2026-09-08T06:00:00.000Z",
-        "updatedAt": "2026-09-08T06:00:00.000Z",
+        "createdAt": "2026-09-08T09:00:00.000Z",
+        "updatedAt": "2026-09-08T09:00:00.000Z",
         "deletedAt": null,
         "taskId": "8c091e8a-d687-713b-91c1-a4e35a12ad04",
-        "startAt": "2026-09-08T07:15:00.000Z",
-        "endAt": "2026-09-08T08:45:00.000Z"
+        "startAt": "2026-09-08T10:15:00.000Z",
+        "endAt": "2026-09-08T11:45:00.000Z"
       },
       {
         "id": "0ec5a680-8b34-7291-8721-267c8d7da482",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "taskId": "8c091e8a-d687-713b-91c1-a4e35a12ad04",
-        "startAt": "2026-09-10T06:00:00.000Z",
-        "endAt": "2026-09-10T06:30:00.000Z"
+        "startAt": "2026-09-10T09:00:00.000Z",
+        "endAt": "2026-09-10T09:30:00.000Z"
       },
       {
         "id": "1dd1da00-5e05-7742-a480-12f6fa74c517",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "taskId": "81f6d1fa-a2d0-7e8f-80b6-43d8fc46b49f",
-        "startAt": "2026-09-11T06:00:00.000Z",
-        "endAt": "2026-09-11T07:00:00.000Z"
+        "startAt": "2026-09-11T09:00:00.000Z",
+        "endAt": "2026-09-11T10:00:00.000Z"
       },
       {
         "id": "2f26acf1-34bb-7799-b7a8-e87d47f9101c",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "taskId": "b210f839-f69a-7fa9-b1bb-60c9f4e0e97d",
-        "startAt": "2026-09-05T06:00:00.000Z",
-        "endAt": "2026-09-05T07:30:00.000Z"
+        "startAt": "2026-09-05T09:00:00.000Z",
+        "endAt": "2026-09-05T10:30:00.000Z"
       },
       {
         "id": "3f913f22-9524-7392-97cd-624393dd280a",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "taskId": "331f2216-d9af-7a22-9e54-0b58f74e8eae",
-        "startAt": "2026-09-05T07:45:00.000Z",
-        "endAt": "2026-09-05T08:30:00.000Z"
+        "startAt": "2026-09-05T10:45:00.000Z",
+        "endAt": "2026-09-05T11:30:00.000Z"
       },
       {
         "id": "54c6157f-0637-7842-b749-1c7029aaa744",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "taskId": "940bd751-6474-7ca6-a60f-5c04d9c58ad7",
-        "startAt": "2026-09-06T06:00:00.000Z",
-        "endAt": "2026-09-06T07:00:00.000Z"
+        "startAt": "2026-09-06T09:00:00.000Z",
+        "endAt": "2026-09-06T10:00:00.000Z"
       },
       {
         "id": "5a80732a-cd1e-7e1f-9fee-d2d3fc7b1eb2",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "taskId": "99fc2849-d5ed-70d9-a33b-8a8f5d04d2a9",
-        "startAt": "2026-09-09T07:45:00.000Z",
-        "endAt": "2026-09-09T08:15:00.000Z"
+        "startAt": "2026-09-09T10:45:00.000Z",
+        "endAt": "2026-09-09T11:15:00.000Z"
       },
       {
         "id": "63c24315-3e6c-7904-bfc3-edb3b476b671",
-        "createdAt": "2026-09-08T06:00:00.000Z",
-        "updatedAt": "2026-09-08T06:00:00.000Z",
+        "createdAt": "2026-09-08T09:00:00.000Z",
+        "updatedAt": "2026-09-08T09:00:00.000Z",
         "deletedAt": null,
         "taskId": "e5d391dd-25fe-7231-a903-bd3f4213a564",
-        "startAt": "2026-09-08T06:00:00.000Z",
-        "endAt": "2026-09-08T07:00:00.000Z"
+        "startAt": "2026-09-08T09:00:00.000Z",
+        "endAt": "2026-09-08T10:00:00.000Z"
       },
       {
         "id": "899de12b-42cf-761f-828e-4cb64468db23",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "taskId": "4afff948-adf4-717f-9fe8-11fc6f8cf46a",
-        "startAt": "2026-09-11T07:15:00.000Z",
-        "endAt": "2026-09-11T08:00:00.000Z"
+        "startAt": "2026-09-11T10:15:00.000Z",
+        "endAt": "2026-09-11T11:00:00.000Z"
       },
       {
         "id": "b2d37210-b8fd-724c-ad3b-d7d84e9013a6",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "taskId": "728832e0-7cc7-7115-9c11-c4d2f7ff4b1f",
-        "startAt": "2026-09-10T06:45:00.000Z",
-        "endAt": "2026-09-10T07:45:00.000Z"
+        "startAt": "2026-09-10T09:45:00.000Z",
+        "endAt": "2026-09-10T10:45:00.000Z"
       },
       {
         "id": "be2b047d-2d47-7bd9-b494-41e4533d6d44",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "taskId": "1acf5311-8e25-747c-965a-65483d70f89d",
-        "startAt": "2026-09-09T06:00:00.000Z",
-        "endAt": "2026-09-09T07:30:00.000Z"
+        "startAt": "2026-09-09T09:00:00.000Z",
+        "endAt": "2026-09-09T10:30:00.000Z"
       },
       {
         "id": "cd94cdf9-3c50-7647-b57c-44dfa2f581f2",
-        "createdAt": "2026-09-07T06:00:00.000Z",
-        "updatedAt": "2026-09-07T06:00:00.000Z",
+        "createdAt": "2026-09-07T09:00:00.000Z",
+        "updatedAt": "2026-09-07T09:00:00.000Z",
         "deletedAt": null,
         "taskId": "940bd751-6474-7ca6-a60f-5c04d9c58ad7",
-        "startAt": "2026-09-07T06:00:00.000Z",
-        "endAt": "2026-09-07T06:30:00.000Z"
+        "startAt": "2026-09-07T09:00:00.000Z",
+        "endAt": "2026-09-07T09:30:00.000Z"
       }
     ],
     "rules": [
       {
         "id": "150d3a52-6491-7097-80fd-fa800e50066b",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "name": "Bills",
         "enabled": true,
@@ -2924,8 +2924,8 @@
       },
       {
         "id": "1a80f8e2-8909-7d0f-8c93-ee23c1316df2",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "name": "No deep work late",
         "enabled": true,
@@ -2937,8 +2937,8 @@
       },
       {
         "id": "96dc5396-2f1f-74c8-8a89-3633ba795fe4",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "name": "Rollover",
         "enabled": true,
@@ -2953,8 +2953,8 @@
     "insightStates": [
       {
         "id": "114aca27-1701-7c98-9fa6-7e3545814012",
-        "createdAt": "2026-09-10T06:00:00.000Z",
-        "updatedAt": "2026-09-10T06:00:00.000Z",
+        "createdAt": "2026-09-10T09:00:00.000Z",
+        "updatedAt": "2026-09-10T09:00:00.000Z",
         "deletedAt": null,
         "insightKey": "neglected-goal:demo",
         "snoozedUntil": null,
@@ -2965,11 +2965,11 @@
       },
       {
         "id": "26f1386c-af10-79d6-8a8b-7bc1c27ce18b",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "insightKey": "stale-project:0131bd1f-f160-72bb-a1f4-07cf97d6c6e9",
-        "snoozedUntil": "2026-09-18T06:00:00.000Z",
+        "snoozedUntil": "2026-09-18T09:00:00.000Z",
         "dismissedAt": null,
         "snoozeMode": "time",
         "suppressedFingerprint": null,
@@ -2991,12 +2991,12 @@
       },
       {
         "id": "63486ba6-fbe9-770b-8f33-fa59f02463a1",
-        "createdAt": "2026-09-09T06:00:00.000Z",
-        "updatedAt": "2026-09-09T06:00:00.000Z",
+        "createdAt": "2026-09-09T09:00:00.000Z",
+        "updatedAt": "2026-09-09T09:00:00.000Z",
         "deletedAt": null,
         "insightKey": "overloaded-day:2026-09-14",
         "snoozedUntil": null,
-        "dismissedAt": "2026-09-09T06:00:00.000Z",
+        "dismissedAt": "2026-09-09T09:00:00.000Z",
         "snoozeMode": null,
         "suppressedFingerprint": null,
         "lastSummary": {
@@ -3017,8 +3017,8 @@
       },
       {
         "id": "c5fd4fe6-d821-7358-910c-7798ae8fc77e",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "insightKey": "estimate-bias:area:4a923ac4-0196-7125-9e90-34cffc4464ad",
         "snoozedUntil": null,
@@ -3045,8 +3045,8 @@
     "captures": [
       {
         "id": "421a5630-0eaa-796e-b362-eeb4256979ca",
-        "createdAt": "2026-09-12T06:00:00.000Z",
-        "updatedAt": "2026-09-12T06:00:00.000Z",
+        "createdAt": "2026-09-12T09:00:00.000Z",
+        "updatedAt": "2026-09-12T09:00:00.000Z",
         "deletedAt": null,
         "text": "Idea 3: review test results",
         "type": "note",
@@ -3058,8 +3058,8 @@
       },
       {
         "id": "77efdffd-9650-70be-b54f-3ed5a4053634",
-        "createdAt": "2026-09-12T06:00:00.000Z",
-        "updatedAt": "2026-09-12T06:00:00.000Z",
+        "createdAt": "2026-09-12T09:00:00.000Z",
+        "updatedAt": "2026-09-12T09:00:00.000Z",
         "deletedAt": null,
         "text": "Idea 1: send the invoice",
         "type": "note",
@@ -3071,8 +3071,8 @@
       },
       {
         "id": "9f2b11dc-d887-7ebb-bb2a-ba4f1c5755c4",
-        "createdAt": "2026-09-12T06:00:00.000Z",
-        "updatedAt": "2026-09-12T06:00:00.000Z",
+        "createdAt": "2026-09-12T09:00:00.000Z",
+        "updatedAt": "2026-09-12T09:00:00.000Z",
         "deletedAt": null,
         "text": "Idea 2: draft the slides",
         "type": "note",
@@ -3087,8 +3087,8 @@
     "appSettings": [
       {
         "id": "00000000-0000-7000-8000-000000000001",
-        "createdAt": "2026-09-05T06:00:00.000Z",
-        "updatedAt": "2026-09-05T06:00:00.000Z",
+        "createdAt": "2026-09-05T09:00:00.000Z",
+        "updatedAt": "2026-09-05T09:00:00.000Z",
         "deletedAt": null,
         "workingWindow": {
           "startMin": 540,
@@ -3129,8 +3129,8 @@
     "weeklyReviews": [
       {
         "id": "5159b2c7-f37b-7c81-8983-7ba66f1a213a",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "reviewWeekStart": "2026-09-07",
         "targetWeekStart": "2026-09-14",
@@ -3142,7 +3142,7 @@
           {
             "step": "inbox",
             "status": "done",
-            "at": "2026-09-11T06:00:00.000Z",
+            "at": "2026-09-11T09:00:00.000Z",
             "fingerprint": "fedcba9876543210",
             "resolved": 1,
             "deferred": 0,
@@ -3153,7 +3153,7 @@
         "stepDraft": {
           "version": 1,
           "step": "overdue",
-          "savedAt": "2026-09-11T06:00:00.000Z",
+          "savedAt": "2026-09-11T09:00:00.000Z",
           "choices": [
             {
               "ref": {
@@ -3168,15 +3168,15 @@
             }
           ]
         },
-        "startedAt": "2026-09-11T06:00:00.000Z",
-        "pausedAt": "2026-09-11T06:00:00.000Z",
+        "startedAt": "2026-09-11T09:00:00.000Z",
+        "pausedAt": "2026-09-11T09:00:00.000Z",
         "completedAt": null,
         "summary": null
       },
       {
         "id": "f6d1dec9-dc16-7b83-a58a-df9fbf2c2877",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "reviewWeekStart": "2026-08-31",
         "targetWeekStart": "2026-09-07",
@@ -3188,7 +3188,7 @@
           {
             "step": "inbox",
             "status": "done",
-            "at": "2026-09-06T06:00:00.000Z",
+            "at": "2026-09-06T09:00:00.000Z",
             "fingerprint": "0123456789abcdef",
             "resolved": 2,
             "deferred": 0,
@@ -3198,7 +3198,7 @@
           {
             "step": "overdue",
             "status": "deferred",
-            "at": "2026-09-06T06:00:00.000Z",
+            "at": "2026-09-06T09:00:00.000Z",
             "fingerprint": "0123456789abcdef",
             "resolved": 0,
             "deferred": 1,
@@ -3208,7 +3208,7 @@
           {
             "step": "projects",
             "status": "done",
-            "at": "2026-09-06T06:00:00.000Z",
+            "at": "2026-09-06T09:00:00.000Z",
             "fingerprint": "0123456789abcdef",
             "resolved": 0,
             "deferred": 0,
@@ -3218,7 +3218,7 @@
           {
             "step": "goals",
             "status": "done",
-            "at": "2026-09-06T06:00:00.000Z",
+            "at": "2026-09-06T09:00:00.000Z",
             "fingerprint": "0123456789abcdef",
             "resolved": 0,
             "deferred": 0,
@@ -3228,7 +3228,7 @@
           {
             "step": "bills",
             "status": "done",
-            "at": "2026-09-06T06:00:00.000Z",
+            "at": "2026-09-06T09:00:00.000Z",
             "fingerprint": "0123456789abcdef",
             "resolved": 0,
             "deferred": 0,
@@ -3238,7 +3238,7 @@
           {
             "step": "capacity",
             "status": "done",
-            "at": "2026-09-06T06:00:00.000Z",
+            "at": "2026-09-06T09:00:00.000Z",
             "fingerprint": "0123456789abcdef",
             "resolved": 0,
             "deferred": 0,
@@ -3247,14 +3247,14 @@
           }
         ],
         "stepDraft": null,
-        "startedAt": "2026-09-06T06:00:00.000Z",
+        "startedAt": "2026-09-06T09:00:00.000Z",
         "pausedAt": null,
-        "completedAt": "2026-09-06T06:00:00.000Z",
+        "completedAt": "2026-09-06T09:00:00.000Z",
         "summary": {
           "version": 1,
           "reviewWeekStart": "2026-08-31",
           "targetWeekStart": "2026-09-07",
-          "computedAt": "2026-09-06T06:00:00.000Z",
+          "computedAt": "2026-09-06T09:00:00.000Z",
           "steps": [],
           "actionCount": 3,
           "items": [
@@ -3273,7 +3273,7 @@
             "availableMin": 3465,
             "targetMin": 2400,
             "overloadedDays": 1,
-            "computedAt": "2026-09-06T06:00:00.000Z"
+            "computedAt": "2026-09-06T09:00:00.000Z"
           }
         }
       }
@@ -3281,8 +3281,8 @@
     "weeklyReviewActions": [
       {
         "id": "2f5cac04-a607-78df-b42d-1f765629a6e9",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "reviewId": "5159b2c7-f37b-7c81-8983-7ba66f1a213a",
         "step": "inbox",
@@ -3291,13 +3291,13 @@
         "fingerprint": "fedcba9876543210",
         "choice": {},
         "result": {},
-        "at": "2026-09-11T06:00:00.000Z",
+        "at": "2026-09-11T09:00:00.000Z",
         "supersedes": null
       },
       {
         "id": "97e7e502-be8e-7506-88c5-a341cca41ea1",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "reviewId": "f6d1dec9-dc16-7b83-a58a-df9fbf2c2877",
         "step": "bills",
@@ -3310,18 +3310,18 @@
         ],
         "fingerprint": "0123456789abcdef",
         "choice": {
-          "paidAt": "2026-08-17T06:00:00.000Z"
+          "paidAt": "2026-08-17T09:00:00.000Z"
         },
         "result": {
           "successorId": "b7cdd8fd-e412-786c-9118-3e2e172e0d47"
         },
-        "at": "2026-09-06T06:00:00.000Z",
+        "at": "2026-09-06T09:00:00.000Z",
         "supersedes": null
       },
       {
         "id": "beffcd94-82d7-767c-abfe-53273c3cec40",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "reviewId": "f6d1dec9-dc16-7b83-a58a-df9fbf2c2877",
         "step": "overdue",
@@ -3337,13 +3337,13 @@
           "reason": "Waiting on a reply"
         },
         "result": {},
-        "at": "2026-09-06T06:00:00.000Z",
+        "at": "2026-09-06T09:00:00.000Z",
         "supersedes": null
       },
       {
         "id": "cbf5d8cd-625d-7fc7-ae02-bd12a5cca1c4",
-        "createdAt": "2026-09-06T06:00:00.000Z",
-        "updatedAt": "2026-09-06T06:00:00.000Z",
+        "createdAt": "2026-09-06T09:00:00.000Z",
+        "updatedAt": "2026-09-06T09:00:00.000Z",
         "deletedAt": null,
         "reviewId": "f6d1dec9-dc16-7b83-a58a-df9fbf2c2877",
         "step": "inbox",
@@ -3359,7 +3359,7 @@
         "result": {
           "status": "archived"
         },
-        "at": "2026-09-06T06:00:00.000Z",
+        "at": "2026-09-06T09:00:00.000Z",
         "supersedes": null
       }
     ],
@@ -3368,8 +3368,8 @@
     "links": [
       {
         "id": "71119c6f-bd2f-7185-8972-da63cd4fe4da",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "fromType": "project",
         "fromId": "639b4491-fb43-735a-812e-21a1f7c6dfa5",
@@ -3379,8 +3379,8 @@
       },
       {
         "id": "819eaa4e-403b-75a7-9b00-7da36518d54f",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "fromType": "project",
         "fromId": "ed442775-663d-7865-8ab9-ee82931f163e",
@@ -3390,8 +3390,8 @@
       },
       {
         "id": "a5733b49-3097-70a3-a665-0035aa182553",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "fromType": "project",
         "fromId": "e68e61d6-2060-7b3e-beb4-6b9c5ff364ef",
@@ -3401,8 +3401,8 @@
       },
       {
         "id": "fb877055-2b50-767e-bb7d-e89ac8ede655",
-        "createdAt": "2026-09-11T06:00:00.000Z",
-        "updatedAt": "2026-09-11T06:00:00.000Z",
+        "createdAt": "2026-09-11T09:00:00.000Z",
+        "updatedAt": "2026-09-11T09:00:00.000Z",
         "deletedAt": null,
         "fromType": "project",
         "fromId": "3b16c4e1-5d2c-7300-8880-6462692ac3b0",
