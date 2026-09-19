@@ -1,0 +1,12 @@
+﻿{
+  "at": "2026-09-19T00:23:18.9207749+00:00",
+  "action": "uninstall-snapshot",
+  "executableExists": false,
+  "uninstallerExists": false,
+  "executableSha256": null,
+  "protocolCommand": "\"C:\\Windows\\System32\\notepad.exe\" \"%1\"",
+  "protocolOwnsOrbit": false,
+  "autostartCommand": null,
+  "orbitProcesses": [],
+  "dataDirectoryExists": true
+}

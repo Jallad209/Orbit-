@@ -1,0 +1,12 @@
+﻿{
+  "at": "2026-09-18T23:48:01.2177973+00:00",
+  "action": "snapshot",
+  "executableExists": true,
+  "uninstallerExists": true,
+  "executableSha256": "883EAD38785ED4223C164C309E6BD20A7BA6B2F556277B71DE980F41213B406E",
+  "protocolCommand": "\"C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\Orbit\\orbit.exe\" \"%1\"",
+  "protocolOwnsOrbit": true,
+  "autostartCommand": null,
+  "orbitProcesses": [],
+  "dataDirectoryExists": true
+}

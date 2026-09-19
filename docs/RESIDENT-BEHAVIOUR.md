@@ -261,27 +261,28 @@ Week 12 (activation, protocol, quit preparation), automated on the same machine:
 | Hidden capture with text offers Save capture / Discard / Cancel quit                                            | PASS — vitest QuickCaptureWindow                                                                                                                                                   |
 | Scheduler pre-delivery validation: paid bill, completed/deleted commitment, deleted person, watermark           | PASS — `cargo test` (scheduler)                                                                                                                                                    |
 
-Installed build (clean VM procedure in `docs/WEEK-11` plan §14.6 and `docs/WEEK-12-PLAN.md`
-§11.1/§11.5): **NOT RUN** in either pass. Week 13 now provides a Windows Sandbox harness at
-`tests/installed/`, but the current candidate has not been built and exercised from the required
-external user terminal/Sandbox session. Until that happens, the following remain pending and
-neither resident delivery nor notification activation is marked complete on an installed build:
+Installed build, Windows Sandbox, 19 September 2026 — candidate
+`Orbit_0.1.0-alpha.2_x64-setup.exe` (SHA-256 `AF05DA3B…441991`, tree `1a2dc6a`), harness at
+`tests/installed/`, evidence in `docs/testing/release-1.0/installed/`:
 
-- notification body click with Orbit visible, hidden, and fully exited (notification-center
-  item after exit) opening the exact current record in one process;
-- production `orbit://` registration by the NSIS installer: ownership check against a
-  foreign handler, quoting, upgrade keeping the handler and executable target, uninstall
-  removing only Orbit's registration;
-- immediate native display failure leaving a retryable pending row on an installed build;
+| Scenario                                                                                                     | Result                                                                              |
+| ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| Fresh silent NSIS install: executable, uninstaller, `orbit://` registration, data folder                     | PASS — `installed-state.json`                                                       |
+| Foreign `orbit://` handler survives a reinstall untouched                                                    | PASS — `foreign-handler-after-reinstall.txt`                                        |
+| Orbit reports that another program owns `orbit://`                                                           | **FAIL — not implemented**; Settings → Desktop shows only static text (fix pending) |
+| `orbit://task/<id>` while visible: existing process, exact record, one process after handover                | PASS — `protocol-dispatch.json`, settled in 260 ms                                  |
+| Same while hidden in the tray: existing window restored on the record                                        | PASS — `04-hidden-activation.json`                                                  |
+| Same while exited: exactly one process cold-started straight onto the record, no first-run screen            | PASS — `05-cold-activation.json` (PD-001's real-world path)                         |
+| Duplicate manual launch activates the running instance                                                       | PASS — `06-duplicate-launch.json`                                                   |
+| Forced termination → one honest unclean-run report, app usable                                               | PASS — `07-last-run.json` (`endedCleanly: false`, `crash: null`)                    |
+| A → B upgrade (alpha.1 over alpha.2, then alpha.2): data, protocol ownership, executable target refreshed    | PASS — `08-after-upgrade.json` (hash back to the candidate's)                       |
+| Uninstall removes only Orbit's login value and protocol key, leaves a foreign handler, keeps every data file | PASS — `09b-after-uninstall.json`, `09b-uninstall-full.png`                         |
+| Notification refused by Windows stays pending and is retried; delivered once the platform is back            | PASS — `10-shell.log`: three `0x803E0105` refusals, then `deliver fired: 1`         |
+| Installed notification carries the Orbit name and icon                                                       | PASS — `11-notification-centre.png`                                                 |
 
-- installed Orbit name and icon on notifications; Focus Assist behaviour;
-- install → enable login launch → reboot → hidden initialization → reminder delivery;
-- sleep/resume across a due time without duplicate delivery;
-- upgrade with the opt-in retained and the executable target refreshed;
-- disable → reboot → no auto-launch; uninstall cleanup with data and backups retained;
-- duplicate manual launch against the real single-instance registration (skipped under test
-  isolation by design);
-- forced termination, then one honest unclean-run report and recovery.
+Still **NOT RUN** (need the disposable `OrbitTest` host account, not Sandbox): login launch →
+reboot → hidden initialization → delivery; disable → reboot → no launch; sleep across a due time
+→ one delivery.
 
 MSI: **BLOCKED as a stable-release gate**. The hook above is NSIS-only; equivalent MSI
 cleanup must be implemented and verified before an MSI channel ships.

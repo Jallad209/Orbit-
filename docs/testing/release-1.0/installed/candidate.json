@@ -1,0 +1,10 @@
+﻿{
+  "capturedAt": "2026-09-18T22:40:33.6280429+00:00",
+  "sandboxBuild": {
+    "WindowsProductName": "Windows 10 Enterprise",
+    "WindowsVersion": "2009",
+    "OsBuildNumber": "26100"
+  },
+  "installer": "Orbit_0.1.0-alpha.2_x64-setup.exe",
+  "sha256": "AF05DA3BCE43DEFC8B1B89BAE7845F02DAEB3D5CF413AC8FAB0C26AA58441991"
+}

@@ -1,0 +1,10 @@
+﻿{
+  "at": "2026-09-18T23:39:32.5702365+00:00",
+  "uriKind": "task",
+  "processesBefore": [6980],
+  "processCountImmediately": 2,
+  "processesAfter": [6980],
+  "settledWithinMs": 266,
+  "originalProcessSurvived": true,
+  "exactlyOneProcess": true
+}
