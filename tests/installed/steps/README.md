@@ -7,3 +7,5 @@ PowerShell session:
     Set-ExecutionPolicy -Scope Process Bypass -Force
 
 then run a step by path, for example `C:\OrbitHarness\steps\02b-restore-ownership.ps1`.
+
+The reboot and sleep scenarios (12–14) are not Sandbox steps; they live in `../host/`.

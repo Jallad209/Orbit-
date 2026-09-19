@@ -32,7 +32,11 @@ close.
 
 ## Disposable host-account scenarios
 
-These cannot be proved in Sandbox because Sandbox cannot reboot or sleep.
+These cannot be proved in Sandbox because Sandbox cannot reboot or sleep. Signed in as
+`OrbitTest`, run `tests/installed/host/next.ps1` step by step (`host/README.md`): the arm
+steps record the Run value and the queued reminder before each restart or sleep, the verify
+steps read the boot or sleep/resume times, the launch mode and readiness from the shell log,
+wait for the delivery, and capture the toast and the notification centre themselves.
 
 |   # | Scenario                                                                            | Result  | Required evidence                                                 |
 | --: | ----------------------------------------------------------------------------------- | ------- | ----------------------------------------------------------------- |

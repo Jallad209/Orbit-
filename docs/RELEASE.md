@@ -83,7 +83,8 @@ say so. The workflow still knows how to sign (see the last section) should that 
 12. **Installed pass.** Open `tests/installed/orbit-sandbox.wsb`, follow
     `tests/installed/CHECKLIST.md`, run `checks.ps1` inside Sandbox, and copy evidence to the
     mapped folder before closing it. Expect the SmartScreen warning because builds are unsigned.
-    Run the three reboot/sleep cases under the disposable `OrbitTest` host account.
+    Run the three reboot/sleep cases under the disposable `OrbitTest` host account with
+    `tests/installed/host/next.ps1` (`tests/installed/host/README.md`).
 13. **Install check.** Record every scenario PASS, FAIL, or NOT RUN. First run creates
     `%APPDATA%\app.orbit.desktop\data\orbit.db`; Settings → Data reports integrity ok. Do not
     publish while an installed release gate is NOT RUN.
