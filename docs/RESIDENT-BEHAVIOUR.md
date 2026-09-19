@@ -200,7 +200,9 @@ pointing at a missing file.
   `HKCU\Software\Classes\orbit` (`URL Protocol`, the icon, and
   `shell\open\command = "<exe>" "%1"`, quoted). If a command already exists there and does
   not name `Orbit.exe`, another program owns the scheme and it is left alone; the app then
-  reports the missing handler instead of hijacking it;
+  reports it instead of hijacking it: Settings → Desktop reads the registration back on every
+  visit (`protocol.rs`, in `resident_status`) and says whether `orbit://` reaches this
+  installation, another Orbit installation, another program (named), or nothing;
 - after uninstall: if the uninstaller is running in place (`$EXEPATH == $INSTDIR\uninstall.exe`,
   which is how an upgrade invokes the previous version's uninstaller) keep both
   registrations for the new version; otherwise delete the Run value and the protocol
@@ -265,20 +267,20 @@ Installed build, Windows Sandbox, 19 September 2026 — candidate
 `Orbit_0.1.0-alpha.2_x64-setup.exe` (SHA-256 `AF05DA3B…441991`, tree `1a2dc6a`), harness at
 `tests/installed/`, evidence in `docs/testing/release-1.0/installed/`:
 
-| Scenario                                                                                                     | Result                                                                              |
-| ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| Fresh silent NSIS install: executable, uninstaller, `orbit://` registration, data folder                     | PASS — `installed-state.json`                                                       |
-| Foreign `orbit://` handler survives a reinstall untouched                                                    | PASS — `foreign-handler-after-reinstall.txt`                                        |
-| Orbit reports that another program owns `orbit://`                                                           | **FAIL — not implemented**; Settings → Desktop shows only static text (fix pending) |
-| `orbit://task/<id>` while visible: existing process, exact record, one process after handover                | PASS — `protocol-dispatch.json`, settled in 260 ms                                  |
-| Same while hidden in the tray: existing window restored on the record                                        | PASS — `04-hidden-activation.json`                                                  |
-| Same while exited: exactly one process cold-started straight onto the record, no first-run screen            | PASS — `05-cold-activation.json` (PD-001's real-world path)                         |
-| Duplicate manual launch activates the running instance                                                       | PASS — `06-duplicate-launch.json`                                                   |
-| Forced termination → one honest unclean-run report, app usable                                               | PASS — `07-last-run.json` (`endedCleanly: false`, `crash: null`)                    |
-| A → B upgrade (alpha.1 over alpha.2, then alpha.2): data, protocol ownership, executable target refreshed    | PASS — `08-after-upgrade.json` (hash back to the candidate's)                       |
-| Uninstall removes only Orbit's login value and protocol key, leaves a foreign handler, keeps every data file | PASS — `09b-after-uninstall.json`, `09b-uninstall-full.png`                         |
-| Notification refused by Windows stays pending and is retried; delivered once the platform is back            | PASS — `10-shell.log`: three `0x803E0105` refusals, then `deliver fired: 1`         |
-| Installed notification carries the Orbit name and icon                                                       | PASS — `11-notification-centre.png`                                                 |
+| Scenario                                                                                                     | Result                                                                                                                              |
+| ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Fresh silent NSIS install: executable, uninstaller, `orbit://` registration, data folder                     | PASS — `installed-state.json`                                                                                                       |
+| Foreign `orbit://` handler survives a reinstall untouched                                                    | PASS — `foreign-handler-after-reinstall.txt`                                                                                        |
+| Orbit reports that another program owns `orbit://`                                                           | **FAIL on alpha.2 — not implemented**; implemented afterwards (Settings → Desktop names the owner), re-verify on the next candidate |
+| `orbit://task/<id>` while visible: existing process, exact record, one process after handover                | PASS — `protocol-dispatch.json`, settled in 260 ms                                                                                  |
+| Same while hidden in the tray: existing window restored on the record                                        | PASS — `04-hidden-activation.json`                                                                                                  |
+| Same while exited: exactly one process cold-started straight onto the record, no first-run screen            | PASS — `05-cold-activation.json` (PD-001's real-world path)                                                                         |
+| Duplicate manual launch activates the running instance                                                       | PASS — `06-duplicate-launch.json`                                                                                                   |
+| Forced termination → one honest unclean-run report, app usable                                               | PASS — `07-last-run.json` (`endedCleanly: false`, `crash: null`)                                                                    |
+| A → B upgrade (alpha.1 over alpha.2, then alpha.2): data, protocol ownership, executable target refreshed    | PASS — `08-after-upgrade.json` (hash back to the candidate's)                                                                       |
+| Uninstall removes only Orbit's login value and protocol key, leaves a foreign handler, keeps every data file | PASS — `09b-after-uninstall.json`, `09b-uninstall-full.png`                                                                         |
+| Notification refused by Windows stays pending and is retried; delivered once the platform is back            | PASS — `10-shell.log`: three `0x803E0105` refusals, then `deliver fired: 1`                                                         |
+| Installed notification carries the Orbit name and icon                                                       | PASS — `11-notification-centre.png`                                                                                                 |
 
 Still **NOT RUN** (need the disposable `OrbitTest` host account, not Sandbox): login launch →
 reboot → hidden initialization → delivery; disable → reboot → no launch; sleep across a due time

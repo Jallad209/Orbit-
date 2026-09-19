@@ -6,7 +6,51 @@ import { Card, SectionHeader } from '@/components/ui/Card';
 import { Toggle } from '@/components/ui/Checkbox';
 import { toast } from '@/components/ui/toastStore';
 import { usePlatform } from '@/platform';
-import type { AutostartStatus, DesktopPrefs, ResidentStatus } from '@/platform/types';
+import type {
+  AutostartStatus,
+  DesktopPrefs,
+  ProtocolHandler,
+  ResidentStatus,
+} from '@/platform/types';
+
+/**
+ * What an `orbit://` link reaches right now, read back from the registration the installer
+ * writes. The installer never takes the scheme from another program, so this is the one
+ * place that says so instead of promising that notification clicks open Orbit.
+ */
+function ProtocolHandlerNote({ handler }: { handler: ProtocolHandler }) {
+  const program = handler.executable ?? handler.command ?? 'another program';
+  switch (handler.owner) {
+    case 'this-installation':
+      return (
+        <p className="mt-1 text-[12px] text-ink-muted" data-testid="protocol-handler">
+          orbit:// links are registered to this installation.
+        </p>
+      );
+    case 'other-orbit':
+      return (
+        <p className="mt-1 text-[12px] text-ink-muted" data-testid="protocol-handler">
+          orbit:// links are registered to a different Orbit installation ({program}); clicks open
+          that copy, not this one.
+        </p>
+      );
+    case 'foreign':
+      return (
+        <p className="mt-1 text-[12px] text-gold-ink" data-testid="protocol-handler">
+          Another program owns orbit:// links for your account ({program}). Notification clicks will
+          open it instead of Orbit; reinstalling Orbit does not take the scheme back. Remove that
+          program's registration, then run the Orbit installer again.
+        </p>
+      );
+    case 'missing':
+      return (
+        <p className="mt-1 text-[12px] text-gold-ink" data-testid="protocol-handler">
+          orbit:// is not registered for your account, so notification clicks cannot open Orbit. Run
+          the Orbit installer again to register it.
+        </p>
+      );
+  }
+}
 
 /**
  * Settings → Desktop: the resident shell as it actually is. Close-to-tray
@@ -205,6 +249,7 @@ export function DesktopSettings() {
         </div>
         <div data-testid="notification-clicks">
           <p className="text-sm font-medium text-ink">Notification clicks</p>
+          {status ? <ProtocolHandlerNote handler={status.protocolHandler} /> : null}
           <p className="mt-1 text-[12px] text-ink-faint">
             Clicking a reminder opens the record it names, whether Orbit is visible, hidden, or not
             running, through the orbit:// handler the installer registers for your account. A link

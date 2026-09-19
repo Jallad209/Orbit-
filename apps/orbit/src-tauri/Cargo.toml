@@ -36,7 +36,7 @@ flate2 = { version = "1", default-features = false, features = ["rust_backend"] 
 # Notification activation (week 12): toasts with a protocol launch payload and an
 # immediate submission result, which the notification plugin cannot provide.
 [target.'cfg(windows)'.dependencies]
-windows = { version = "0.61", features = ["Data_Xml_Dom", "UI_Notifications", "Foundation"] }
+windows = { version = "0.61", features = ["Data_Xml_Dom", "UI_Notifications", "Foundation", "Win32_System_Registry"] }
 
 # Keep useful source locations in development backtraces without making MSVC
 # generate the much larger full debug database on every app relink.

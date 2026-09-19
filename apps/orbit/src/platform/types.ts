@@ -87,6 +87,21 @@ export interface ResidentStatus {
   shutdownError: string | null;
   /** The main window is shown (hidden to the tray otherwise). */
   mainVisible: boolean;
+  /** Who owns `orbit://` for this Windows user: what a notification click actually reaches. */
+  protocolHandler: ProtocolHandler;
+}
+
+export interface ProtocolHandler {
+  /**
+   * `this-installation`: clicks reach this executable. `other-orbit`: an orbit.exe elsewhere
+   * (an installed copy while a development build runs). `foreign`: another program owns the
+   * scheme and the installer left it alone. `missing`: nothing is registered.
+   */
+  owner: 'this-installation' | 'other-orbit' | 'foreign' | 'missing';
+  /** The registered command, verbatim (an executable path and '%1'). */
+  command: string | null;
+  /** The executable that command names, when it could be parsed. */
+  executable: string | null;
 }
 
 /** Events the shell raises for the main window (and, for quit preparation, the capture window). */

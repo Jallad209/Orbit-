@@ -57,6 +57,11 @@ export function fakeResidentApi(
     generation: 1,
     shutdownError: null,
     mainVisible: true,
+    protocolHandler: {
+      owner: 'this-installation',
+      command: '"C:\\Orbit\\orbit.exe" "%1"',
+      executable: 'C:\\Orbit\\orbit.exe',
+    },
   });
   const api = {
     freshIntegrity: async () => ({ ok: true, messages: ['ok'], fts5: true, durationMs: 1 }),

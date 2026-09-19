@@ -274,6 +274,8 @@ pub struct ResidentStatus {
     pub shutdown_error: Option<String>,
     /// Whether the main window is currently shown (hidden to the tray otherwise).
     pub main_visible: bool,
+    /// Who owns `orbit://` for this user: what a notification click will actually reach.
+    pub protocol_handler: crate::protocol::ProtocolHandler,
 }
 
 fn with_resident<T>(app: &AppHandle, f: impl FnOnce(&mut Resident) -> T) -> Option<T> {
@@ -320,6 +322,7 @@ pub fn status(app: &AppHandle) -> ResidentStatus {
             .get_webview_window(MAIN_WINDOW)
             .and_then(|w| w.is_visible().ok())
             .unwrap_or(false),
+        protocol_handler: crate::protocol::status(),
     }
 }
 

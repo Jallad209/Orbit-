@@ -24,7 +24,9 @@ then edited by hand before each release.
   waits for or holds the connection for 250 ms or more. The open-time check is now
   `PRAGMA quick_check`, run once per connection rather than once per window; the full
   `integrity_check` stays on every verified backup copy and in Diagnostics. The first insights
-  scan waits out its 3 s initial delay even when boot itself writes. A window that reloads
+  scan waits out its 3 s initial delay even when boot itself writes. Settings → Desktop now
+  says who owns `orbit://` for your account — this installation, another Orbit, another
+  program by name, or nothing — instead of assuming notification clicks reach Orbit. A window that reloads
   releases the transaction its previous document owned at once, so the next document no
   longer waits up to 30 s on "Opening Orbit…". The web now reminds after
   more than seven days and 100 changes without a full JSON export.

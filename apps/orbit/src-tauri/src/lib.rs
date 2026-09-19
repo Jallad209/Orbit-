@@ -15,6 +15,7 @@ mod commands;
 mod logging;
 mod notifications;
 mod prefs;
+mod protocol;
 mod resident;
 mod scheduler;
 mod time;

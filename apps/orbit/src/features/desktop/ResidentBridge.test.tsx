@@ -9,6 +9,7 @@ import { markFirstRunDone } from '@/features/firstRun/firstRun';
 import { useToastStore } from '@/components/ui/toastStore';
 import { useDraftStore } from '@/features/drafts/draftStore';
 import { webPlatform, type Platform } from '@/platform';
+import type { ResidentStatus } from '@/platform/types';
 import { fakeResidentApi } from '@/test/desktop';
 import { renderWithProviders } from '@/test/render';
 import { DesktopSettings } from '@/features/settings/DesktopSettings';
@@ -173,11 +174,73 @@ describe('DesktopSettings', () => {
         generation: 1,
         shutdownError: null,
         mainVisible: true,
+        protocolHandler: { owner: 'this-installation', command: null, executable: null },
       }),
     });
     renderWithProviders(<DesktopSettings />, { platform: desktopWith(fake), insights: false });
     expect(await screen.findByTestId('tray-error')).toHaveTextContent('no system tray');
     expect(screen.getByRole('switch', { name: /^Close to tray/ })).toBeDisabled();
+  });
+
+  it('says who owns orbit:// instead of promising that notification clicks open Orbit', async () => {
+    const withHandler = (handler: ResidentStatus['protocolHandler']) =>
+      fakeResidentApi({
+        residentStatus: async () => ({
+          phase: 'ready',
+          launch: 'manual',
+          trayAvailable: true,
+          trayError: null,
+          closeToTray: true,
+          closeToTrayEffective: true,
+          closeResolved: true,
+          closeExplanationSeen: true,
+          readyGeneration: 1,
+          generation: 1,
+          shutdownError: null,
+          mainVisible: true,
+          protocolHandler: handler,
+        }),
+      });
+
+    const owned = renderWithProviders(<DesktopSettings />, {
+      platform: desktopWith(
+        withHandler({
+          owner: 'this-installation',
+          command: '"C:\\Orbit\\orbit.exe" "%1"',
+          executable: 'C:\\Orbit\\orbit.exe',
+        }),
+      ),
+      insights: false,
+    });
+    expect(await screen.findByTestId('protocol-handler')).toHaveTextContent(
+      'registered to this installation',
+    );
+    owned.unmount();
+
+    // The installed pass of 19 September: Notepad owned the scheme and the page said nothing.
+    const foreign = renderWithProviders(<DesktopSettings />, {
+      platform: desktopWith(
+        withHandler({
+          owner: 'foreign',
+          command: '"C:\\Windows\\System32\\notepad.exe" "%1"',
+          executable: 'C:\\Windows\\System32\\notepad.exe',
+        }),
+      ),
+      insights: false,
+    });
+    const note = await screen.findByTestId('protocol-handler');
+    expect(note).toHaveTextContent('Another program owns orbit:// links');
+    expect(note).toHaveTextContent('notepad.exe');
+    expect(note).toHaveTextContent('reinstalling Orbit does not take the scheme back');
+    foreign.unmount();
+
+    renderWithProviders(<DesktopSettings />, {
+      platform: desktopWith(withHandler({ owner: 'missing', command: null, executable: null })),
+      insights: false,
+    });
+    expect(await screen.findByTestId('protocol-handler')).toHaveTextContent(
+      'not registered for your account',
+    );
   });
 
   it('saves registered drafts before a quit and acknowledges with the request ids', async () => {
