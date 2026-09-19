@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { $, browser, expect } from '@wdio/globals';
-import { dismissFirstRun } from './helpers';
+import { dismissFirstRun, goto } from './helpers';
 import { SESSION_DIR_FILE } from '../session';
 
 /**
@@ -29,6 +29,11 @@ interface ResidentStatus {
   generation: number;
   shutdownError: string | null;
   mainVisible: boolean;
+  protocolHandler: {
+    owner: 'this-installation' | 'other-orbit' | 'foreign' | 'missing';
+    command: string | null;
+    executable: string | null;
+  };
 }
 
 interface Prefs {
@@ -92,6 +97,21 @@ describe('resident shell on desktop', () => {
     expect(status.closeResolved).toBe(true);
     expect(status.closeToTrayEffective).toBe(true);
     expect(status.mainVisible).toBe(true);
+
+    // Who owns orbit:// is read back from this user's registration (week 13, installed pass
+    // scenario 2b). The harness binary is not the installed one, so 'this-installation' is
+    // only one of the honest answers; what must hold is that the answer matches the command.
+    const handler = status.protocolHandler;
+    expect(['this-installation', 'other-orbit', 'foreign', 'missing']).toContain(handler.owner);
+    if (handler.owner === 'missing') {
+      expect(handler.command).toBeNull();
+    } else {
+      expect(handler.command).toContain(handler.executable!);
+      expect(/orbit.exe$/i.test(handler.executable!)).toBe(handler.owner !== 'foreign');
+    }
+    const note = await $('[data-testid="protocol-handler"]');
+    await goto('/settings');
+    await expect(note).toBeExisting();
 
     const prefs = await invoke<Prefs>('prefs_get');
     expect(prefs).toEqual({
