@@ -29,9 +29,10 @@ $plan = @(
   @{ n = '7b'; name = 'read the unclean-run note';                            before = 'In Orbit open Settings -> Data and note the wording about the previous run; tell Claude.'; run = { 'Tell Claude what Settings -> Data says about the previous run.' } },
   @{ n = '8';  name = 'A -> B upgrade keeps data and registrations';          before = 'Quit Orbit from the tray.';                          run = { & "$steps\08-upgrade.ps1" } },
   @{ n = '8b'; name = 'confirm data survived the upgrade';                    before = 'Launch Orbit: is test1 still there? Is Settings -> Desktop unchanged? Tell Claude.'; run = { 'Tell Claude whether test1 and your settings survived.' } },
-  @{ n = '9';  name = 'uninstall keeps data and a foreign handler';           before = 'Quit Orbit from the tray.';                          run = { & "$steps\09-uninstall.ps1" } },
-  @{ n = '10'; name = 'reinstall for the notification scenarios';             before = 'Nothing to do first.';                               run = { & "$steps\O3.ps1" } },
-  @{ n = '11'; name = 'notifications carry the Orbit name and icon; Focus Assist described honestly'; before = 'In Orbit create a bill due in 2 minutes with a reminder; wait for the toast (name + icon?). Then turn on Focus Assist / Do not disturb and check Settings -> Desktop describes suppression honestly. Screenshot the notification centre into C:\OrbitHarness\evidence. Tell Claude.'; run = { 'Tell Claude what you saw.' } }
+  @{ n = '8c'; name = 'register login launch for the uninstall check';       before = 'Nothing to do first.';                               run = { & "$steps\08c-enable-login-launch.ps1" } },
+  @{ n = '9';  name = 'uninstall keeps data, removes only Orbit''s own keys';  before = 'Quit Orbit from the tray.';                          run = { & "$steps\09-uninstall.ps1" } },
+  @{ n = '10'; name = 'reinstall for the notification scenario';              before = 'Nothing to do first.';                               run = { & "$steps\O3.ps1" } },
+  @{ n = '11'; name = 'an installed notification carries the Orbit name and icon'; before = 'The one human step left. Launch Orbit, open Spending, add a bill due today, and give it a reminder a couple of minutes from now. When the Windows toast appears: Win+Shift+S, snip it, save as C:\OrbitHarness\evidence\11-toast.png. Then Win+N for the notification centre and snip that as 11-centre.png. Tell Claude the file names.'; run = { 'Tell Claude the two snip file names.' } }
 )
 
 $state = if ((Test-Path $progress) -and -not $Reset) { Get-Content $progress | ConvertFrom-Json } else { [pscustomobject]@{ index = 0; results = @() } }
