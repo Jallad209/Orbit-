@@ -52,7 +52,9 @@ export function InsightHistory({ entries, onRestore, busyKey = null }: Props) {
             ) : (
               <Badge tone="outline">Earlier</Badge>
             )}
-            <div className="min-w-0 flex-1">
+            {/* See InsightCard: a zero-basis `flex-1` beside a badge and a button collapses
+                to a few pixels at 400% zoom instead of wrapping onto its own line. */}
+            <div className="min-w-[11rem] flex-1">
               <p className="text-[13px] text-ink">
                 {summary ? summary.title : 'A previously dismissed observation'}
               </p>

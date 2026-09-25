@@ -50,7 +50,9 @@ export function ReviewDashboard({ clock = systemClock }: { clock?: Clock }) {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5" data-testid="review-dashboard">
       <div className="flex flex-wrap items-end gap-3">
-        <div className="min-w-0 flex-1">
+        {/* A minimum width so the heading and its sentence wrap above the button at 400%
+            zoom instead of collapsing into a one-word column beside it. */}
+        <div className="min-w-[11rem] flex-1">
           <h1 className="text-display font-semibold tracking-tight text-ink">Reviews</h1>
           <p className="mt-1 text-ink-muted">
             Your briefings, reflections, patterns, and follow-ups—calculated only on this device.

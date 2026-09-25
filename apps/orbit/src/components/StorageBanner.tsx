@@ -61,10 +61,12 @@ export function StorageBanner() {
     <div
       role="status"
       data-testid="storage-banner"
-      className="flex items-center gap-3 border-b border-gold-2/60 bg-gold-2/30 px-4 py-2 text-[13px] text-gold-ink"
+      className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-gold-2/60 bg-gold-2/30 px-4 py-2 text-[13px] text-gold-ink"
     >
       <HardDrive className="size-4 shrink-0" aria-hidden="true" />
-      <p className="min-w-0 flex-1">
+      {/* The buttons keep their width, so a bare `flex-1` would squeeze this sentence into a
+          few characters per line at 400% zoom. A minimum width makes the row wrap instead. */}
+      <p className="min-w-[11rem] flex-1">
         <span className="font-medium">
           This browser has not promised to keep Orbit&apos;s data.
         </span>{' '}

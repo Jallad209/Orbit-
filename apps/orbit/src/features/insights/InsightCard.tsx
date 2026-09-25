@@ -76,7 +76,9 @@ export function InsightCard({
           <Icon className="size-3" aria-hidden="true" />
           {SEVERITY_LABEL[insight.severity]}
         </Badge>
-        <div className="min-w-0 flex-1">
+        {/* `flex-1` alone has a zero basis, so the row never wraps and the observation is
+            squeezed beside the badge — a few characters per line at 400% zoom. */}
+        <div className="min-w-[11rem] flex-1">
           <h3 id={`${id}-title`} className="text-[14px] font-medium leading-5 text-ink">
             {insight.title}
           </h3>

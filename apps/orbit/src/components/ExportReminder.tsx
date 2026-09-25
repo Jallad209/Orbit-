@@ -63,10 +63,11 @@ export function ExportReminder({ clock = systemClock }: { clock?: Clock }) {
     <div
       role="status"
       data-testid="export-reminder"
-      className="flex items-center gap-3 border-b border-gold-2/60 bg-gold-2/20 px-4 py-2 text-[13px] text-gold-ink"
+      className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-gold-2/60 bg-gold-2/20 px-4 py-2 text-[13px] text-gold-ink"
     >
       <Download className="size-4 shrink-0" aria-hidden="true" />
-      <p className="min-w-0 flex-1">
+      {/* See StorageBanner: a minimum width keeps the sentence readable at 400% zoom. */}
+      <p className="min-w-[11rem] flex-1">
         It has been {data.days} days and {data.operations} changes since your last full backup.
         Export everything as JSON.
       </p>

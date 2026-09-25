@@ -73,8 +73,10 @@ export function Toggle({ className, label, description, id, ...props }: TogglePr
   );
   if (!label) return control;
   return (
-    <div className="flex items-center justify-between gap-4">
-      <label htmlFor={inputId} className="cursor-pointer select-none">
+    // Wrapping keeps the label and its description readable when the row is narrow (400%
+    // zoom): the switch drops below the text instead of squeezing it into a thin column.
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+      <label htmlFor={inputId} className="min-w-[11rem] flex-1 cursor-pointer select-none">
         <span className="block text-sm text-ink">{label}</span>
         {description ? (
           <span className="block text-[13px] text-ink-muted">{description}</span>
