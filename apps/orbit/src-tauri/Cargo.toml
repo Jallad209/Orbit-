@@ -3,6 +3,7 @@ name = "orbit"
 version = "0.1.0-alpha.2"
 description = "Orbit — an offline-first personal operating system"
 authors = ["Orbit"]
+license = "Apache-2.0"
 edition = "2021"
 rust-version = "1.85"
 publish = false

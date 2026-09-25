@@ -33,3 +33,13 @@ pnpm run dev
 ## Architecture in one paragraph
 
 The React app never touches storage directly. It talks to a `Repository` interface from `@orbit/storage`, which has in-memory, IndexedDB, and (from week 7) SQLite adapters. All domain logic in `@orbit/core` is pure TypeScript over a state snapshot, so the planner, parser, rules, and insights are tested without a UI or a database. A `Platform` interface in the app is the only place runtime APIs are imported, which is what lets the same code run as an installable PWA and as a Tauri desktop app.
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE). Use it, change it, build on
+it, ship it commercially; keep the copyright notice and the NOTICE file, and say what you
+changed. It comes with no warranty.
+
+Two things that are requests, not conditions: if you build a business on Orbit, say it was
+built on this project, and get in touch about a share if you think it earned one. Neither is
+required by the license, and neither adds a term to it.
