@@ -74,9 +74,13 @@ async function seed() {
 }
 
 function render(repo: Awaited<ReturnType<typeof seed>>['repo']) {
+  // The insights strip reads the clock from its provider, not from the page. Without this the
+  // engine would run on the real system clock while the records carry September 2026 dates, so
+  // the seeded project would turn stale as the calendar moved and add a second insight card.
   return renderWithProviders(<TodayPage clock={clock} date={DATE} />, {
     repository: repo,
     route: '/today',
+    clock,
   });
 }
 

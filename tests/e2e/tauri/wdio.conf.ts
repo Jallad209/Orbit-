@@ -38,6 +38,38 @@ const tauriDriverBin =
 let tauriDriver: ChildProcess | undefined;
 let sessionDir: string | undefined;
 
+/** End a process and everything it spawned; Windows `kill()` reaches only the parent. */
+function killTree(pid: number): Promise<void> {
+  return new Promise<void>((done) => {
+    const killer = spawn('taskkill', ['/PID', String(pid), '/T', '/F'], { stdio: 'ignore' });
+    const timer = setTimeout(() => {
+      killer.kill();
+      done();
+    }, 15_000);
+    const finish = () => {
+      clearTimeout(timer);
+      done();
+    };
+    // A driver that already exited makes taskkill fail; that is the state we wanted anyway.
+    killer.once('error', finish);
+    killer.once('exit', finish);
+  });
+}
+
+/** True once nothing answers on the WebDriver port, so the next driver owns it alone. */
+async function portFree(timeoutMs: number): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    try {
+      await fetch('http://127.0.0.1:4444/status');
+    } catch {
+      return true; // nothing listening
+    }
+    if (Date.now() > deadline) return false;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+}
+
 export const config: WebdriverIO.Config = {
   runner: 'local',
   hostname: '127.0.0.1',
@@ -73,6 +105,11 @@ export const config: WebdriverIO.Config = {
   beforeSession: async () => {
     sessionDir = mkdtempSync(join(tmpdir(), 'orbit-desktop-e2e-'));
     writeFileSync(SESSION_DIR_FILE, sessionDir);
+    // One spec file is one session, and every session spawns its own driver on the same
+    // port. A previous session's driver that has not finished dying still answers /status,
+    // so without this the new session would attach to it and wait out the timeout in
+    // `dismissFirstRun` against an app that was never launched.
+    if (!(await portFree(30_000))) throw new Error('port 4444 was still busy after 30 s');
     tauriDriver = spawn(tauriDriverBin, ['--native-driver', nativeDriver], {
       stdio: ['ignore', process.stdout, process.stderr],
       env: {
@@ -108,8 +145,12 @@ export const config: WebdriverIO.Config = {
   },
 
   afterSession: async () => {
-    tauriDriver?.kill();
+    // tauri-driver spawns the native driver, which spawns Orbit; `kill()` on Windows ends
+    // only the parent, so both could outlive the session, keep the port and hold the data
+    // folder. Take the whole tree down and wait for the port before the next session.
+    if (tauriDriver?.pid) await killTree(tauriDriver.pid);
     tauriDriver = undefined;
+    await portFree(15_000);
     // The app releases its files a moment after the session closes.
     await new Promise((r) => setTimeout(r, 500));
     if (sessionDir) rmSync(sessionDir, { recursive: true, force: true, maxRetries: 5 });

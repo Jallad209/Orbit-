@@ -10,8 +10,16 @@ import { expect, test, type Page } from './fixtures';
 // suite happens to run and fail every afternoon. setFixedTime fixes what `new Date()`
 // returns without faking timers, so autosave/debounce still work. 06:00Z == 09:00 in
 // Asia/Amman, the timezone pinned in playwright.config.ts.
+const PINNED = new Date('2026-09-14T06:00:00.000Z');
+/**
+ * The Monday after the pinned Monday: what `nextWeek` rollover must produce, spelled out
+ * rather than computed, so the expectation cannot drift away from `PINNED` the way a
+ * `new Date()` calculation does once the real calendar moves past it.
+ */
+const NEXT_MONDAY = '2026-09-21';
+
 test.beforeEach(async ({ page }) => {
-  await page.clock.setFixedTime(new Date('2026-09-14T06:00:00.000Z'));
+  await page.clock.setFixedTime(PINNED);
 });
 
 async function createArea(page: Page, name: string) {
@@ -303,16 +311,11 @@ test('morning briefing → timer → completion prompt → evening shutdown with
   await expect(page.getByText('Day closed')).toBeVisible();
 
   // The rolled task now carries next Monday's due date.
-  const now = new Date();
-  const dow = now.getDay();
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + (dow === 0 ? 1 : 8 - dow));
-  monday.setHours(23, 59, 0, 0);
   await page.goto('/projects');
   await page.getByRole('link', { name: /Thesis/ }).click();
   const row = page
     .getByRole('list', { name: 'Project tasks' })
     .getByRole('listitem')
     .filter({ hasText: 'Email the supervisor' });
-  await expect(row).toContainText(monday.toISOString().slice(0, 10));
+  await expect(row).toContainText(NEXT_MONDAY);
 });
