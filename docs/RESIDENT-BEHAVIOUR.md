@@ -214,6 +214,22 @@ The app itself never writes the protocol registration; only the installer does. 
 desktop tests run the binary, not the installer, and hand it `orbit://` arguments directly,
 so they never touch the developer's registry (see Test isolation).
 
+## The webview profile across an upgrade
+
+An upgrade replaces the executable and the bundled frontend, but the WebView2 profile at
+`%LOCALAPPDATA%\app.orbit.desktop\EBWebView` survives it, and whatever is cached there decides
+which frontend actually runs. That is a trap, because the IPC contract moves between releases:
+a new shell answering an old frontend fails on the first database call and the window shows
+only "Orbit could not open its data store".
+
+Two things keep it shut. The desktop build does not register a service worker — the web app's
+worker precaches an entire release, and inside the shell it buys nothing, because the assets
+are already local. And on the first run of a new version the shell deletes any service worker,
+cache storage, and HTTP or code cache left in the profile (`clear_stale_webview_cache`), then
+records the version so it happens once. The deletion has to live in the shell: a stale worker
+is what chooses the frontend, so frontend code can never remove it from the inside. Local
+storage, the database, backups, and preferences are not caches and are never touched.
+
 The MSI channel is separate. This hook is NSIS-only and is no evidence for MSI; MSI cleanup is
 an explicit gate for a stable release (see verification).
 

@@ -75,6 +75,15 @@ then edited by hand before each release.
 
 ### Fixed
 
+- Upgrading no longer leaves Orbit showing "could not open its data store". The desktop
+  build registered the web app's service worker, which precached a whole release; after an
+  upgrade that worker kept serving the previous release's HTML and scripts to the new shell,
+  and the first database call failed against the newer IPC contract. The desktop shell does
+  not register a service worker at all now — it serves its assets from disk, so there was
+  never anything to gain — and on the first run of a new version it removes any worker and
+  webview cache left behind, which is the only way to recover a profile where the stale
+  worker would otherwise decide which frontend runs. Data, preferences, and local storage
+  are untouched.
 - PD-001: cold `orbit://` and notification activation waits for a subscribed frontend and
   is acknowledged before the native queue entry is removed, so startup races no longer
   silently lose the destination.
