@@ -303,6 +303,11 @@ function Editor({ detail, clock }: { detail: NoteDetail; clock: Clock }) {
         }
       }}
     >
+      {/* Every other record page names itself with an `h1`. Here the title is an editable
+          field in the form below, so the page had no heading at all and a screen-reader user
+          navigating by heading landed on nothing. The name belongs in the document either
+          way; it is hidden only because the field already shows it. */}
+      <h1 className="sr-only">{base.title.trim() || 'Untitled note'}</h1>
       <div className="flex flex-wrap items-center gap-3">
         <Link to="/notes" className="text-[13px] text-ink-muted hover:underline">
           ← Notes

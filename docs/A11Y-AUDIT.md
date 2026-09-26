@@ -1,6 +1,6 @@
 # Accessibility audit
 
-Audit date: 18 September 2026; keyboard and zoom walked 25 September 2026  
+Audit date: 18 September 2026; keyboard and zoom walked 25 September, NVDA 26 September 2026  
 Code baseline: `19888d239a355e55489174768d80e114545f42ad` plus the uncommitted Week 13 implementation  
 Target: WCAG 2.1 AA for Orbit's narrow-desktop and desktop interfaces
 
@@ -30,21 +30,57 @@ findings. “Detail” means the scan used a real record created through the pro
 
 | Route group                                | Three-browser axe | Keyboard manual | NVDA / WebView2 | Zoom 200% / 400% |
 | ------------------------------------------ | ----------------- | --------------- | --------------- | ---------------- |
-| Today, Inbox, Timeline                     | PASS              | PASS            | NOT RUN         | PASS             |
-| Areas, Goals, Goal detail                  | PASS              | PASS            | NOT RUN         | PASS             |
-| Projects, Project detail, Task detail      | PASS              | PASS            | NOT RUN         | PASS             |
-| People and Person detail                   | PASS              | PASS            | NOT RUN         | PASS             |
-| Spending/Bills and Bill detail             | PASS              | PASS            | NOT RUN         | PASS             |
-| Notes and Note detail                      | PASS              | PASS            | NOT RUN         | PASS             |
-| Review dashboard, Morning, Evening, Weekly | PASS              | PASS            | NOT RUN         | PASS             |
-| Insights, Search, Settings                 | PASS              | PASS            | NOT RUN         | PASS             |
+| Today, Inbox, Timeline                     | PASS              | PASS            | PASS            | PASS             |
+| Areas, Goals, Goal detail                  | PASS              | PASS            | PASS            | PASS             |
+| Projects, Project detail, Task detail      | PASS              | PASS            | PASS            | PASS             |
+| People and Person detail                   | PASS              | PASS            | PASS            | PASS             |
+| Spending/Bills and Bill detail             | PASS              | PASS            | PASS            | PASS             |
+| Notes and Note detail                      | PASS              | PASS            | PASS            | PASS             |
+| Review dashboard, Morning, Evening, Weekly | PASS              | PASS            | PASS            | PASS             |
+| Insights, Search, Settings                 | PASS              | PASS            | PASS            | PASS             |
 
 ## Manual assistive-technology status
 
 The keyboard and zoom columns were walked on 25 September 2026 against the dev build in Chromium
-with a seeded database (248 records), at 1280 × 900 and at the two zoom widths. NVDA remains
-**NOT RUN**: it has to be read in the installed WebView2 build rather than a browser, and it is a
-release gate, not an implied pass. VoiceOver is **NOT RUN** because no Apple hardware is available.
+with a seeded database (248 records), at 1280 × 900 and at the two zoom widths. NVDA was read on
+26 September against the release WebView2 build. VoiceOver is **NOT RUN** because no Apple
+hardware is available.
+
+### NVDA, 26 September 2026
+
+NVDA 2026.1.1 drove the real `orbit.exe` — a WebView2 window, not a browser — with a throwaway
+data folder and webview profile, so the run started at first run like a new install. The
+synthesizer was set to `silence` and the log level to debug, which makes NVDA write every
+utterance it would have spoken to its log; that transcript is what was read, so "heard" here
+means recorded verbatim rather than paraphrased. Method and limits both matter: this is the
+release binary, but launched directly rather than from the NSIS install, and the installed copy
+is confirmed in the release smoke.
+
+| Check                                             | Result                                                                                                       |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Controls announce a name and a role               | PASS — "Today · link · Today (G then T)", "Start planning · button", "Choose folder… · button"               |
+| Keyboard shortcuts are spoken with their control  | PASS — every rail link reads its chord; the palette button reads "Control+K"                                 |
+| Landmarks are exposed                             | PASS — "Primary · navigation landmark", "main landmark"                                                      |
+| Skip link is reachable and named                  | PASS — "Skip to content · same page · link"                                                                  |
+| Lists report their size and position              | PASS — "list · with 12 items"; palette results read "Add task Create · 1 of 23"                              |
+| Grouped controls report group, state and position | PASS — "Energy · grouping … High · radio button · checked · 3 of 3"                                          |
+| Form fields announce label and value              | PASS — "Working window start · edit · 09:00"                                                                 |
+| The command palette announces itself as a dialog  | PASS — "Command palette · dialog", then "Commands and results · list"                                        |
+| Every screen offers a heading to navigate to      | FIXED — the note editor had none; see below                                                                  |
+| Status messages are in a live region              | PASS — every route carries a polite `role="status"` region (the toaster); Timeline also has an assertive one |
+
+**Found and fixed.** The note editor was the one screen with no `h1`: its title is an editable
+field, so the page named itself nowhere and heading navigation landed on nothing. It now carries
+the note's name as a visually hidden `h1`, matching every other record page. The axe route scan
+now also asserts exactly one `h1` per route, because axe itself does not require one and nothing
+else would have caught it.
+
+**Not covered by this pass.** Driving a screen reader by synthetic keystrokes reaches the shell,
+the first-run screen, the rail, the palette and Settings reliably; it does not reliably reach
+flows that need typing into a focused field, so toast wording after a capture, the review flows
+and the detail editors were read structurally (roles, names, live regions) rather than heard end
+to end. A human NVDA user's judgement of _wording_ — whether what is announced is the most useful
+phrasing — is still worth having and is not claimed here.
 
 ### Keyboard, 25 September 2026
 

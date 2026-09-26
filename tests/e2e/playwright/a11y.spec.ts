@@ -136,6 +136,12 @@ test('all routes have no serious or critical axe violations', async ({ page }) =
   ]) {
     const violations = await test.step(`axe ${route}`, () => scan(page, route));
     if (violations.length) failures.push(describeViolations(route, violations));
+
+    // axe does not require a level-one heading, but a screen-reader user navigating by
+    // heading needs one on every screen: the note editor shipped without any because its
+    // title is an input, and nothing caught it until NVDA read the page (A11Y-AUDIT.md).
+    const h1s = await page.locator('main h1').count();
+    if (h1s !== 1) failures.push(`${route}: expected exactly one <h1> in main, found ${h1s}`);
   }
   expect(failures, failures.join('\n\n')).toEqual([]);
 });
