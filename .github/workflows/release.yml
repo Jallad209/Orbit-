@@ -7,9 +7,10 @@ name: Release
 # Trusted Signing when the AZURE_* secrets are set, writes SHA-256 checksums,
 # zips the PWA build, and attaches everything to a draft GitHub Release whose
 # body is the changelog section for the tag.
-# Channels: `-alpha.N` unsigned builds, `-beta.N` signed pre-releases (any tag
-# with a hyphen is marked pre-release and ships NSIS only — the MSI needs a
-# numeric version), plain `vX.Y.Z` ships NSIS + MSI as a full release.
+# Channels: `-alpha.N` and `-beta.N` tags (any tag with a hyphen) are marked
+# pre-release; a plain `vX.Y.Z` is a full release. Every channel ships the NSIS
+# installer only: the MSI stays blocked until it has the NSIS hooks' uninstall
+# cleanup and has been verified (docs/RESIDENT-BEHAVIOUR.md).
 
 on:
   push:
@@ -124,8 +125,10 @@ jobs:
           releaseBody: 'Installers for Windows and the PWA bundle. Notes follow.'
           releaseDraft: true
           prerelease: ${{ env.PRERELEASE == 'true' }}
-          # Pre-release identifiers (-alpha.N, -beta.N) are not valid MSI versions.
-          args: ${{ env.PRERELEASE == 'true' && '--bundles nsis' || '--bundles nsis,msi' }} ${{ env.TAURI_CONFIG_ARGS }}
+          # NSIS only, on every channel. The MSI is blocked as a release artifact until it has
+          # the uninstall cleanup the NSIS hooks provide (Orbit's orbit:// and login-launch keys,
+          # docs/RESIDENT-BEHAVIOUR.md) and has been verified; an MSI build also failed Release #1.
+          args: --bundles nsis ${{ env.TAURI_CONFIG_ARGS }}
 
       - name: Verify signatures
         if: env.SIGNING == 'true'
