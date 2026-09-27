@@ -44,6 +44,11 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "publisher": "Jallad209",
+    "copyright": "Copyright 2026 Jallad209",
+    "homepage": "https://github.com/Jallad209/Orbit-",
+    "category": "Productivity",
+    "shortDescription": "Plan your days and keep your promises, all on your own computer.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -54,7 +59,11 @@
     "windows": {
       "nsis": {
         "installMode": "currentUser",
-        "installerHooks": "./windows/hooks.nsh"
+        "installerHooks": "./windows/hooks.nsh",
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico",
+        "sidebarImage": "windows/installer-sidebar.bmp",
+        "headerImage": "windows/installer-header.bmp"
       }
     }
   }

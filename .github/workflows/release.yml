@@ -82,14 +82,28 @@ jobs:
       - name: Release notes from the changelog
         shell: pwsh
         run: |
-          pnpm exec git-cliff --current --strip all | Set-Content -Encoding utf8 RELEASE_NOTES.md
+          # The release page is where people download Orbit, so it carries the hand-edited
+          # CHANGELOG section for this version (written for users), not the raw commit list.
+          # git-cliff is the fallback for a tag with no section. Relative links would break on
+          # the release page, so they point at the tagged files instead.
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          $changelog = Get-Content -Raw -Encoding utf8 CHANGELOG.md
+          $pattern = '(?ms)^## \[' + [regex]::Escape($version) + '\][^\n]*\n(.*?)(?=^## \[|\z)'
+          $section = [regex]::Match($changelog, $pattern)
+          if ($section.Success -and $section.Groups[1].Value.Trim()) {
+            $base = 'https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/'
+            $body = [regex]::Replace($section.Groups[1].Value.Trim(), '\]\((?!https?:|#|mailto:)([^)]+)\)', { param($m) "](" + $base + $m.Groups[1].Value + ")" })
+            $body | Set-Content -Encoding utf8 RELEASE_NOTES.md
+          } else {
+            pnpm exec git-cliff --current --strip all | Set-Content -Encoding utf8 RELEASE_NOTES.md
+          }
           if ((Get-Item RELEASE_NOTES.md).Length -lt 10) { "No conventional commits since the previous tag." | Set-Content RELEASE_NOTES.md }
           "" | Add-Content RELEASE_NOTES.md
           "### Install" | Add-Content RELEASE_NOTES.md
           if ($env:SIGNING -eq 'true') {
             "Windows: run the ``-setup.exe`` (NSIS) installer. It is signed; Windows shows the publisher on first run." | Add-Content RELEASE_NOTES.md
           } else {
-            "Windows: run the ``-setup.exe`` (NSIS) installer. This build is **unsigned**: SmartScreen will warn once; choose *More info → Run anyway*." | Add-Content RELEASE_NOTES.md
+            "**Windows:** download the file ending in ``-setup.exe`` below and open it. The first time, Windows shows a blue *Windows protected your PC* box because the installer is not signed; that is expected — click *More info*, then *Run anyway*. No administrator password is needed. Step by step, in plain language: [Installing Orbit](https://github.com/Jallad209/Orbit-/blob/main/INSTALL.md)." | Add-Content RELEASE_NOTES.md
           }
           "Browser: unzip ``orbit-pwa-*.zip`` and serve the folder from any static server (see docs/HOSTING.md)." | Add-Content RELEASE_NOTES.md
           "" | Add-Content RELEASE_NOTES.md

@@ -6,6 +6,11 @@ A personal operating system that turns goals, responsibilities, routines, commit
 
 Capture → Plan → Do → Review. One loop, one connected system.
 
+**Just want to use it?** Download the installer from the
+[latest release](https://github.com/Jallad209/Orbit-/releases/latest) and follow
+[Installing Orbit](INSTALL.md) — about two minutes, no technical steps. Everything below is for
+people building Orbit from source.
+
 ## Status
 
 Week 13 hardening is implemented and locally verified where automation can reach it. The
