@@ -16,7 +16,11 @@ optional `finish` step), and in your data folder one reminder rule and two bills
 
 ## Running it
 
-Open PowerShell (Start → type `powershell`) and run the same command each time:
+Open PowerShell yourself (Start → type `powershell`) and run the same command each time. Run
+the steps in **your own** PowerShell, not through Claude: a shell started by a packaged Windows
+app (Claude's desktop app is one) can see a virtualised copy of `HKCU` and `AppData`, so its
+reading of the Run value and preferences is not the real one. If a verdict hinges on login
+launch, `check-login-launch.ps1` reads it from the real account and saves it as evidence.
 
     powershell -ExecutionPolicy Bypass -File C:\Orbit\tests\installed\host\next.ps1
 

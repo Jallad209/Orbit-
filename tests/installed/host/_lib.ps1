@@ -65,10 +65,38 @@ function Get-LogonTime {
   $explorer = Get-Process explorer -ErrorAction SilentlyContinue | Sort-Object StartTime | Select-Object -First 1
   if ($explorer) { [DateTimeOffset]$explorer.StartTime } else { Get-BootTime }
 }
-# MainWindowHandle is 0 while a process has no visible top-level window: the hidden main window.
+# Whether Orbit's own main window — the top-level window titled "Orbit" — is showing.
+# MainWindowHandle cannot answer that: it picked the single-instance plugin's helper window
+# ("app.orbit.desktop-siw"), a zero-size window Windows reports as visible, so a correctly
+# hidden login launch read as shown. Enumerate the process's windows and look at the real one.
+if (-not ('HostWin.Enum' -as [type])) {
+  Add-Type -Namespace HostWin -Name Enum -MemberDefinition @'
+public delegate bool Callback(IntPtr hwnd, IntPtr param);
+[DllImport("user32.dll")] public static extern bool EnumWindows(Callback cb, IntPtr param);
+[DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
+[DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hwnd);
+[DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr hwnd, System.Text.StringBuilder text, int max);
+'@
+}
+function Test-MainWindowVisible([int] $ProcessId) {
+  $script:mainVisible = $false
+  $callback = [HostWin.Enum+Callback]{
+    param($hwnd, $param)
+    $owner = 0
+    [void][HostWin.Enum]::GetWindowThreadProcessId($hwnd, [ref]$owner)
+    if ([int]$owner -eq $ProcessId) {
+      $title = New-Object System.Text.StringBuilder 64
+      [void][HostWin.Enum]::GetWindowText($hwnd, $title, 64)
+      if ($title.ToString() -eq 'Orbit' -and [HostWin.Enum]::IsWindowVisible($hwnd)) { $script:mainVisible = $true }
+    }
+    $true
+  }
+  [void][HostWin.Enum]::EnumWindows($callback, [IntPtr]::Zero)
+  $script:mainVisible
+}
 function Get-OrbitProcesses {
   @(Get-Process Orbit -ErrorAction SilentlyContinue | ForEach-Object {
-    [ordered]@{ id = $_.Id; startedAt = Iso([DateTimeOffset]$_.StartTime); visibleWindow = $_.MainWindowHandle -ne 0; title = $_.MainWindowTitle }
+    [ordered]@{ id = $_.Id; startedAt = Iso([DateTimeOffset]$_.StartTime); visibleWindow = (Test-MainWindowVisible $_.Id) }
   })
 }
 
