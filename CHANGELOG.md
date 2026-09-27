@@ -3,7 +3,7 @@
 All notable changes to Orbit. Generated from Conventional Commits with git-cliff,
 then edited by hand before each release.
 
-## [1.0.0] — 2026-09-27
+## [1.0.0] — 2026-09-28
 
 The first stable release of Orbit: a personal planner that turns your goals, routines,
 commitments, bills and notes into a plan for today — on your own computer, with no account and
@@ -55,6 +55,11 @@ password is needed.
 - **Upgrading no longer breaks Orbit.** An earlier build could keep showing the previous
   version after an upgrade and stop with "could not open its data store". Upgrades now clear the
   old copy on the first run of the new version; your data, settings and backups are untouched.
+- **The menu on the left stays in view.** On long pages such as Settings it scrolled out of sight
+  with the page. Opening another page now starts it at the top, and the section list in Settings
+  stays in view while you scroll.
+- Pressing Escape straight after the first Ctrl+K now closes the command palette, instead of the
+  palette opening a moment later anyway.
 - Clicking a notification while Orbit was starting could open nothing; it now always opens the
   record.
 - At 400% zoom, several screens squeezed their text into a column a few letters wide; those rows

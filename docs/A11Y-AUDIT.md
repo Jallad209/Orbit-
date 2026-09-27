@@ -93,15 +93,23 @@ Driven with real Tab keypresses, not scripted `focus()` — the latter never tri
 | Focus order follows the visual layout (2.4.3)             | PASS — rail, then banner, then section nav, then panel; no positive `tabindex`   |
 | Every control has an accessible name (4.1.2)              | PASS — 671 tabbable elements over 22 routes, none unnamed                        |
 | Skip link is the first stop                               | PASS — "Skip to content"                                                         |
-| Command palette traps focus, Escape closes, focus returns | PASS in steady state; see the first-open race below                              |
+| Command palette traps focus, Escape closes, focus returns | PASS — FIXED 28 Sep for the first open; see below                                |
 | No keyboard trap (2.1.2)                                  | PASS — no stop refused to release focus                                          |
+| Navigation rail stays reachable on long pages             | FIXED 28 Sep — see below                                                         |
 
-**Known issue, low severity, not fixed for 1.0.** The palette dialog is lazy-loaded, so on the
-first `Ctrl+K` of a page load an Escape pressed before the chunk arrives is either swallowed (the
-palette opens a moment later) or leaves focus on `<body>` instead of the control that opened it.
-Every later open restores focus correctly, and about half a second is enough on the first one.
-The fix is to preload the chunk or hold Escape until the dialog mounts; neither is worth touching
-the palette for this close to the release.
+**Fixed before release (28 September).** The palette dialog is lazy-loaded, so on the first
+`Ctrl+K` of a page load an Escape pressed before the chunk arrived went nowhere, and the palette
+opened a moment later anyway. While the chunk loads, the palette now owns Escape itself: it closes
+and focus goes back to the control that opened it. `tests/e2e/playwright/palette.spec.ts` holds the
+chunk back to make that window reliable, and failed on all three engines before the fix.
+
+A user reported the second one: on pages taller than the window (Settings, Spending) the
+navigation rail scrolled out of sight with the page. The shell's grid row grew to fit the page, so
+the document scrolled rather than the workspace. The rail is now sticky and one window tall, with
+its own scrollbar at 400% zoom, and the document stays the scroller. An inner scrolling workspace
+was tried first and rejected: Page Down pressed after clicking a rail link then scrolled nothing
+in any engine, because the workspace is not an ancestor of the rail. `layout.spec.ts` covers the
+rail, Page Down after a rail click, and 400% zoom.
 
 ### Zoom 200% / 400%, 25 September 2026
 
