@@ -249,7 +249,9 @@ describe('TodayPage', () => {
     const stop = await within(focus).findByRole('button', { name: 'Stop' });
     expect(stop).toHaveAttribute('aria-pressed', 'true');
     expect(within(focus).getByTestId('timer-elapsed')).toHaveTextContent('0:00');
-    expect(document.title).toBe('0:00 · Send the draft');
+    // The title comes from its own effect, after the render that shows Stop: wait for it
+    // (the same race made Timer.test.tsx fail at random on CI).
+    await waitFor(() => expect(document.title).toBe('0:00 · Send the draft'));
     clock.advance(10 * 60_000);
 
     // Done with a session behind it: no prompt, the actual comes from the timer.

@@ -63,7 +63,9 @@ describe('useTimer', () => {
     });
     await waitFor(() => expect(screen.getByTestId('task')).toHaveTextContent('Write intro'));
     expect(screen.getByTestId('elapsed')).toHaveTextContent('25:13');
-    expect(document.title).toBe('25:13 · Write intro');
+    // The title is set by its own effect, which runs after the render that shows the text, so
+    // wait for it too: asserting it straight after the text failed at random on a busy CI runner.
+    await waitFor(() => expect(document.title).toBe('25:13 · Write intro'));
 
     view.unmount();
     expect(document.title).toBe('Orbit');
