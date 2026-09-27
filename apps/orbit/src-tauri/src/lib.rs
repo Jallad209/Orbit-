@@ -89,19 +89,19 @@ fn clear_stale_webview_cache() {
             std::path::Path::new(&local).join("app.orbit.desktop")
         }
     };
-    clear_webview_cache_in(&root.join("EBWebView"), env!("CARGO_PKG_VERSION"));
+    clear_webview_cache_in(&root, env!("CARGO_PKG_VERSION"));
 }
 
 /// The part of `clear_stale_webview_cache` that does not read the environment, so the version
-/// marker and the deletions can be tested without a real WebView2 profile.
-fn clear_webview_cache_in(profile: &std::path::Path, current: &str) -> Vec<&'static str> {
-    if !profile.is_dir() {
-        return Vec::new(); // first ever run: nothing cached, nothing to clear
-    }
-    let marker = profile.join("orbit-version");
+/// marker and the deletions can be tested without a real WebView2 profile. `root` is the
+/// folder WebView2 creates its `EBWebView` profile in. The marker lives beside the profile,
+/// not inside it, so it can be written on a first run before WebView2 has created anything.
+fn clear_webview_cache_in(root: &std::path::Path, current: &str) -> Vec<&'static str> {
+    let marker = root.join("orbit-webview-version");
     if std::fs::read_to_string(&marker).is_ok_and(|seen| seen.trim() == current) {
         return Vec::new();
     }
+    let profile = root.join("EBWebView");
     let mut cleared = Vec::new();
     let mut failed = Vec::new();
     // `Service Worker` first, and it is the one that matters: the PWA worker precaches the
@@ -127,15 +127,19 @@ fn clear_webview_cache_in(profile: &std::path::Path, current: &str) -> Vec<&'sta
         }
     }
     if !failed.is_empty() {
+        // Best effort: a cache still mapped by another process is not worth refusing to
+        // start over. The marker stays unwritten, so the next launch tries again.
         eprintln!("orbit: could not clear webview caches: {failed:?}");
+        return cleared;
     }
-    // Best effort: a cache we could not delete (a file still mapped by another process) is
-    // not worth refusing to start over, and the next launch tries again while the marker
-    // stays unwritten.
-    if !cleared.is_empty() || !profile.join("Default").is_dir() {
-        let _ = std::fs::write(&marker, current);
+    // Written whenever nothing failed — including on a new install, which arrives here with no
+    // profile at all. Leaving that unmarked cost a slow start: the second launch found no
+    // marker and threw away the code cache the first launch had just built.
+    let _ = std::fs::create_dir_all(root);
+    let _ = std::fs::write(&marker, current);
+    if !cleared.is_empty() {
+        eprintln!("orbit: new version {current}, cleared webview caches: {cleared:?}");
     }
-    eprintln!("orbit: new version {current}, cleared webview caches: {cleared:?}");
     cleared
 }
 
@@ -366,79 +370,98 @@ pub fn run() {
 mod webview_cache_tests {
     use super::clear_webview_cache_in;
     use std::fs;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
-    /// A profile shaped like WebView2's, with the caches that matter populated.
-    fn profile(tag: &str) -> PathBuf {
-        let dir =
+    const MARKER: &str = "orbit-webview-version";
+
+    fn fresh_root(tag: &str) -> PathBuf {
+        let root =
             std::env::temp_dir().join(format!("orbit-cache-test-{tag}-{}", std::process::id()));
-        let _ = fs::remove_dir_all(&dir);
+        let _ = fs::remove_dir_all(&root);
+        root
+    }
+
+    /// A WebView2 profile under `root`, with the caches that matter populated.
+    fn with_profile(root: &Path) {
         for name in ["Service Worker", "Cache", "Code Cache", "Local Storage"] {
-            fs::create_dir_all(dir.join("Default").join(name)).unwrap();
-            fs::write(dir.join("Default").join(name).join("data"), b"x").unwrap();
+            let dir = root.join("EBWebView").join("Default").join(name);
+            fs::create_dir_all(&dir).unwrap();
+            fs::write(dir.join("data"), b"x").unwrap();
         }
-        dir
+    }
+
+    fn cached(root: &Path, name: &str) -> bool {
+        root.join("EBWebView")
+            .join("Default")
+            .join(name)
+            .join("data")
+            .exists()
     }
 
     #[test]
     fn a_new_version_drops_the_service_worker_and_caches_but_keeps_local_storage() {
-        let dir = profile("upgrade");
-        fs::write(dir.join("orbit-version"), "0.9.0").unwrap();
+        let root = fresh_root("upgrade");
+        with_profile(&root);
+        fs::write(root.join(MARKER), "0.9.0").unwrap();
 
-        let cleared = clear_webview_cache_in(&dir, "1.0.0");
+        let cleared = clear_webview_cache_in(&root, "1.0.0");
 
         assert!(cleared.contains(&"Service Worker"), "cleared: {cleared:?}");
-        assert!(cleared.contains(&"Cache"));
-        assert!(!dir.join("Default").join("Service Worker").exists());
+        assert!(cleared.contains(&"Code Cache"));
+        assert!(!cached(&root, "Service Worker"));
         // Everything the user owns stays: local storage is not a cache.
-        assert!(dir
-            .join("Default")
-            .join("Local Storage")
-            .join("data")
-            .exists());
-        assert_eq!(
-            fs::read_to_string(dir.join("orbit-version")).unwrap(),
-            "1.0.0"
-        );
-        let _ = fs::remove_dir_all(&dir);
+        assert!(cached(&root, "Local Storage"));
+        assert_eq!(fs::read_to_string(root.join(MARKER)).unwrap(), "1.0.0");
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]
     fn the_same_version_leaves_the_profile_alone() {
-        let dir = profile("same");
-        fs::write(dir.join("orbit-version"), "1.0.0").unwrap();
+        let root = fresh_root("same");
+        with_profile(&root);
+        fs::write(root.join(MARKER), "1.0.0").unwrap();
 
-        let cleared = clear_webview_cache_in(&dir, "1.0.0");
-
-        assert!(cleared.is_empty(), "cleared: {cleared:?}");
-        assert!(dir
-            .join("Default")
-            .join("Service Worker")
-            .join("data")
-            .exists());
-        let _ = fs::remove_dir_all(&dir);
+        assert!(clear_webview_cache_in(&root, "1.0.0").is_empty());
+        assert!(cached(&root, "Service Worker"));
+        assert!(cached(&root, "Code Cache"));
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]
-    fn a_profile_from_before_the_marker_existed_is_cleared_once() {
-        let dir = profile("unmarked");
-        assert!(!dir.join("orbit-version").exists());
+    fn a_profile_from_an_earlier_release_is_cleared_once() {
+        // alpha.1 and alpha.2 left a profile and a service worker, and no marker.
+        let root = fresh_root("unmarked");
+        with_profile(&root);
 
-        let first = clear_webview_cache_in(&dir, "1.0.0");
+        let first = clear_webview_cache_in(&root, "1.0.0");
         assert!(first.contains(&"Service Worker"), "first: {first:?}");
 
-        // Marked now, so a second launch of the same build does nothing.
-        let second = clear_webview_cache_in(&dir, "1.0.0");
+        let second = clear_webview_cache_in(&root, "1.0.0");
         assert!(second.is_empty(), "second: {second:?}");
-        let _ = fs::remove_dir_all(&dir);
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]
-    fn a_profile_that_does_not_exist_yet_is_not_touched() {
-        let dir = std::env::temp_dir().join(format!("orbit-cache-absent-{}", std::process::id()));
-        let _ = fs::remove_dir_all(&dir);
-        assert!(clear_webview_cache_in(&dir, "1.0.0").is_empty());
-        assert!(!dir.exists(), "must not create the profile directory");
+    fn a_new_install_is_marked_on_its_first_run_so_its_second_launch_keeps_its_caches() {
+        // Regression: a first run used to return without a marker, so the second launch
+        // found none and deleted the code cache the first had just built — a slow start
+        // for every new install, and the desktop 50k startup test measures exactly that.
+        let root = fresh_root("new-install");
+
+        assert!(clear_webview_cache_in(&root, "1.0.0").is_empty());
+        assert_eq!(fs::read_to_string(root.join(MARKER)).unwrap(), "1.0.0");
+        assert!(
+            !root.join("EBWebView").exists(),
+            "must not create the profile itself"
+        );
+
+        with_profile(&root); // what WebView2 builds during that first run
+        assert!(clear_webview_cache_in(&root, "1.0.0").is_empty());
+        assert!(
+            cached(&root, "Code Cache"),
+            "the second launch must keep the code cache"
+        );
+        let _ = fs::remove_dir_all(&root);
     }
 }
 

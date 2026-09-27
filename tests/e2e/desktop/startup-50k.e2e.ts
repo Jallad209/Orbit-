@@ -1,3 +1,4 @@
+import { appendFileSync } from 'node:fs';
 import { expect as pw } from '@playwright/test';
 import { afterEach, describe, expect, it } from 'vitest';
 import { launchOrbit, removeSession, waitForPath, type LaunchedOrbit } from './coldLaunch';
@@ -45,6 +46,13 @@ describeWindows('desktop startup with release-sized data', () => {
     await pw(app.page.getByTestId('focus')).toBeVisible({ timeout: 30_000 });
     await pw(app.page.getByTestId('plan-panel')).toBeVisible({ timeout: 30_000 });
     const interactiveMs = await app.page.evaluate(() => performance.now());
+
+    // Printed, and written to the CI step summary, so every run leaves the figure behind the
+    // way the browser startup spec does; an assertion alone records only pass or fail.
+    const line = `Desktop cold start with ${seeded} records: main page ${Math.round(app.timings.spawnToMainPageMs)} ms, interactive ${Math.round(interactiveMs)} ms (budget ${BUDGET_MS} ms)`;
+    console.log(line);
+    if (process.env.GITHUB_STEP_SUMMARY)
+      appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Desktop startup\n\n${line}\n`);
 
     expect(seeded).toBeGreaterThan(60_000);
     expect(app.timings.spawnToMainPageMs).toBeLessThan(BUDGET_MS);

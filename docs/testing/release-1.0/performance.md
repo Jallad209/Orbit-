@@ -117,6 +117,30 @@ Conditions: the post-fix runs were taken on battery with the CPU at ~51 % of max
 frequency; the app window is foreground and was not visibly throttled, but background
 test processes were (the 50k seed took ~60 s instead of ~6 s). Re-measure plugged in.
 
+### Re-measured plugged in, 27 September
+
+On AC power with the machine idle, 26 runs of `startup-50k.e2e.ts` against 70,050 records.
+The test now prints its figures and writes them to the CI step summary, like the browser
+startup spec, so a run leaves the number behind rather than only pass or fail.
+
+| Series                          | Runs | Main page  | Interactive    | Over 3,000 ms |
+| ------------------------------- | ---: | ---------- | -------------- | ------------: |
+| Immediately after a fresh build |   18 | 369–538 ms | 1,977–3,658 ms |       10 / 18 |
+| Steady state                    |    8 | 355–420 ms | 1,995–2,959 ms |         0 / 8 |
+
+The steady state — median about 2.35 s — agrees with the 18 September figures, so nothing
+regressed. The slow series is the fresh-binary effect: Windows Defender scans a newly written
+executable on its first launches, and every early run came straight after `tauri:build:bin`,
+with the times falling back to the steady range within a dozen launches, same code
+throughout. **Measure after a few warm-up launches, never on the first runs after a build.**
+
+Where the time goes, from the shell log of one measured launch (process time): database open
+at 68 ms, `PRAGMA quick_check` 354 ms, the frontend marks the app ready at **522 ms**. The
+remaining ~1.5–2 s is the Today screen building its plan over 70k records in JavaScript. The
+shell and the database are not the bottleneck; the planner's first pass is, and it is
+CPU-bound, which is why its time moves with machine load. That is the place to look if the
+desktop budget is ever tightened, not the open-time check.
+
 The number still to record on the reference machine is the final release candidate on a
 clean host; the figures above are from the development machine.
 
