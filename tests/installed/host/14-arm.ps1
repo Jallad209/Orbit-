@@ -2,6 +2,7 @@
 # sleep so the due time passes while nothing can run. Windows records the sleep and the resume
 # in the System log; the second part reads them back and waits for the single delivery.
 . "$PSScriptRoot\_lib.ps1"
+$null = Use-PassAccount
 Require-Orbit 'the bill is added in the app'
 $days = Get-BillRuleDays
 if ($days -notcontains 0) { "no bill reminder rule with Days 0 found (rules: $($days -join ', ')). Settings -> Rules -> Reminder, Days 0; then run this again."; exit 1 }
@@ -30,7 +31,7 @@ Save-Evidence '14-armed.json' ([ordered]@{
 ''
 'The machine goes to SLEEP in 20 seconds. Keep it plugged in and do not close the lid.'
 "Leave it asleep until at least $(Local $wakeAfter) (local time), then press a key or the power button,"
-'sign in as OrbitTest, and run next.ps1 straight away.'
+"sign in as $(Use-PassAccount), and run next.ps1 straight away."
 Start-Sleep -Seconds 20
 [System.Windows.Forms.Application]::SetSuspendState([System.Windows.Forms.PowerState]::Suspend, $false, $false) | Out-Null
 Start-Sleep -Seconds 30

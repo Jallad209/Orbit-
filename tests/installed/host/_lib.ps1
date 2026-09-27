@@ -27,6 +27,37 @@ function Read-Evidence([string] $Name) {
   Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
 }
 
+# The pass runs in one Windows account from start to finish. Orbit installs per user, so its
+# Run value, its orbit:// key and its data folder all live in that account's profile, and
+# evidence from two accounts would describe two different installs. The first step asks which
+# account the pass is for and saves the answer; every later step holds you to it.
+$script:AccountFile = Join-Path $Evidence 'host-account.txt'
+
+function Use-PassAccount([switch] $Ask) {
+  $saved = if (Test-Path $AccountFile) { (Get-Content -LiteralPath $AccountFile -Raw).Trim() } else { '' }
+  if ($saved) {
+    if ($saved -ne $env:USERNAME) {
+      Write-Host "This pass belongs to the account '$saved', but you are signed in as '$env:USERNAME'."
+      Write-Host "Sign in as '$saved' and run next.ps1 again, or run next.ps1 -Reset to start over under this account."
+      exit 1
+    }
+    return $saved
+  }
+  if (-not $Ask) {
+    Write-Host 'No account is recorded for this pass yet; run next.ps1 from the start (setup).'
+    exit 1
+  }
+  $name = (Read-Host "Which Windows account is this pass for? Press Enter for '$env:USERNAME'").Trim()
+  if (-not $name) { $name = $env:USERNAME }
+  if ($name -ne $env:USERNAME) {
+    Write-Host "You are signed in as '$env:USERNAME'. Sign in as '$name' first, then run next.ps1."
+    exit 1
+  }
+  Set-Content -LiteralPath $AccountFile -Value $name -Encoding utf8
+  Write-Host "Pass account: $name (saved; every later step checks it)."
+  return $name
+}
+
 function Get-RunValue { (Get-ItemProperty -Path $RunKey -Name Orbit -ErrorAction SilentlyContinue).Orbit }
 function Get-BootTime { [DateTimeOffset](Get-CimInstance Win32_OperatingSystem).LastBootUpTime }
 # When this desktop session began (explorer starts at logon).

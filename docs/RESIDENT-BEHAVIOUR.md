@@ -298,7 +298,7 @@ Installed build, Windows Sandbox, 19 September 2026 — candidate
 | Notification refused by Windows stays pending and is retried; delivered once the platform is back            | PASS — `10-shell.log`: three `0x803E0105` refusals, then `deliver fired: 1`                                                         |
 | Installed notification carries the Orbit name and icon                                                       | PASS — `11-notification-centre.png`                                                                                                 |
 
-Still **NOT RUN** (need the disposable `OrbitTest` host account, not Sandbox): login launch →
+Still **NOT RUN** (need a real Windows account, not Sandbox, which cannot reboot): login launch →
 reboot → hidden initialization → delivery; disable → reboot → no launch; sleep across a due time
 → one delivery.
 

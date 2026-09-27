@@ -15,14 +15,16 @@ New-Item -ItemType Directory -Path $evidence -Force | Out-Null
 $plan = @(
   @{ n = 'setup';  name = 'install the candidate for this account';                 before = 'Nothing to do first.';                                                                script = '00-setup.ps1' },
   @{ n = '12';     name = 'login launch -> restart -> hidden start -> delivery';    before = 'Orbit is running, the Days-0 reminder rule exists, "Start Orbit at login" is ON.';    script = '12-arm.ps1' },
-  @{ n = '12v';    name = 'after the restart: hidden start and delivery';           before = 'You restarted and just signed in as OrbitTest.';                                     script = '12-verify.ps1' },
+  @{ n = '12v';    name = 'after the restart: hidden start and delivery';           before = 'You restarted and just signed in again.';                                           script = '12-verify.ps1' },
   @{ n = '13';     name = 'login launch off -> restart -> no Orbit';                before = 'Orbit is running.';                                                                   script = '13-arm.ps1' },
-  @{ n = '13v';    name = 'after the restart: nothing started';                     before = 'You restarted and just signed in as OrbitTest.';                                     script = '13-verify.ps1' },
+  @{ n = '13v';    name = 'after the restart: nothing started';                     before = 'You restarted and just signed in again.';                                           script = '13-verify.ps1' },
   @{ n = '14';     name = 'sleep across a due time (arms, then sleeps the machine)'; before = 'Orbit is running (start it from the Start menu if not).';                          script = '14-arm.ps1' },
   @{ n = '14v';    name = 'after the resume: one delivery, no duplicate';           before = 'The machine slept past the due time and you just woke it and signed in.';             script = '14-verify.ps1' },
-  @{ n = 'finish'; name = 'uninstall from this account';                            before = 'Right-click the tray icon -> Quit.';                                                  script = '99-finish.ps1' }
+  @{ n = 'finish'; name = 'uninstall from this account (optional: skip it to keep Orbit)'; before = 'Right-click the tray icon -> Quit.';                                            script = '99-finish.ps1' }
 )
 
+# Starting over also forgets which account the pass was for, so setup asks again.
+if ($Reset) { Remove-Item (Join-Path $evidence 'host-account.txt') -ErrorAction SilentlyContinue }
 $state = if ((Test-Path $progress) -and -not $Reset) { Get-Content $progress -Raw | ConvertFrom-Json } else { [pscustomobject]@{ index = 0; results = @() } }
 $i = [int]$state.index
 if ($Redo -and $i -gt 0) { $i-- }
@@ -30,7 +32,7 @@ if ($Step) {
   $i = [array]::FindIndex($plan, [Predicate[object]]{ param($p) $p.n -eq $Step })
   if ($i -lt 0) { "no step named '$Step'; steps: $(($plan | ForEach-Object { $_.n }) -join ', ')"; exit 1 }
 }
-if ($i -ge $plan.Count) { 'All host steps are done. Sign out of OrbitTest and tell Claude.'; exit 0 }
+if ($i -ge $plan.Count) { 'All host steps are done. Tell Claude.'; exit 0 }
 $current = $plan[$i]
 
 ''

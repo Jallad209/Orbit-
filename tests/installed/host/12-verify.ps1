@@ -1,6 +1,7 @@
 # Scenario 12, after the restart: Orbit must have started by itself, hidden, and delivered
 # the reminder armed before the restart. Waits for the delivery and captures the toast.
 . "$PSScriptRoot\_lib.ps1"
+$null = Use-PassAccount
 $armed = Read-Evidence '12-armed.json'
 $armedAt = [DateTimeOffset]$armed.armedAt
 $boot = Get-BootTime

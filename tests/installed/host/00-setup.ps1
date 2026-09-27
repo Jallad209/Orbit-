@@ -1,12 +1,9 @@
 # Host-account setup: install the candidate for this Windows user, record what was installed,
-# and start Orbit for its first run. Run it signed in as the disposable account, never as the
-# developer account (the NSIS currentUser install and the HKCU keys would land in that profile).
+# and start Orbit for its first run. The install is per user (NSIS currentUser, HKCU keys, a data
+# folder under AppData), so it lands in whichever account runs this; that account is asked for
+# once, saved, and every later step checks it.
 . "$PSScriptRoot\_lib.ps1"
-
-if ($env:USERNAME -ne 'OrbitTest') {
-  "You are signed in as '$env:USERNAME', not OrbitTest. Sign in as the disposable account first."
-  exit 1
-}
+$account = Use-PassAccount -Ask
 
 $bundle = Join-Path $Repo 'apps\orbit\src-tauri\target\release\bundle\nsis'
 $installer = Get-ChildItem -LiteralPath $bundle -Filter 'Orbit_*_x64-setup.exe' -File -ErrorAction SilentlyContinue |
@@ -17,7 +14,7 @@ $hash = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash
 "installing $($installer.Name) (SHA-256 $hash)"
 Save-Evidence 'host-candidate.json' ([ordered]@{
   at = Iso(Now-Utc)
-  account = $env:USERNAME
+  account = $account
   computer = $env:COMPUTERNAME
   os = (Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, BuildNumber)
   installer = $installer.Name

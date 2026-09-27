@@ -1,6 +1,7 @@
 # Scenario 13, before the restart: login launch is switched off by the real Settings toggle,
 # which must remove the Run value; the post-restart check then expects no Orbit at all.
 . "$PSScriptRoot\_lib.ps1"
+$null = Use-PassAccount
 Require-Orbit 'the toggle is in Settings -> Desktop'
 
 if (Get-RunValue) {
@@ -25,5 +26,5 @@ Save-Evidence '13-armed.json' ([ordered]@{
 'NEXT:'
 '  1. Right-click the Orbit tray icon -> Quit, and wait until the icon is gone.'
 '  2. Type:   shutdown /r /t 0'
-'  3. After the restart sign in as OrbitTest, open PowerShell, and run next.ps1 again'
+"  3. After the restart sign in as $(Use-PassAccount), open PowerShell, and run next.ps1 again"
 '     (it waits until a minute after logon before it looks).'

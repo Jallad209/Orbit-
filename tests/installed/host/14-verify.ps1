@@ -2,6 +2,7 @@
 # delivery must follow, and the reminder must be fired once. Sleep and resume times come from
 # the System event log, the delivery from the shell log, the row from the database.
 . "$PSScriptRoot\_lib.ps1"
+$null = Use-PassAccount
 $armed = Read-Evidence '14-armed.json'
 $armedAt = [DateTimeOffset]$armed.armedAt
 $fireAt = [DateTimeOffset]$armed.reminder.fireAt

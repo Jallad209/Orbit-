@@ -4,7 +4,7 @@ Sandbox pass run 19 September 2026 against `Orbit_0.1.0-alpha.2_x64-setup.exe` (
 `AF05DA3BCE43DEFC8B1B89BAE7845F02DAEB3D5CF413AC8FAB0C26AA58441991`, source tree `1a2dc6a`); evidence
 in `docs/testing/release-1.0/installed/`. Scenarios 12–14 still need the host account.
 
-Run only in Windows Sandbox or the disposable `OrbitTest` host account. Record PASS, FAIL, or
+Run only in Windows Sandbox or the one Windows account the host pass records. Record PASS, FAIL, or
 NOT RUN; never convert a missing environment into PASS. Candidate hashes belong in
 `C:\OrbitHarness\evidence\candidate.json`.
 
@@ -33,7 +33,7 @@ close.
 ## Disposable host-account scenarios
 
 These cannot be proved in Sandbox because Sandbox cannot reboot or sleep. Signed in as
-`OrbitTest`, run `tests/installed/host/next.ps1` step by step (`host/README.md`): the arm
+the account the pass records (your own is fine), run `tests/installed/host/next.ps1` step by step (`host/README.md`): the arm
 steps record the Run value and the queued reminder before each restart or sleep, the verify
 steps read the boot or sleep/resume times, the launch mode and readiness from the shell log,
 wait for the delivery, and capture the toast and the notification centre themselves.

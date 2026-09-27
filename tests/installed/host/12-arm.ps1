@@ -2,6 +2,7 @@
 # bill is due a few minutes from now (so its reminder falls due after the machine is back),
 # and both facts are recorded for the post-restart check.
 . "$PSScriptRoot\_lib.ps1"
+$null = Use-PassAccount
 Require-Orbit 'the bill is added in the app'
 
 $run = Get-RunValue
@@ -39,5 +40,5 @@ Save-Evidence '12-armed.json' ([ordered]@{
 'NEXT:'
 '  1. Right-click the Orbit tray icon -> Quit, and wait until the icon is gone.'
 '  2. Type:   shutdown /r /t 0'
-'  3. After the restart sign in as OrbitTest, open PowerShell straight away (Start -> type powershell),'
+"  3. After the restart sign in as $(Use-PassAccount), open PowerShell straight away (Start -> type powershell),"
 '     and run next.ps1 again. It waits for the toast itself: do NOT click the toast when it appears.'

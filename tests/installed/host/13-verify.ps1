@@ -1,5 +1,6 @@
 # Scenario 13, after the restart: no Run value, no Orbit process, no launch in the shell log.
 . "$PSScriptRoot\_lib.ps1"
+$null = Use-PassAccount
 $armed = Read-Evidence '13-armed.json'
 $armedAt = [DateTimeOffset]$armed.armedAt
 $boot = Get-BootTime
