@@ -53,7 +53,10 @@ function NavHotkey({ to, hotkey }: { to: string; hotkey: string }) {
 
 export function NavRail() {
   return (
-    <nav aria-label="Primary" className="flex h-full flex-col bg-nav text-nav-fg">
+    <nav
+      aria-label="Primary"
+      className="sticky top-0 flex h-dvh flex-col overflow-y-auto bg-nav text-nav-fg"
+    >
       <div className="flex h-14 items-center gap-2 px-4">
         <span
           aria-hidden="true"
