@@ -118,8 +118,8 @@ exists and verifies every signature; nothing in the code needs to change:
    Signatures tab on the downloaded installer lists your name. Delete the draft afterwards.
 
 Local builds never sign (`bundle.windows.signCommand` is passed only in CI as a `--config`
-overlay). `pnpm run tauri:build` on a pre-release version fails at the MSI step by design; use
-`pnpm run tauri:build:bin` for the binary or `pnpm run tauri build -- --bundles nsis`.
+overlay). `pnpm run tauri:build` builds the NSIS installer (the only bundle target), and
+`pnpm run tauri:build:bin` builds just the binary.
 
 ## If something goes wrong
 
