@@ -51,8 +51,17 @@ describeWindows('desktop startup with release-sized data', () => {
     // way the browser startup spec does; an assertion alone records only pass or fail.
     const line = `Desktop cold start with ${seeded} records: main page ${Math.round(app.timings.spawnToMainPageMs)} ms, interactive ${Math.round(interactiveMs)} ms (budget ${BUDGET_MS} ms)`;
     console.log(line);
-    if (process.env.GITHUB_STEP_SUMMARY)
-      appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Desktop startup\n\n${line}\n`);
+    if (process.env.GITHUB_STEP_SUMMARY) {
+      // Best effort. On CI this suite runs under run-unelevated.ps1's restricted token, and
+      // the summary file belongs to the elevated runner account, so the open fails with
+      // EPERM. Reporting a number must never fail the test that measured it; the line above
+      // is already in the job log.
+      try {
+        appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Desktop startup\n\n${line}\n`);
+      } catch {
+        /* not writable from a restricted token */
+      }
+    }
 
     expect(seeded).toBeGreaterThan(60_000);
     expect(app.timings.spawnToMainPageMs).toBeLessThan(BUDGET_MS);
