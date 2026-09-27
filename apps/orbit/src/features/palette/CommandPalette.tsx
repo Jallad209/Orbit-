@@ -1,7 +1,7 @@
 import { systemClock } from '@orbit/core';
 import type { Clock } from '@orbit/core';
 import { Search } from 'lucide-react';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { Kbd } from '@/components/ui/Kbd';
 import { useHotkey } from '@/lib/hotkeys';
 import { useCommandPalette } from './useCommandPalette';
@@ -10,6 +10,29 @@ import { useCommandPalette } from './useCommandPalette';
 const PaletteDialog = lazy(() =>
   import('./PaletteDialog').then((m) => ({ default: m.PaletteDialog })),
 );
+
+/**
+ * Stands in for the dialog while its chunk loads. The palette is already open,
+ * so Escape belongs to it: without this, an Escape pressed on the first Ctrl+K
+ * went nowhere and the palette appeared a moment later anyway.
+ */
+function LoadingPalette() {
+  const setOpen = useCommandPalette((s) => s.setOpen);
+  const opener = useCommandPalette((s) => s.opener);
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      // Capture phase: the field focus is in never sees an Escape meant for the palette.
+      e.preventDefault();
+      e.stopPropagation();
+      setOpen(false);
+      if (opener?.isConnected) opener.focus();
+    };
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => document.removeEventListener('keydown', onKeyDown, true);
+  }, [setOpen, opener]);
+  return null;
+}
 
 interface Props {
   clock?: Clock;
@@ -32,7 +55,7 @@ export function CommandPalette({ clock = systemClock }: Props) {
 
   if (!open) return null;
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<LoadingPalette />}>
       <PaletteDialog clock={clock} />
     </Suspense>
   );
