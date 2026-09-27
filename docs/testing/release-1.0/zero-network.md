@@ -33,9 +33,11 @@ anything Orbit ships or calls. Orbit's own process opened no socket, and no requ
 app's pages left `tauri.localhost`.
 
 The honest form of the claim is therefore: **Orbit sends nothing, and the component Microsoft
-supplies to render it talks to Microsoft.** A user who needs that silenced too can block
-`msedgewebview2.exe` at the firewall; the app keeps working, because it never wanted the
-network. Passing `--disable-background-networking` to the webview would stop most of it at the
+supplies to render it talks to Microsoft.** A firewall block on `msedgewebview2.exe` would stop
+that traffic, but it reaches every WebView2 app on the machine, not only Orbit. Orbit is expected
+to keep working under it — its pages come from a custom protocol and its data from IPC, neither
+of which uses the network stack — but that is **untested**: adding a firewall rule is a system
+change this pass did not make. Passing `--disable-background-networking` to the webview would stop most of it at the
 source, and is worth considering after 1.0 — it is not done now because the same channel is how
 the desktop test harness attaches a debugger, and changing it deserves its own verification
 rather than a change made on release day.

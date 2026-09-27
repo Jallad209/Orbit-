@@ -5,6 +5,15 @@ check. It does not send your records anywhere. The web app contacts only the ori
 you chose to load it; the desktop app uses local Tauri IPC. A link you explicitly open is handed
 to the operating system and may then use your normal browser or mail client.
 
+One thing Orbit does not control: on Windows the desktop app draws its window with Microsoft
+Edge WebView2, a component Windows installs and keeps updated for every app that uses it. That
+component makes its own connections to Microsoft for updates and Edge services. It carries
+nothing of yours — Orbit's own process opens no network connection at all, which was checked at
+the operating-system level ([zero-network evidence](testing/release-1.0/zero-network.md)).
+Blocking `msedgewebview2.exe` in a firewall would stop that traffic, but it applies to every app
+on the machine that uses WebView2, not only Orbit. Orbit should keep working under such a block,
+since its pages and data never touch the network, but that has not been tested.
+
 ## Files and storage
 
 - Web records live in that browser profile's IndexedDB. A device-local export watermark and
