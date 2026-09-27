@@ -3,93 +3,74 @@
 All notable changes to Orbit. Generated from Conventional Commits with git-cliff,
 then edited by hand before each release.
 
-## [Unreleased]
+## [1.0.0] — 2026-09-27
+
+The first stable release of Orbit: a personal planner that turns your goals, routines,
+commitments, bills and notes into a plan for today — on your own computer, with no account and
+nothing sent anywhere. New here? [Installing Orbit](INSTALL.md) walks through it in about two
+minutes.
+
+The Windows installer is not code-signed, so Windows shows a blue "Windows protected your PC"
+box the first time you open it; click **More info**, then **Run anyway**. No administrator
+password is needed.
 
 ### Added
 
-- Weekly reviews now cover seven resumable steps—Inbox, Overdue, Projects, Goals, Bills,
-  Patterns, and Capacity—with idempotent receipts and frozen summaries. People and
-  commitments, recurring bills, notes, `orbit://` links, notification activation, and
-  draft-safe activation complete the Week 12 workflows.
-- Daily reviews ask configurable morning capture questions, support Later today reminders
-  and templates, preserve same-day drafts, add an evening journal/reflection, and have a
-  review dashboard. Weekly Patterns summarizes explicit time, energy, reflection tags, and
-  per-currency spending without reading journal prose.
-- Spending log entries and monthly reminders; explicit person follow-up dates/times; direct
-  reminders for review steps, people, and spending; preferred-date planner hints; and review
-  settings.
-- Desktop data safety: verified daily/weekly rotating SQLite backups (the first attempt waits
-  20 s after launch so it never competes with the first screen), manual backups, restore-kind
-  labels, and a fresh integrity check in diagnostics. The shell logs any database command that
-  waits for or holds the connection for 250 ms or more. The open-time check is now
-  `PRAGMA quick_check`, run once per connection rather than once per window; the full
-  `integrity_check` stays on every verified backup copy and in Diagnostics. The first insights
-  scan waits out its 3 s initial delay even when boot itself writes. Settings → Desktop now
-  says who owns `orbit://` for your account — this installation, another Orbit, another
-  program by name, or nothing — instead of assuming notification clicks reach Orbit. A window that reloads
-  releases the transaction its previous document owned at once, so the next document no
-  longer waits up to 30 s on "Opening Orbit…". The web now reminds after
-  more than seven days and 100 changes without a full JSON export.
-
-- Command palette: `Ctrl+K` (or the Search button on the rail) opens one box for commands and
-  search. Commands — add task / note / event, plan my day, regenerate today's proposal,
-  reschedule unfinished work, show neglected goals, review this week, open project, go to any
-  screen — validate their input inline and offer **Undo** on the toast (this session, last 20).
-- Global search across tasks, notes, projects, and people, with prefix and typo tolerance,
-  `type:note` / `area:name` filters, highlighted snippets, and a `/search` page whose URL is
-  the state. Desktop uses SQLite FTS5 inside the data file when available; the web (and a
-  SQLite without FTS5) uses an in-memory index. Notes and people open in a read-only preview.
-- Local diagnostics, never telemetry: rolling JSON logs on desktop (daily, 10 MB, seven kept)
-  with a redacting writer and a crash marker; a bounded event buffer on the web; Settings →
-  Data → **Save diagnostics bundle** writes a zip (desktop) or JSON (web) that holds versions,
-  counts, and error kinds — no titles, bodies, names, queries, or paths. See
-  `docs/BUG-REPORTS.md`.
-
-- Insights: an **Insights** screen (and `g o`, or the "Open insights" command) lists what
-  needs attention — overloaded days, weekly area targets beyond available time, stale
-  projects, estimates that run over, and people with several open commitments — each with its
-  threshold visible and the records and arithmetic behind it. Snooze for a day, a week, or
-  until the data changes; dismiss until restored; history with Restore. Today shows the first
-  three; the Timeline warns about an overloaded day and links to the evidence. Thresholds are
-  in Settings → Insights. See `docs/INSIGHTS.md`.
-- Desktop: Orbit stays in the **system tray** when the window is closed (Open Orbit, Quick
-  Capture, Plan my day, Quit); the first close explains this. One Orbit process: launching it
-  again brings the window back. **Start at login** is opt-in in Settings → Desktop and shows
-  what Windows actually has registered. Reminders for known bills and follow-ups are prepared
-  ahead with their dates, so they arrive while the window is hidden. See
-  `docs/RESIDENT-BEHAVIOUR.md`.
+- **Weekly review** in seven resumable steps — Inbox, Overdue, Projects, Goals, Bills, Patterns,
+  and Capacity — with a summary you can come back to. **Daily reviews** ask configurable morning
+  questions, offer "Later today" reminders and templates, keep same-day drafts, and end with an
+  evening journal. A review dashboard ties them together.
+- **People and commitments**: record what you owe and what you're owed, get a follow-up reminder
+  when someone goes quiet, and see each person's open promises.
+- **Bills and spending**: recurring bills that keep their paid history, a spending log with
+  monthly reminders, and totals kept separate per currency.
+- **Notes** with safe offline editing, and links between notes, tasks, projects and people.
+- **Insights**: a screen that lists what needs attention — overloaded days, weekly targets beyond
+  the time you have, stale projects, estimates that keep running over, people with several open
+  commitments — each showing its threshold and the records behind it. Snooze or dismiss any of
+  them; tune the thresholds in Settings → Insights.
+- **Command palette** (`Ctrl+K`): one box for search and commands — add a task, note or event,
+  plan your day, reschedule unfinished work, open a project, go to any screen — with **Undo**.
+- **Search** across tasks, notes, projects and people, tolerant of typos, with filters such as
+  `type:note` and `area:name`.
+- **Stays in the tray**: closing the window keeps Orbit running quietly so reminders still
+  arrive; **Start at login** is available in Settings → Desktop. Reminders are prepared ahead,
+  so they arrive while the window is hidden, and a notification click opens the exact record.
+- **Your data stays safe**: on the desktop, daily and weekly backups that are checked after
+  they're written, manual backups and one-step restore; in the browser version, a reminder to
+  export when you haven't in a while. A local diagnostics bundle for bug reports holds no titles,
+  names or text.
 
 ### Changed
 
-- Restoring a backup made before the search index existed is accepted; the index is rebuilt on
-  the next open.
-- Project "stale" badges, the Today screen, and the at-risk list now share one definition of
-  activity (a project's own change, its tasks and milestones — including deleting one — and
-  sessions) and the stale threshold from Settings → Insights.
-- Reminder wording carries dates ("Rent due 2026-09-20", "No reply on … since 2026-09-10")
-  instead of "due in 3 days".
-- Export schema is now 6 / IndexedDB 5 / SQLite 4. Older formats migrate forward; newer
-  formats are still refused.
-- Close-to-tray moved from Settings → Data to Settings → Desktop; the earlier setting is
-  carried over once.
+- Reminders carry real dates ("Rent due 2026-09-20") instead of "due in 3 days".
+- Project "stale" badges, Today, and the at-risk list all use the same definition of activity,
+  and the stale threshold from Settings → Insights.
+- The close-to-tray setting moved to Settings → Desktop; an earlier choice is carried over.
+- Older export files and databases are upgraded automatically; files from a newer Orbit are
+  refused rather than half-read.
 
 ### Fixed
 
-- Upgrading no longer leaves Orbit showing "could not open its data store". The desktop
-  build registered the web app's service worker, which precached a whole release; after an
-  upgrade that worker kept serving the previous release's HTML and scripts to the new shell,
-  and the first database call failed against the newer IPC contract. The desktop shell does
-  not register a service worker at all now — it serves its assets from disk, so there was
-  never anything to gain — and on the first run of a new version it removes any worker and
-  webview cache left behind, which is the only way to recover a profile where the stale
-  worker would otherwise decide which frontend runs. Data, preferences, and local storage
-  are untouched.
-- PD-001: cold `orbit://` and notification activation waits for a subscribed frontend and
-  is acknowledged before the native queue entry is removed, so startup races no longer
-  silently lose the destination.
-- Area deletion always requires confirmation, direct reminder toasts open their exact
-  destination, old daily-review drafts expire, and spending totals remain separated by
-  currency.
+- **Upgrading no longer breaks Orbit.** An earlier build could keep showing the previous
+  version after an upgrade and stop with "could not open its data store". Upgrades now clear the
+  old copy on the first run of the new version; your data, settings and backups are untouched.
+- Clicking a notification while Orbit was starting could open nothing; it now always opens the
+  record.
+- At 400% zoom, several screens squeezed their text into a column a few letters wide; those rows
+  now wrap properly.
+- The note editor now has a heading, so screen-reader users can find their place on it.
+- A brand-new installation no longer starts slowly the second time it opens.
+- Deleting an area always asks first, reminder notifications open the right screen, and old
+  daily-review drafts expire.
+
+### Tested for this release
+
+Keyboard, 200%/400% zoom and NVDA screen-reader passes; checks that Orbit itself opens no network
+connection (see [Privacy](docs/PRIVACY.md) for the one Windows component that does); and
+installed-build tests covering install, upgrade, uninstall, notification clicks, start at login,
+restarts and sleep. The full record is in
+[docs/testing/release-1.0/REPORT.md](docs/testing/release-1.0/REPORT.md).
 
 ## [0.1.0-alpha.2] — 2026-09-13
 
