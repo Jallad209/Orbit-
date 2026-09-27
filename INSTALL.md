@@ -72,8 +72,15 @@ Orbit also keeps its own automatic backups, but a copy you saved yourself is the
 
 ## Updating
 
-Download the newer `-setup.exe` the same way and run it. It replaces the old version and
-**keeps all your plans, notes and settings**.
+1. Quit Orbit first: right-click its icon near the clock and choose **Quit**.
+2. Download the newer `-setup.exe` the same way and open it.
+3. The installer will say **"An older version of Orbit is installed"** and offer two choices.
+   Choose **Do not uninstall**, then click **Next**. (The other choice opens the old version's
+   uninstaller in the middle of the update — it also keeps your data, but it's an extra
+   window you don't need.)
+4. Click through the rest as for a first install.
+
+Updating replaces the program and **keeps all your plans, notes and settings**.
 
 ## Uninstalling
 
