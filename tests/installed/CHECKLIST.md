@@ -38,11 +38,11 @@ steps record the Run value and the queued reminder before each restart or sleep,
 steps read the boot or sleep/resume times, the launch mode and readiness from the shell log,
 wait for the delivery, and capture the toast and the notification centre themselves.
 
-|   # | Scenario                                                                            | Result  | Required evidence                                                 |
-| --: | ----------------------------------------------------------------------------------- | ------- | ----------------------------------------------------------------- |
-|  12 | Enable login launch → reboot → Orbit initializes hidden → due reminder is delivered | NOT RUN | Run key, boot time, process/window state, notification screenshot |
-|  13 | Disable login launch → reboot → Orbit does not start                                | NOT RUN | absent Run value and post-boot process query                      |
-|  14 | Sleep across a due time → resume → one delivery, no duplicate                       | NOT RUN | sleep/resume times, reminder row/log, notification screenshot     |
+|   # | Scenario                                                                            | Result | Required evidence                                                 |
+| --: | ----------------------------------------------------------------------------------- | ------ | ----------------------------------------------------------------- |
+|  12 | Enable login launch → reboot → Orbit initializes hidden → due reminder is delivered | PASS   | Run key, boot time, process/window state, notification screenshot |
+|  13 | Disable login launch → reboot → Orbit does not start                                | PASS   | absent Run value and post-boot process query                      |
+|  14 | Sleep across a due time → resume → one delivery, no duplicate                       | PASS   | sleep/resume times, reminder row/log, notification screenshot     |
 
 After the pass, copy the results into `docs/RESIDENT-BEHAVIOUR.md` and
 `docs/testing/release-1.0/REPORT.md`, including candidate commit and SHA-256.

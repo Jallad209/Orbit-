@@ -1,0 +1,19 @@
+﻿{
+  "armedAt": "2026-09-27T16:16:48.456Z",
+  "reminder": {
+    "id": "01a0e3a7-6c7e-750e-875c-75405b469bf6",
+    "title": "sleep test due 2026-09-27",
+    "fireAt": "2026-09-27T16:20:00.000Z",
+    "status": "pending",
+    "updatedAt": "2026-09-27T16:16:35.454Z"
+  },
+  "wakeNotBefore": "2026-09-27T16:21:30.000Z",
+  "deliveriesLoggedBeforeSleep": 1,
+  "orbitProcesses": [
+    {
+      "id": 12768,
+      "startedAt": "2026-09-27T16:15:08.167Z",
+      "visibleWindow": true
+    }
+  ]
+}

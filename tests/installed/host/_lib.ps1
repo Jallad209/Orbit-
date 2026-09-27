@@ -165,6 +165,29 @@ function Copy-ShellLog([string] $Name) {
   if ($newest) { Copy-Item -LiteralPath $newest.FullName -Destination (Join-Path $Evidence $Name) -Force; "saved $(Join-Path $Evidence $Name)" }
 }
 
+# The sleep a wake came back from, as Windows itself summarises it. Power-Troubleshooter event 1
+# carries "Sleep Time" and "Wake Time" for the whole low-power interval, which is what matters.
+# Pairing the raw Kernel-Power events instead goes wrong on Modern Standby machines: this one
+# logged "resumed from sleep" two seconds after going down and then a 0.3 s in/out blip at the
+# real wake, so the newest "sleep" before the wake was the blip, not the ten minutes asleep.
+function Get-SleepWindows([DateTimeOffset] $Since) {
+  $parse = {
+    param([string] $message, [string] $label)
+    # The times are wrapped in left-to-right marks and carry nine fractional digits; .NET
+    # parses at most seven.
+    $clean = $message -replace [char]0x200E, ''
+    if ($clean -notmatch "$label\s*:\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(\.\d+)?Z") { return $null }
+    $fraction = if ($matches[2]) { $matches[2].Substring(0, [Math]::Min(8, $matches[2].Length)) } else { '' }
+    [DateTimeOffset]::Parse("$($matches[1])${fraction}Z")
+  }
+  @(Get-WinEvent -FilterHashtable @{ LogName = 'System'; ProviderName = 'Microsoft-Windows-Power-Troubleshooter'; Id = 1; StartTime = $Since.LocalDateTime } -ErrorAction SilentlyContinue |
+    ForEach-Object {
+      $slept = & $parse $_.Message 'Sleep Time'
+      $woke = & $parse $_.Message 'Wake Time'
+      if ($slept -and $woke) { [pscustomobject]@{ sleptAt = $slept; wokeAt = $woke } }
+    } | Sort-Object wokeAt)
+}
+
 # Sleep and resume, from the System event log: Kernel-Power 42 (entering sleep), 107 (resumed),
 # 506/507 (Modern Standby in/out), Power-Troubleshooter 1 (the resume summary with both times).
 function Get-PowerEvents([DateTimeOffset] $Since) {

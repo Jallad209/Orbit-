@@ -298,9 +298,22 @@ Installed build, Windows Sandbox, 19 September 2026 — candidate
 | Notification refused by Windows stays pending and is retried; delivered once the platform is back            | PASS — `10-shell.log`: three `0x803E0105` refusals, then `deliver fired: 1`                                                         |
 | Installed notification carries the Orbit name and icon                                                       | PASS — `11-notification-centre.png`                                                                                                 |
 
-Still **NOT RUN** (need a real Windows account, not Sandbox, which cannot reboot): login launch →
-reboot → hidden initialization → delivery; disable → reboot → no launch; sleep across a due time
-→ one delivery.
+Host account, 27 September 2026 — the developer's own Windows account, installer
+`Orbit_0.1.0-alpha.2_x64-setup.exe` rebuilt that day (SHA-256 `15927BBE…`) with every application
+change through `5bb42cc`, confirmed in the binary; later commits touched only docs and tests —
+evidence in `docs/testing/release-1.0/installed/host/`:
+
+| Scenario                                                                           | Result                                                                                                                                                                                                 |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 12 Login launch on → restart → Orbit starts hidden → the due reminder is delivered | PASS — launched `background` at sign-in, main window hidden, ready in the same second; "reboot test" delivered once 38 s after its due time; Run value still registered afterwards (`12-verdict.json`) |
+| 13 Login launch off → restart → Orbit does not start                               | PASS — Run value gone, no process and no launch logged 95 s after sign-in (`13-after-reboot.json`)                                                                                                     |
+| 14 Asleep across a due time → wake → one delivery, no duplicate                    | PASS — asleep 16:17:08–16:27:45Z across a 16:20Z due time; delivered once, 15 s after waking (`14-verdict.json`)                                                                                       |
+
+The first automatic verdicts for 12 and 14 said FAIL; both were the harness, not Orbit, and
+both corrections are recorded beside the original readings. 12's window check picked the
+single-instance helper window instead of Orbit's, and its registry read ran in a shell that sees
+a virtualised HKCU; 14 paired Modern Standby's short in/out events instead of reading Windows'
+own sleep summary. All three are fixed in the harness.
 
 MSI: **BLOCKED as a stable-release gate**. The hook above is NSIS-only; equivalent MSI
 cleanup must be implemented and verified before an MSI channel ships.

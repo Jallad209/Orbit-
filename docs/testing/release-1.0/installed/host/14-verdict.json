@@ -1,0 +1,13 @@
+{
+  "scenario": 14,
+  "verdict": "PASS",
+  "decidedAt": "2026-09-27T16:40:00Z",
+  "account": "User",
+  "evidence": {
+    "armed": "14-armed.json — 'sleep test due 2026-09-27', fireAt 16:20:00Z, armed 16:16:48Z",
+    "sleep": "Power-Troubleshooter event 1 (logged 16:27:46Z): Sleep Time 16:17:08.564Z, Wake Time 16:27:45.274Z — asleep across the due time",
+    "delivery": "14-shell.log — scheduler/deliver {fired: 1} at 16:28:00.818Z, 15 s after waking; 14-after-resume.json: 1 delivery event, reminder status fired",
+    "noDuplicate": "14-notification-centre.png — one 'sleep test due 2026-09-27' entry under Orbit at 7:28 PM"
+  },
+  "correction": "14-after-resume.json recorded FAIL with sleptAcrossDueTime=false. This machine uses Modern Standby: it logged Kernel-Power 107 'resumed' two seconds after 42 'entering sleep', then a 0.3 s 506/507 blip at the real wake, and the script paired the wake with that blip (sleep 16:27:45Z) instead of the ten-minute sleep. Fixed in the harness: 14-verify takes the interval from Windows' Power-Troubleshooter summary and only falls back to pairing raw events without one; re-evaluated against this run's System log it gives slept 16:17:08Z to 16:27:45Z, across the due time, delivery after resume. The 14-toast.png frame is empty: 14v started a minute after the delivery, by which time the toast had left the screen; the notification-centre capture carries the delivery."
+}

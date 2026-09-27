@@ -1,0 +1,17 @@
+{
+  "scenario": 12,
+  "verdict": "PASS",
+  "decidedAt": "2026-09-27T16:05:00Z",
+  "account": "User",
+  "installer": "Orbit_0.1.0-alpha.2_x64-setup.exe (SHA-256 15927BBE756B…, built 2026-09-27 18:33 local; carries every application change through 5bb42cc, confirmed by the renamed webview marker in the binary)",
+  "evidence": {
+    "armed": "12-armed.json — Run value 'orbit.exe --background' present; 'reboot test' due 15:57:00Z",
+    "restart": "boot 15:54:00Z, after arming at 15:51:23Z",
+    "loginLaunch": "12-shell.log — resident/launch {launch: background} at 15:56:18Z; previous run ended cleanly",
+    "hidden": "Orbit's main window (title 'Orbit', class 'Tauri Window') not visible, pid 23548 started 15:56:17Z",
+    "ready": "resident/ready at 15:56:18Z",
+    "delivery": "scheduler/deliver {fired: 1} at 15:57:38Z; reminder status fired; 12-toast.png shows 'Orbit — reboot test due 2026-09-27'",
+    "loginLaunchSurvives": "login-launch-20260927-160328.json, read in the user's own shell: Run value present, Startup apps enabled, prefs autostart=true"
+  },
+  "correction": "12-after-reboot.json recorded FAIL on two readings that were wrong, not on the scenario. (1) 'visible window: True' came from Process.MainWindowHandle picking the single-instance helper window 'app.orbit.desktop-siw'; Orbit's own window was hidden. (2) 'login launch MISSING' came from running 12v in a shell inside Claude's packaged desktop app, which saw a virtualised HKCU and a stale preferences file dated 2026-09-15. Both fixed in 1e6a8b6: the window check enumerates Orbit's windows, and check-login-launch.ps1 reads the real account."
+}

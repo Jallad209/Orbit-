@@ -1,0 +1,12 @@
+﻿{
+  "armedAt": "2026-09-27T15:51:23.679Z",
+  "bootTimeBefore": "2026-09-26T19:56:47.500Z",
+  "runValue": "C:\\Users\\User\\AppData\\Local\\Orbit\\orbit.exe --background",
+  "reminder": {
+    "id": "01a0e390-44fc-70e9-af4c-d249779ed4f4",
+    "title": "reboot test due 2026-09-27",
+    "fireAt": "2026-09-27T15:57:00.000Z",
+    "status": "pending",
+    "updatedAt": "2026-09-27T15:51:18.012Z"
+  }
+}

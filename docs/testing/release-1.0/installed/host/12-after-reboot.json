@@ -1,0 +1,36 @@
+﻿{
+  "at": "2026-09-27T15:57:42.512Z",
+  "armedAt": "2026-09-27T15:51:23.679Z",
+  "bootTime": "2026-09-27T15:54:00.500Z",
+  "logonTime": "2026-09-27T15:54:52.993Z",
+  "runValue": null,
+  "orbitProcessesAtCheck": [
+    {
+      "id": 23548,
+      "startedAt": "2026-09-27T15:56:17.824Z",
+      "visibleWindow": true,
+      "title": "app.orbit.desktop-siw"
+    }
+  ],
+  "firstLaunchAfterBoot": {
+    "at": "2026-09-27T15:56:18.399Z",
+    "launch": "background"
+  },
+  "readyAt": "2026-09-27T15:56:18.554Z",
+  "readyTimeoutLogged": false,
+  "reminderFireAt": "2026-09-27T15:57:00.000Z",
+  "deliveredAt": "2026-09-27T15:57:38.437Z",
+  "deliveriesAfterBoot": 1,
+  "firedAfterBoot": 1,
+  "deliveredAfterReady": true,
+  "catchUp": false,
+  "reminderAfter": {
+    "id": "01a0e390-44fc-70e9-af4c-d249779ed4f4",
+    "title": "reboot test due 2026-09-27",
+    "fireAt": "2026-09-27T15:57:00.000Z",
+    "status": "fired",
+    "updatedAt": "2026-09-27T15:57:38.418Z"
+  },
+  "startedHidden": false,
+  "deliveredOnce": true
+}

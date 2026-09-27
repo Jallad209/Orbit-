@@ -8,17 +8,26 @@ $armedAt = [DateTimeOffset]$armed.armedAt
 $fireAt = [DateTimeOffset]$armed.reminder.fireAt
 "armed $(Local $armedAt) local, reminder due $(Local $fireAt)"
 
-# The wake the user just came back from is the last resume since arming; the sleep that
-# matters is the last one before it. Modern Standby can log short in/out pairs of its own
-# (a screen-off, a maintenance wake); every event is kept in the evidence.
+# Windows' own summary of the sleep the user just woke from comes first: the latest
+# Power-Troubleshooter interval since arming. Only without one do we pair raw events — the
+# last resume, and the last sleep before it — which Modern Standby's short in/out pairs can
+# fool. Every raw event is kept in the evidence either way.
 $power = @(Get-PowerEvents $armedAt)
-$isSleep = { $_.provider -eq 'Microsoft-Windows-Kernel-Power' -and ($_.id -eq 42 -or $_.id -eq 506) }
-$isResume = { ($_.provider -eq 'Microsoft-Windows-Kernel-Power' -and ($_.id -eq 107 -or $_.id -eq 507)) -or $_.provider -eq 'Microsoft-Windows-Power-Troubleshooter' }
-$resume = $power | Where-Object $isResume | Select-Object -Last 1
-$sleep = $power | Where-Object $isSleep | Where-Object { -not $resume -or ([DateTimeOffset]$_.at) -lt ([DateTimeOffset]$resume.at) } | Select-Object -Last 1
-$sleptAt = if ($sleep) { [DateTimeOffset]$sleep.at } else { $null }
-$resumedAt = if ($resume) { [DateTimeOffset]$resume.at } else { $null }
-"sleep: $(if ($sleptAt) { Local $sleptAt } else { 'not recorded' })   resume: $(if ($resumedAt) { Local $resumedAt } else { 'not recorded' })"
+$window = Get-SleepWindows $armedAt | Select-Object -Last 1
+if ($window) {
+  $sleptAt = $window.sleptAt
+  $resumedAt = $window.wokeAt
+  $source = 'Power-Troubleshooter summary'
+} else {
+  $isSleep = { $_.provider -eq 'Microsoft-Windows-Kernel-Power' -and ($_.id -eq 42 -or $_.id -eq 506) }
+  $isResume = { ($_.provider -eq 'Microsoft-Windows-Kernel-Power' -and ($_.id -eq 107 -or $_.id -eq 507)) -or $_.provider -eq 'Microsoft-Windows-Power-Troubleshooter' }
+  $resume = $power | Where-Object $isResume | Select-Object -Last 1
+  $sleep = $power | Where-Object $isSleep | Where-Object { -not $resume -or ([DateTimeOffset]$_.at) -lt ([DateTimeOffset]$resume.at) } | Select-Object -Last 1
+  $sleptAt = if ($sleep) { [DateTimeOffset]$sleep.at } else { $null }
+  $resumedAt = if ($resume) { [DateTimeOffset]$resume.at } else { $null }
+  $source = 'paired Kernel-Power events'
+}
+"sleep: $(if ($sleptAt) { Local $sleptAt } else { 'not recorded' })   resume: $(if ($resumedAt) { Local $resumedAt } else { 'not recorded' })   (from $source)"
 if (-not $sleptAt -or -not $resumedAt) {
   'Windows recorded no sleep/resume pair since arming. If the machine did sleep, tell Claude; otherwise run the arm step again.'
   Save-Evidence '14-after-resume.json' ([ordered]@{ at = Iso(Now-Utc); armedAt = $armed.armedAt; powerEvents = $power; verdict = 'NOT PROVED: no sleep/resume recorded' })
@@ -44,6 +53,7 @@ Save-Evidence '14-after-resume.json' ([ordered]@{
   reminderFireAt = $armed.reminder.fireAt
   sleptAt = Iso($sleptAt)
   resumedAt = Iso($resumedAt)
+  sleepSource = $source
   sleptAcrossDueTime = $sleptAcrossDueTime
   powerEvents = $power
   deliveredAt = if ($deliveredAt) { Iso($deliveredAt) } else { $null }

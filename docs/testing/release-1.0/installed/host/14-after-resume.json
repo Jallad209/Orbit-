@@ -1,0 +1,59 @@
+﻿{
+  "at": "2026-09-27T16:29:14.296Z",
+  "armedAt": "2026-09-27T16:16:48.456Z",
+  "reminderFireAt": "2026-09-27T16:20:00.000Z",
+  "sleptAt": "2026-09-27T16:27:45.041Z",
+  "resumedAt": "2026-09-27T16:27:46.441Z",
+  "sleptAcrossDueTime": false,
+  "powerEvents": [
+    {
+      "at": "2026-09-27T16:17:09.641Z",
+      "provider": "Microsoft-Windows-Kernel-Power",
+      "id": 42,
+      "message": "The system is entering sleep."
+    },
+    {
+      "at": "2026-09-27T16:17:11.364Z",
+      "provider": "Microsoft-Windows-Kernel-Power",
+      "id": 107,
+      "message": "The system has resumed from sleep."
+    },
+    {
+      "at": "2026-09-27T16:27:45.041Z",
+      "provider": "Microsoft-Windows-Kernel-Power",
+      "id": 506,
+      "message": "The system is entering Modern Standby"
+    },
+    {
+      "at": "2026-09-27T16:27:45.332Z",
+      "provider": "Microsoft-Windows-Kernel-Power",
+      "id": 507,
+      "message": "The system is exiting Modern Standby"
+    },
+    {
+      "at": "2026-09-27T16:27:46.441Z",
+      "provider": "Microsoft-Windows-Power-Troubleshooter",
+      "id": 1,
+      "message": "The system has returned from a low power state."
+    }
+  ],
+  "deliveredAt": "2026-09-27T16:28:00.818Z",
+  "deliveryLanded": "after resume",
+  "deliveriesSinceArming": 1,
+  "firedSinceArming": 1,
+  "reminderAfter": {
+    "id": "01a0e3a7-6c7e-750e-875c-75405b469bf6",
+    "title": "sleep test due 2026-09-27",
+    "fireAt": "2026-09-27T16:20:00.000Z",
+    "status": "fired",
+    "updatedAt": "2026-09-27T16:28:00.811Z"
+  },
+  "orbitProcesses": [
+    {
+      "id": 12768,
+      "startedAt": "2026-09-27T16:15:08.167Z",
+      "visibleWindow": true
+    }
+  ],
+  "pass": false
+}

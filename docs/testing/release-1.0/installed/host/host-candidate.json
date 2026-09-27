@@ -1,0 +1,12 @@
+﻿{
+  "at": "2026-09-27T15:44:27.113Z",
+  "account": "User",
+  "computer": "(developer machine)",
+  "os": {
+    "Caption": "Microsoft Windows 11 Pro",
+    "Version": "10.0.26200",
+    "BuildNumber": "26200"
+  },
+  "installer": "Orbit_0.1.0-alpha.2_x64-setup.exe",
+  "sha256": "15927BBE756B7FA32DF60BF7706384EDBA6C00569449541D0C0A8D86D22CF8FE"
+}

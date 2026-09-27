@@ -1,0 +1,15 @@
+﻿{
+  "at": "2026-09-27T16:03:28.447Z",
+  "account": "User",
+  "runValue": "C:\\Users\\User\\AppData\\Local\\Orbit\\orbit.exe --background",
+  "startupApprovedEnabled": true,
+  "prefsAutostart": true,
+  "prefsWritten": "2026-09-27T15:48:38.113Z",
+  "orbitProcesses": [
+    {
+      "id": 23548,
+      "startedAt": "2026-09-27T15:56:17.824Z",
+      "visibleWindow": false
+    }
+  ]
+}

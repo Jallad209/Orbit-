@@ -1,0 +1,12 @@
+﻿{
+  "armedAt": "2026-09-27T16:11:46.354Z",
+  "bootTimeBefore": "2026-09-27T15:54:00.500Z",
+  "runValue": null,
+  "orbitProcesses": [
+    {
+      "id": 23548,
+      "startedAt": "2026-09-27T15:56:17.824Z",
+      "visibleWindow": true
+    }
+  ]
+}
