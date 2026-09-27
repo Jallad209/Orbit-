@@ -7,13 +7,19 @@ import { secondWindowHandle } from './helpers';
 async function invoke<T>(command: string, args: Record<string, unknown>): Promise<T> {
   const result = await browser.execute(
     async (cmd, params) => {
-      const internal = (
-        window as unknown as {
-          __TAURI_INTERNALS__: {
-            invoke<R>(name: string, args: Record<string, unknown>): Promise<R>;
-          };
-        }
-      ).__TAURI_INTERNALS__;
+      type Bridge = { invoke<R>(name: string, args: Record<string, unknown>): Promise<R> };
+      const bridge = () =>
+        (window as unknown as { __TAURI_INTERNALS__?: Bridge }).__TAURI_INTERNALS__;
+      // Unlike the other specs, this one calls the shell before the app has finished loading
+      // (it never runs dismissFirstRun), so the page may not have Tauri's bridge yet — on a
+      // slow runner `__TAURI_INTERNALS__` was still undefined. Wait for the bridge itself and
+      // nothing more, in whichever window this runs (main first, then capture).
+      const ready = Date.now() + 15_000;
+      while (!bridge()) {
+        if (Date.now() >= ready) return { failure: 'Tauri bridge never appeared in this window' };
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      const internal = bridge()!;
       // Like the app driver, wait only for ownership conflicts, never retry SQL errors.
       // Return failures as data so WebDriver does not retry arbitrary writes itself.
       const deadline = Date.now() + 10_000;
